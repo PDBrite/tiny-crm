@@ -185,31 +185,66 @@ async function GET(request) {
                 status: 400
             });
         }
-        // Build the query with lead join for company filtering
-        let query = __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["supabase"].from('touchpoints').select(`
-        scheduled_at,
-        lead:leads!inner(company, campaign_id)
-      `).gte('scheduled_at', startDate).lte('scheduled_at', endDate + 'T23:59:59.999Z').is('completed_at', null);
-        // Add company filter if provided
-        if (company) {
-            query = query.eq('lead.company', company);
-        }
-        // Add campaign filter if provided
-        if (campaignId) {
-            query = query.eq('lead.campaign_id', campaignId);
-        }
-        const { data: touchpoints, error } = await query;
-        if (error) {
-            console.error('Error fetching touchpoint counts:', error);
-            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-                error: 'Failed to fetch touchpoint counts'
-            }, {
-                status: 500
-            });
+        let touchpoints = [];
+        if (company === 'Avalern') {
+            // For Avalern, fetch touchpoints for district contacts
+            let query = __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["supabase"].from('touchpoints').select(`
+          scheduled_at,
+          district_contact:district_contacts!inner(
+            id,
+            district_lead:district_leads!inner(
+              id,
+              company,
+              campaign_id
+            )
+          )
+        `).gte('scheduled_at', startDate).lte('scheduled_at', endDate + 'T23:59:59.999Z').is('completed_at', null).eq('district_contact.district_lead.company', 'Avalern');
+            // Add campaign filter if provided
+            if (campaignId) {
+                query = query.eq('district_contact.district_lead.campaign_id', campaignId);
+            }
+            const { data: districtTouchpoints, error } = await query;
+            if (error) {
+                console.error('Error fetching district touchpoint counts:', error);
+                return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                    error: 'Failed to fetch touchpoint counts'
+                }, {
+                    status: 500
+                });
+            }
+            touchpoints = districtTouchpoints || [];
+        } else {
+            // For other companies, fetch regular lead touchpoints
+            let query = __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["supabase"].from('touchpoints').select(`
+          scheduled_at,
+          lead:leads!inner(
+            company, 
+            campaign_id,
+            campaign:campaigns(company)
+          )
+        `).gte('scheduled_at', startDate).lte('scheduled_at', endDate + 'T23:59:59.999Z').is('completed_at', null);
+            // Add company filter if provided
+            if (company) {
+                query = query.eq('lead.campaign.company', company);
+            }
+            // Add campaign filter if provided
+            if (campaignId) {
+                query = query.eq('lead.campaign_id', campaignId);
+            }
+            const { data: leadTouchpoints, error } = await query;
+            if (error) {
+                console.error('Error fetching lead touchpoint counts:', error);
+                return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                    error: 'Failed to fetch touchpoint counts'
+                }, {
+                    status: 500
+                });
+            }
+            touchpoints = leadTouchpoints || [];
         }
         // Count touchpoints by date
         const counts = {};
-        touchpoints?.forEach((touchpoint)=>{
+        touchpoints.forEach((touchpoint)=>{
             const date = new Date(touchpoint.scheduled_at).toISOString().split('T')[0];
             counts[date] = (counts[date] || 0) + 1;
         });

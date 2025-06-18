@@ -16,11 +16,10 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$re
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$users$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Users$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/users.js [app-client] (ecmascript) <export default as Users>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$target$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Target$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/target.js [app-client] (ecmascript) <export default as Target>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$upload$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Upload$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/upload.js [app-client] (ecmascript) <export default as Upload>");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$settings$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Settings$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/settings.js [app-client] (ecmascript) <export default as Settings>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$building$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Building2$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/building-2.js [app-client] (ecmascript) <export default as Building2>");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$calendar$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Calendar$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/calendar.js [app-client] (ecmascript) <export default as Calendar>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$school$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__School$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/school.js [app-client] (ecmascript) <export default as School>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$message$2d$square$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__MessageSquare$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/message-square.js [app-client] (ecmascript) <export default as MessageSquare>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$user$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__User$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/user.js [app-client] (ecmascript) <export default as User>");
 ;
 var _s = __turbopack_context__.k.signature();
 'use client';
@@ -28,33 +27,6 @@ var _s = __turbopack_context__.k.signature();
 ;
 ;
 ;
-const baseNavigation = [
-    {
-        name: 'Dashboard',
-        href: '/',
-        icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$layout$2d$dashboard$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__LayoutDashboard$3e$__["LayoutDashboard"]
-    },
-    {
-        name: 'Outreach',
-        href: '/outreach',
-        icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$calendar$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Calendar$3e$__["Calendar"]
-    },
-    {
-        name: 'Campaigns',
-        href: '/campaigns',
-        icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$target$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Target$3e$__["Target"]
-    },
-    {
-        name: 'Import',
-        href: '/import',
-        icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$upload$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Upload$3e$__["Upload"]
-    },
-    {
-        name: 'Settings',
-        href: '/settings',
-        icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$settings$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Settings$3e$__["Settings"]
-    }
-];
 const craftyCodeNavigation = [
     {
         name: 'Dashboard',
@@ -80,11 +52,6 @@ const craftyCodeNavigation = [
         name: 'Import',
         href: '/import',
         icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$upload$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Upload$3e$__["Upload"]
-    },
-    {
-        name: 'Settings',
-        href: '/settings',
-        icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$settings$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Settings$3e$__["Settings"]
     }
 ];
 const avalernNav = [
@@ -117,27 +84,16 @@ const avalernNav = [
         name: 'Import',
         href: '/import',
         icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$upload$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Upload$3e$__["Upload"]
-    },
-    {
-        name: 'Settings',
-        href: '/settings',
-        icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$settings$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Settings$3e$__["Settings"]
     }
 ];
-const companies = [
-    {
-        name: 'CraftyCode',
-        color: 'bg-blue-500'
-    },
-    {
-        name: 'Avalern',
-        color: 'bg-purple-500'
-    }
-];
+const companyColors = {
+    'CraftyCode': 'bg-blue-500',
+    'Avalern': 'bg-purple-500'
+};
 function Sidebar() {
     _s();
     const pathname = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["usePathname"])();
-    const { selectedCompany, setSelectedCompany } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$CompanyContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCompany"])();
+    const { selectedCompany, setSelectedCompany, availableCompanies } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$CompanyContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCompany"])();
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         className: "flex h-screen w-64 flex-col bg-white shadow-lg",
         children: [
@@ -148,7 +104,7 @@ function Sidebar() {
                         className: "h-8 w-8 text-blue-600"
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/Sidebar.tsx",
-                        lineNumber: 58,
+                        lineNumber: 49,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -156,16 +112,71 @@ function Sidebar() {
                         children: "Lead Manager"
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/Sidebar.tsx",
-                        lineNumber: 59,
+                        lineNumber: 50,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/layout/Sidebar.tsx",
-                lineNumber: 57,
+                lineNumber: 48,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "border-b border-gray-200 p-4",
+                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                    className: "flex items-center space-x-3",
+                    children: [
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center",
+                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$user$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__User$3e$__["User"], {
+                                className: "h-4 w-4 text-gray-500"
+                            }, void 0, false, {
+                                fileName: "[project]/src/components/layout/Sidebar.tsx",
+                                lineNumber: 57,
+                                columnNumber: 13
+                            }, this)
+                        }, void 0, false, {
+                            fileName: "[project]/src/components/layout/Sidebar.tsx",
+                            lineNumber: 56,
+                            columnNumber: 11
+                        }, this),
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "flex-1 min-w-0",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                    className: "text-sm font-medium text-gray-900 truncate",
+                                    children: "Current User"
+                                }, void 0, false, {
+                                    fileName: "[project]/src/components/layout/Sidebar.tsx",
+                                    lineNumber: 60,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                    className: "text-xs text-gray-500 truncate",
+                                    children: "User"
+                                }, void 0, false, {
+                                    fileName: "[project]/src/components/layout/Sidebar.tsx",
+                                    lineNumber: 63,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/src/components/layout/Sidebar.tsx",
+                            lineNumber: 59,
+                            columnNumber: 11
+                        }, this)
+                    ]
+                }, void 0, true, {
+                    fileName: "[project]/src/components/layout/Sidebar.tsx",
+                    lineNumber: 55,
+                    columnNumber: 9
+                }, this)
+            }, void 0, false, {
+                fileName: "[project]/src/components/layout/Sidebar.tsx",
+                lineNumber: 54,
+                columnNumber: 7
+            }, this),
+            availableCompanies.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "border-b border-gray-200 p-4",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -173,48 +184,48 @@ function Sidebar() {
                         children: "Active Companies"
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/Sidebar.tsx",
-                        lineNumber: 64,
-                        columnNumber: 9
+                        lineNumber: 73,
+                        columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "space-y-2",
-                        children: companies.map((company)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                onClick: ()=>setSelectedCompany(company.name),
+                        children: availableCompanies.map((company)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                onClick: ()=>setSelectedCompany(company),
                                 className: `
-                flex items-center w-full px-3 py-2 text-sm font-medium rounded-lg transition-colors
-                ${selectedCompany === company.name ? 'bg-gray-100 text-gray-900 border-l-4 border-blue-500' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}
-              `,
+                  flex items-center w-full px-3 py-2 text-sm font-medium rounded-lg transition-colors
+                  ${selectedCompany === company ? 'bg-gray-100 text-gray-900 border-l-4 border-blue-500' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}
+                `,
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: `w-3 h-3 ${company.color} rounded-full mr-3`
+                                        className: `w-3 h-3 ${companyColors[company] || 'bg-gray-500'} rounded-full mr-3`
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/layout/Sidebar.tsx",
-                                        lineNumber: 80,
-                                        columnNumber: 15
+                                        lineNumber: 89,
+                                        columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        children: company.name
+                                        children: company
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/layout/Sidebar.tsx",
-                                        lineNumber: 81,
-                                        columnNumber: 15
+                                        lineNumber: 90,
+                                        columnNumber: 17
                                     }, this)
                                 ]
-                            }, company.name, true, {
+                            }, company, true, {
                                 fileName: "[project]/src/components/layout/Sidebar.tsx",
-                                lineNumber: 69,
-                                columnNumber: 13
+                                lineNumber: 78,
+                                columnNumber: 15
                             }, this))
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/Sidebar.tsx",
-                        lineNumber: 67,
-                        columnNumber: 9
+                        lineNumber: 76,
+                        columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/layout/Sidebar.tsx",
-                lineNumber: 63,
-                columnNumber: 7
+                lineNumber: 72,
+                columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("nav", {
                 className: "flex-1 px-4 py-6 space-y-2",
@@ -232,14 +243,14 @@ function Sidebar() {
                                     className: `mr-3 h-5 w-5 ${isActive ? 'text-blue-700' : 'text-gray-400'}`
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/layout/Sidebar.tsx",
-                                    lineNumber: 103,
+                                    lineNumber: 113,
                                     columnNumber: 15
                                 }, this),
                                 item.name
                             ]
                         }, item.name, true, {
                             fileName: "[project]/src/components/layout/Sidebar.tsx",
-                            lineNumber: 92,
+                            lineNumber: 102,
                             columnNumber: 13
                         }, this);
                     }),
@@ -256,31 +267,31 @@ function Sidebar() {
                                     className: `mr-3 h-5 w-5 ${isActive ? 'text-blue-700' : 'text-gray-400'}`
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/layout/Sidebar.tsx",
-                                    lineNumber: 122,
+                                    lineNumber: 132,
                                     columnNumber: 15
                                 }, this),
                                 item.name
                             ]
                         }, item.name, true, {
                             fileName: "[project]/src/components/layout/Sidebar.tsx",
-                            lineNumber: 111,
+                            lineNumber: 121,
                             columnNumber: 13
                         }, this);
                     })
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/layout/Sidebar.tsx",
-                lineNumber: 88,
+                lineNumber: 98,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/layout/Sidebar.tsx",
-        lineNumber: 55,
+        lineNumber: 46,
         columnNumber: 5
     }, this);
 }
-_s(Sidebar, "QAWKqcl5La9tI8xCSU0rfPbXFvE=", false, function() {
+_s(Sidebar, "DCF3P1x2XPGftnY+v4+3UXwOXJE=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["usePathname"],
         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$CompanyContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCompany"]
@@ -308,7 +319,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$layout$
 ;
 function DashboardLayout({ children }) {
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-        className: "flex h-screen bg-gray-50",
+        className: "flex h-screen bg-gray-100",
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$layout$2f$Sidebar$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
                 fileName: "[project]/src/components/layout/DashboardLayout.tsx",
@@ -316,7 +327,7 @@ function DashboardLayout({ children }) {
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("main", {
-                className: "flex-1 overflow-y-auto",
+                className: "flex-1 overflow-auto",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "p-8",
                     children: children
@@ -385,10 +396,13 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$re
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$mail$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Mail$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/mail.js [app-client] (ecmascript) <export default as Mail>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$phone$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Phone$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/phone.js [app-client] (ecmascript) <export default as Phone>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$calendar$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Calendar$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/calendar.js [app-client] (ecmascript) <export default as Calendar>");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trending$2d$up$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__TrendingUp$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/trending-up.js [app-client] (ecmascript) <export default as TrendingUp>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$activity$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Activity$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/activity.js [app-client] (ecmascript) <export default as Activity>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$circle$2d$check$2d$big$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__CheckCircle$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/circle-check-big.js [app-client] (ecmascript) <export default as CheckCircle>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$clock$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Clock$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/clock.js [app-client] (ecmascript) <export default as Clock>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$message$2d$square$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__MessageSquare$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/message-square.js [app-client] (ecmascript) <export default as MessageSquare>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$left$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronLeft$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/chevron-left.js [app-client] (ecmascript) <export default as ChevronLeft>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$right$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronRight$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/chevron-right.js [app-client] (ecmascript) <export default as ChevronRight>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$eye$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Eye$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/eye.js [app-client] (ecmascript) <export default as Eye>");
 ;
 var _s = __turbopack_context__.k.signature();
 'use client';
@@ -406,6 +420,11 @@ function CampaignsPage() {
     const [selectedStatus, setSelectedStatus] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('all');
     const [showCreateModal, setShowCreateModal] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [creating, setCreating] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [selectedSequenceSteps, setSelectedSequenceSteps] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])([]);
+    const [fetchingSteps, setFetchingSteps] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    // Pagination
+    const [currentPage, setCurrentPage] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(1);
+    const [itemsPerPage] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(10);
     // Form data for create campaign modal
     const [formData, setFormData] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])({
         name: '',
@@ -421,48 +440,202 @@ function CampaignsPage() {
         "CampaignsPage.useEffect": ()=>{
             const fetchCampaigns = {
                 "CampaignsPage.useEffect.fetchCampaigns": async ()=>{
+                    if (!selectedCompany) {
+                        console.log('No company selected, skipping campaigns fetch');
+                        setLoading(false);
+                        return;
+                    }
                     try {
                         setLoading(true);
-                        const { data, error } = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from('campaigns').select(`
-            id, name, company, start_date, created_at, outreach_sequence_id,
-            leads(id, status, touchpoints(type, completed_at)),
-            outreach_sequence:outreach_sequences(id, name, description)
-          `).eq('company', selectedCompany);
-                        if (error) {
-                            console.error('Error fetching campaigns:', error);
+                        // Fetch campaigns with different data models based on company
+                        let campaignsData;
+                        // Fetch campaigns with basic data first (no joins)
+                        console.log('Fetching campaigns for company:', selectedCompany);
+                        const { data: basicCampaigns, error: campaignsError } = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from('campaigns').select('id, name, company, start_date, created_at, outreach_sequence_id').eq('company', selectedCompany);
+                        if (campaignsError) {
+                            console.error('Error fetching campaigns:', campaignsError.message || campaignsError);
+                            setCampaigns([]);
+                            setLoading(false);
                             return;
                         }
-                        const enriched = data.map({
+                        // Fetch outreach sequences for all campaigns
+                        let allSequences = [];
+                        try {
+                            const { data: sequences, error: seqError } = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from('outreach_sequences').select('id, name, description, company').eq('company', selectedCompany);
+                            if (!seqError && sequences) {
+                                allSequences = sequences;
+                            }
+                        } catch (error) {
+                            console.warn('Could not fetch outreach sequences:', error);
+                        }
+                        // Now fetch related data separately to avoid complex join issues
+                        campaignsData = [];
+                        console.log('Processing campaigns:', basicCampaigns?.length || 0);
+                        for (const campaign of basicCampaigns || []){
+                            let campaignWithData = {
+                                ...campaign
+                            };
+                            // Add outreach sequence info
+                            const outreachSequence = allSequences.find({
+                                "CampaignsPage.useEffect.fetchCampaigns.outreachSequence": (seq)=>seq.id === campaign.outreach_sequence_id
+                            }["CampaignsPage.useEffect.fetchCampaigns.outreachSequence"]);
+                            if (outreachSequence) {
+                                campaignWithData.outreach_sequence = outreachSequence;
+                            }
+                            if (selectedCompany === 'Avalern') {
+                                // For Avalern: Fetch district_leads
+                                try {
+                                    const { data: districtLeads, error: districtError } = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from('district_leads').select('id, status').eq('campaign_id', campaign.id);
+                                    if (districtError) {
+                                        console.warn('Error fetching district leads for campaign', campaign.id, ':', districtError)(campaignWithData).district_leads = [];
+                                    } else if (districtLeads) {
+                                        // Fetch district contacts for these district leads
+                                        const districtLeadIds = districtLeads.map({
+                                            "CampaignsPage.useEffect.fetchCampaigns.districtLeadIds": (dl)=>dl.id
+                                        }["CampaignsPage.useEffect.fetchCampaigns.districtLeadIds"]);
+                                        let districtContacts = [];
+                                        if (districtLeadIds.length > 0) {
+                                            const { data: contacts, error: contactsError } = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from('district_contacts').select('id, district_lead_id').in('district_lead_id', districtLeadIds);
+                                            if (contactsError) {
+                                                console.warn('Error fetching district contacts:', contactsError);
+                                            } else if (contacts) {
+                                                districtContacts = contacts;
+                                            }
+                                        }
+                                        // Fetch touchpoints for district contacts
+                                        const contactIds = districtContacts.map({
+                                            "CampaignsPage.useEffect.fetchCampaigns.contactIds": (c)=>c.id
+                                        }["CampaignsPage.useEffect.fetchCampaigns.contactIds"]);
+                                        let touchpoints = [];
+                                        if (contactIds.length > 0) {
+                                            const { data: tps, error: tpError } = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from('touchpoints').select('type, completed_at, outcome, district_contact_id').in('district_contact_id', contactIds);
+                                            if (tpError) {
+                                                console.warn('Error fetching district touchpoints:', tpError);
+                                            } else if (tps) {
+                                                touchpoints = tps;
+                                            }
+                                        }
+                                        // Attach data to campaign
+                                        campaignWithData.district_leads = districtLeads.map({
+                                            "CampaignsPage.useEffect.fetchCampaigns": (dl)=>({
+                                                    ...dl,
+                                                    district_contacts: districtContacts.filter({
+                                                        "CampaignsPage.useEffect.fetchCampaigns": (c)=>c.district_lead_id === dl.id
+                                                    }["CampaignsPage.useEffect.fetchCampaigns"]).map({
+                                                        "CampaignsPage.useEffect.fetchCampaigns": (c)=>({
+                                                                ...c,
+                                                                touchpoints: touchpoints.filter({
+                                                                    "CampaignsPage.useEffect.fetchCampaigns": (tp)=>tp.district_contact_id === c.id
+                                                                }["CampaignsPage.useEffect.fetchCampaigns"])
+                                                            })
+                                                    }["CampaignsPage.useEffect.fetchCampaigns"])
+                                                })
+                                        }["CampaignsPage.useEffect.fetchCampaigns"]);
+                                    } else {
+                                        campaignWithData.district_leads = [];
+                                    }
+                                } catch (error) {
+                                    console.warn('Error in Avalern data fetching:', error)(campaignWithData).district_leads = [];
+                                }
+                            } else {
+                                // For CraftyCode: Fetch regular leads
+                                try {
+                                    const { data: leads, error: leadsError } = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from('leads').select('id, status').eq('campaign_id', campaign.id);
+                                    if (leadsError) {
+                                        console.warn('Error fetching leads for campaign', campaign.id, ':', leadsError)(campaignWithData).leads = [];
+                                    } else if (leads) {
+                                        // Fetch touchpoints for leads
+                                        const leadIds = leads.map({
+                                            "CampaignsPage.useEffect.fetchCampaigns.leadIds": (l)=>l.id
+                                        }["CampaignsPage.useEffect.fetchCampaigns.leadIds"]);
+                                        let touchpoints = [];
+                                        if (leadIds.length > 0) {
+                                            const { data: tps, error: tpError } = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from('touchpoints').select('type, completed_at, outcome, lead_id').in('lead_id', leadIds);
+                                            if (tpError) {
+                                                console.warn('Error fetching lead touchpoints:', tpError);
+                                            } else if (tps) {
+                                                touchpoints = tps;
+                                            }
+                                        }
+                                        // Attach data to campaign
+                                        campaignWithData.leads = leads.map({
+                                            "CampaignsPage.useEffect.fetchCampaigns": (lead)=>({
+                                                    ...lead,
+                                                    touchpoints: touchpoints.filter({
+                                                        "CampaignsPage.useEffect.fetchCampaigns": (tp)=>tp.lead_id === lead.id
+                                                    }["CampaignsPage.useEffect.fetchCampaigns"])
+                                                })
+                                        }["CampaignsPage.useEffect.fetchCampaigns"]);
+                                    } else {
+                                        campaignWithData.leads = [];
+                                    }
+                                } catch (error) {
+                                    console.warn('Error in CraftyCode data fetching:', error)(campaignWithData).leads = [];
+                                }
+                            }
+                            campaignsData.push(campaignWithData);
+                        }
+                        console.log('Enriching campaign data for', campaignsData.length, 'campaigns');
+                        const enriched = campaignsData.map({
                             "CampaignsPage.useEffect.fetchCampaigns.enriched": (campaign)=>{
-                                const leadCount = campaign.leads?.length || 0;
-                                // Flatten touchpoints from all leads
-                                const allTouchpoints = campaign.leads?.flatMap({
-                                    "CampaignsPage.useEffect.fetchCampaigns.enriched": (lead)=>lead.touchpoints || []
-                                }["CampaignsPage.useEffect.fetchCampaigns.enriched"]) || [];
+                                console.log('Processing campaign:', campaign.name, 'for company:', selectedCompany);
+                                let leadCount = 0;
+                                let allTouchpoints = [];
+                                let engagedCount = 0;
+                                let wonCount = 0;
+                                if (selectedCompany === 'Avalern') {
+                                    // Handle district_leads data structure
+                                    const districtLeads = campaign.district_leads || [];
+                                    leadCount = districtLeads.length;
+                                    // Flatten touchpoints from all district contacts
+                                    allTouchpoints = districtLeads.flatMap({
+                                        "CampaignsPage.useEffect.fetchCampaigns.enriched": (districtLead)=>districtLead.district_contacts?.flatMap({
+                                                "CampaignsPage.useEffect.fetchCampaigns.enriched": (contact)=>contact.touchpoints || []
+                                            }["CampaignsPage.useEffect.fetchCampaigns.enriched"]) || []
+                                    }["CampaignsPage.useEffect.fetchCampaigns.enriched"]);
+                                    engagedCount = districtLeads.filter({
+                                        "CampaignsPage.useEffect.fetchCampaigns.enriched": (dl)=>dl.status === 'engaged'
+                                    }["CampaignsPage.useEffect.fetchCampaigns.enriched"]).length;
+                                    wonCount = districtLeads.filter({
+                                        "CampaignsPage.useEffect.fetchCampaigns.enriched": (dl)=>dl.status === 'won'
+                                    }["CampaignsPage.useEffect.fetchCampaigns.enriched"]).length;
+                                } else {
+                                    // Handle regular leads data structure
+                                    const leads = campaign.leads || [];
+                                    leadCount = leads.length;
+                                    // Flatten touchpoints from all leads
+                                    allTouchpoints = leads.flatMap({
+                                        "CampaignsPage.useEffect.fetchCampaigns.enriched": (lead)=>lead.touchpoints || []
+                                    }["CampaignsPage.useEffect.fetchCampaigns.enriched"]);
+                                    engagedCount = leads.filter({
+                                        "CampaignsPage.useEffect.fetchCampaigns.enriched": (lead)=>lead.status === 'engaged'
+                                    }["CampaignsPage.useEffect.fetchCampaigns.enriched"]).length;
+                                    wonCount = leads.filter({
+                                        "CampaignsPage.useEffect.fetchCampaigns.enriched": (lead)=>lead.status === 'won'
+                                    }["CampaignsPage.useEffect.fetchCampaigns.enriched"]).length;
+                                }
                                 const emailsSent = allTouchpoints.filter({
-                                    "CampaignsPage.useEffect.fetchCampaigns.enriched": (tp)=>tp.type === 'email' && tp.completed_at
+                                    "CampaignsPage.useEffect.fetchCampaigns.enriched": (tp)=>tp.type === 'email' && tp.completed_at && tp.outcome
                                 }["CampaignsPage.useEffect.fetchCampaigns.enriched"]).length;
                                 const callsMade = allTouchpoints.filter({
-                                    "CampaignsPage.useEffect.fetchCampaigns.enriched": (tp)=>tp.type === 'call' && tp.completed_at
+                                    "CampaignsPage.useEffect.fetchCampaigns.enriched": (tp)=>tp.type === 'call' && tp.completed_at && tp.outcome
                                 }["CampaignsPage.useEffect.fetchCampaigns.enriched"]).length;
-                                const appointmentsBooked = campaign.leads?.filter({
-                                    "CampaignsPage.useEffect.fetchCampaigns.enriched": (lead)=>lead.status === 'engaged'
-                                }["CampaignsPage.useEffect.fetchCampaigns.enriched"]).length || 0;
-                                const sales = campaign.leads?.filter({
-                                    "CampaignsPage.useEffect.fetchCampaigns.enriched": (lead)=>lead.status === 'won'
-                                }["CampaignsPage.useEffect.fetchCampaigns.enriched"]).length || 0;
-                                const conversionRate = leadCount > 0 ? Number((sales / leadCount * 100).toFixed(1)) : 0;
+                                const linkedinMessages = allTouchpoints.filter({
+                                    "CampaignsPage.useEffect.fetchCampaigns.enriched": (tp)=>tp.type === 'linkedin_message' && tp.completed_at && tp.outcome
+                                }["CampaignsPage.useEffect.fetchCampaigns.enriched"]).length;
+                                const conversionRate = leadCount > 0 ? Number((wonCount / leadCount * 100).toFixed(1)) : 0;
                                 return {
                                     ...campaign,
                                     leadCount,
                                     emailsSent,
                                     callsMade,
-                                    appointmentsBooked,
-                                    sales,
+                                    linkedinMessages,
+                                    appointmentsBooked: engagedCount,
+                                    sales: wonCount,
                                     conversionRate,
                                     launch_date: campaign.start_date || campaign.created_at,
                                     status: leadCount > 0 ? 'active' : 'queued',
-                                    outreach_sequence: Array.isArray(campaign.outreach_sequence) ? campaign.outreach_sequence[0] : campaign.outreach_sequence
+                                    outreach_sequence: campaign.outreach_sequence || null
                                 };
                             }
                         }["CampaignsPage.useEffect.fetchCampaigns.enriched"]);
@@ -484,15 +657,23 @@ function CampaignsPage() {
         "CampaignsPage.useEffect": ()=>{
             const fetchOutreachSequences = {
                 "CampaignsPage.useEffect.fetchOutreachSequences": async ()=>{
+                    if (!selectedCompany) {
+                        console.log('No company selected, skipping outreach sequences fetch');
+                        return;
+                    }
                     try {
+                        // Check if outreach_sequences table exists
                         const { data, error } = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from('outreach_sequences').select('id, name, description, company').eq('company', selectedCompany);
                         if (error) {
-                            console.error('Error fetching outreach sequences:', error);
+                            console.warn('Outreach sequences table may not exist or be accessible:', error);
+                            // Set empty array if table doesn't exist
+                            setOutreachSequences([]);
                             return;
                         }
                         setOutreachSequences(data || []);
                     } catch (error) {
-                        console.error('Error fetching outreach sequences:', error);
+                        console.warn('Error fetching outreach sequences, using empty array:', error);
+                        setOutreachSequences([]);
                     }
                 }
             }["CampaignsPage.useEffect.fetchOutreachSequences"];
@@ -514,6 +695,189 @@ function CampaignsPage() {
     }["CampaignsPage.useEffect"], [
         selectedCompany
     ]);
+    // Fetch sequence steps when outreach sequence is selected
+    const fetchSequenceSteps = async (sequenceId)=>{
+        if (!sequenceId) {
+            setSelectedSequenceSteps([]);
+            return;
+        }
+        console.log('Fetching steps for sequence:', sequenceId);
+        setFetchingSteps(true);
+        try {
+            const { data: steps, error } = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$supabase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["supabase"].from('outreach_steps').select('id, step_order, type, content_link, day_offset, sequence_id').eq('sequence_id', sequenceId).order('step_order', {
+                ascending: true
+            });
+            if (error) {
+                console.warn('Error fetching sequence steps:', error);
+                setSelectedSequenceSteps([]);
+            } else {
+                console.log('Received sequence steps:', steps);
+                setSelectedSequenceSteps(steps || []);
+                // Auto-calculate end date based on last step
+                if (steps && steps.length > 0 && formData.launchDate) {
+                    try {
+                        const lastStep = steps[steps.length - 1];
+                        console.log('Using last step for end date calculation:', lastStep);
+                        const launchDate = new Date(formData.launchDate);
+                        // Make sure we have a valid day_offset value (default to 30 if undefined/null/NaN)
+                        let delayDays = 30; // Default to 30 days if no valid day_offset found
+                        if (lastStep && lastStep.day_offset !== undefined && lastStep.day_offset !== null) {
+                            const parsedDelay = parseInt(String(lastStep.day_offset));
+                            if (!isNaN(parsedDelay)) {
+                                delayDays = parsedDelay;
+                            } else {
+                                console.warn('Invalid day_offset value, using default 30 days:', lastStep.day_offset);
+                            }
+                        } else {
+                            console.warn('No day_offset found in last step, using default 30 days');
+                        }
+                        console.log('Using delay days:', delayDays);
+                        // Calculate end date safely
+                        const endDate = new Date(launchDate);
+                        endDate.setDate(launchDate.getDate() + delayDays);
+                        if (isNaN(endDate.getTime())) {
+                            console.warn('Invalid end date calculated, using default 30 days from now');
+                            const defaultEndDate = new Date(launchDate);
+                            defaultEndDate.setDate(launchDate.getDate() + 30);
+                            setFormData((prev)=>({
+                                    ...prev,
+                                    endDate: defaultEndDate.toISOString().split('T')[0]
+                                }));
+                        } else {
+                            console.log('Calculated end date:', endDate.toISOString().split('T')[0]);
+                            setFormData((prev)=>({
+                                    ...prev,
+                                    endDate: endDate.toISOString().split('T')[0]
+                                }));
+                        }
+                    } catch (error) {
+                        console.error('Error calculating end date:', error);
+                        // Set a default end date 30 days from launch date
+                        try {
+                            const launchDate = new Date(formData.launchDate);
+                            const defaultEndDate = new Date(launchDate);
+                            defaultEndDate.setDate(launchDate.getDate() + 30);
+                            setFormData((prev)=>({
+                                    ...prev,
+                                    endDate: defaultEndDate.toISOString().split('T')[0]
+                                }));
+                        } catch (e) {
+                            console.error('Failed to set default end date:', e);
+                        }
+                    }
+                } else {
+                    // No steps found, set default end date 30 days from launch date
+                    try {
+                        if (formData.launchDate) {
+                            const launchDate = new Date(formData.launchDate);
+                            const defaultEndDate = new Date(launchDate);
+                            defaultEndDate.setDate(launchDate.getDate() + 30);
+                            setFormData((prev)=>({
+                                    ...prev,
+                                    endDate: defaultEndDate.toISOString().split('T')[0]
+                                }));
+                        }
+                    } catch (e) {
+                        console.error('Failed to set default end date with no steps:', e);
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn('Error fetching sequence steps:', error);
+            setSelectedSequenceSteps([]);
+        } finally{
+            setFetchingSteps(false);
+        }
+    };
+    // Handle sequence selection change
+    const handleSequenceChange = (sequenceId)=>{
+        console.log('Sequence selected:', sequenceId);
+        setFormData((prev)=>({
+                ...prev,
+                outreachSequenceId: sequenceId
+            }));
+        // Clear steps first to ensure UI updates properly
+        if (!sequenceId) {
+            setSelectedSequenceSteps([]);
+            console.log('Clearing sequence steps');
+        } else {
+            console.log('Fetching steps for sequence:', sequenceId);
+            fetchSequenceSteps(sequenceId);
+        }
+    };
+    // Handle launch date change - recalculate end date
+    const handleLaunchDateChange = (launchDate)=>{
+        setFormData((prev)=>({
+                ...prev,
+                launchDate
+            }));
+        // Recalculate end date if sequence is selected
+        if (selectedSequenceSteps.length > 0 && launchDate) {
+            try {
+                const lastStep = selectedSequenceSteps[selectedSequenceSteps.length - 1];
+                console.log('Recalculating end date with launch date change, using step:', lastStep);
+                const newLaunchDate = new Date(launchDate);
+                // Make sure we have a valid day_offset value (default to 30 if undefined/null/NaN)
+                let delayDays = 30; // Default to 30 days if no valid day_offset found
+                if (lastStep && lastStep.day_offset !== undefined && lastStep.day_offset !== null) {
+                    const parsedDelay = parseInt(String(lastStep.day_offset));
+                    if (!isNaN(parsedDelay)) {
+                        delayDays = parsedDelay;
+                    } else {
+                        console.warn('Invalid day_offset value in launch date change, using default 30 days:', lastStep.day_offset);
+                    }
+                } else {
+                    console.warn('No day_offset found in last step during launch date change, using default 30 days');
+                }
+                console.log('Using delay days for launch date change:', delayDays);
+                // Calculate end date safely
+                const endDate = new Date(newLaunchDate);
+                endDate.setDate(newLaunchDate.getDate() + delayDays);
+                if (isNaN(endDate.getTime())) {
+                    console.warn('Invalid end date calculated during launch date change, using default 30 days from now');
+                    const defaultEndDate = new Date(newLaunchDate);
+                    defaultEndDate.setDate(newLaunchDate.getDate() + 30);
+                    setFormData((prev)=>({
+                            ...prev,
+                            endDate: defaultEndDate.toISOString().split('T')[0]
+                        }));
+                } else {
+                    console.log('Calculated new end date after launch date change:', endDate.toISOString().split('T')[0]);
+                    setFormData((prev)=>({
+                            ...prev,
+                            endDate: endDate.toISOString().split('T')[0]
+                        }));
+                }
+            } catch (error) {
+                console.error('Error calculating end date during launch date change:', error);
+                // Set a default end date 30 days from launch date
+                try {
+                    const newLaunchDate = new Date(launchDate);
+                    const defaultEndDate = new Date(newLaunchDate);
+                    defaultEndDate.setDate(newLaunchDate.getDate() + 30);
+                    setFormData((prev)=>({
+                            ...prev,
+                            endDate: defaultEndDate.toISOString().split('T')[0]
+                        }));
+                } catch (e) {
+                    console.error('Failed to set default end date during launch date change:', e);
+                }
+            }
+        } else if (launchDate) {
+            // No sequence steps, set default end date 30 days from launch date
+            try {
+                const newLaunchDate = new Date(launchDate);
+                const defaultEndDate = new Date(newLaunchDate);
+                defaultEndDate.setDate(newLaunchDate.getDate() + 30);
+                setFormData((prev)=>({
+                        ...prev,
+                        endDate: defaultEndDate.toISOString().split('T')[0]
+                    }));
+            } catch (e) {
+                console.error('Failed to set default end date with no sequence:', e);
+            }
+        }
+    };
     const getStatusColor = (status)=>{
         const colors = {
             active: 'bg-green-100 text-green-800',
@@ -528,30 +892,34 @@ function CampaignsPage() {
                 className: "h-3 w-3"
             }, void 0, false, {
                 fileName: "[project]/src/app/campaigns/page.tsx",
-                lineNumber: 175,
+                lineNumber: 579,
                 columnNumber: 15
             }, this),
             queued: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$clock$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Clock$3e$__["Clock"], {
                 className: "h-3 w-3"
             }, void 0, false, {
                 fileName: "[project]/src/app/campaigns/page.tsx",
-                lineNumber: 176,
+                lineNumber: 580,
                 columnNumber: 15
             }, this),
             completed: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$circle$2d$check$2d$big$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__CheckCircle$3e$__["CheckCircle"], {
                 className: "h-3 w-3"
             }, void 0, false, {
                 fileName: "[project]/src/app/campaigns/page.tsx",
-                lineNumber: 177,
+                lineNumber: 581,
                 columnNumber: 18
             }, this)
         };
         return icons[status] || icons.queued;
     };
     const handleCreateCampaign = ()=>{
-        if (!formData.name || !formData.outreachSequenceId || !formData.endDate) {
+        if (!formData.name || !formData.outreachSequenceId) {
             alert('Please fill in all required fields');
             return;
+        }
+        // Ensure end date is properly set based on sequence before proceeding
+        if (selectedSequenceSteps.length > 0) {
+            console.log('Using fixed end date from sequence:', formData.endDate);
         }
         // Navigate to appropriate selection page based on company
         const params = new URLSearchParams({
@@ -573,6 +941,27 @@ function CampaignsPage() {
         if (selectedStatus === 'all') return true;
         return campaign.status === selectedStatus;
     });
+    // Pagination calculations
+    const totalPages = Math.ceil(filteredCampaigns.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentCampaigns = filteredCampaigns.slice(startIndex, endIndex);
+    // Reset to page 1 when filters change
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "CampaignsPage.useEffect": ()=>{
+            setCurrentPage(1);
+        }
+    }["CampaignsPage.useEffect"], [
+        selectedStatus
+    ]);
+    // Debug when sequence steps change
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "CampaignsPage.useEffect": ()=>{
+            console.log('Selected sequence steps changed:', selectedSequenceSteps);
+        }
+    }["CampaignsPage.useEffect"], [
+        selectedSequenceSteps
+    ]);
     if (loading) {
         return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$layout$2f$DashboardLayout$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -581,17 +970,17 @@ function CampaignsPage() {
                     className: "animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"
                 }, void 0, false, {
                     fileName: "[project]/src/app/campaigns/page.tsx",
-                    lineNumber: 219,
+                    lineNumber: 644,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/app/campaigns/page.tsx",
-                lineNumber: 218,
+                lineNumber: 643,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/src/app/campaigns/page.tsx",
-            lineNumber: 217,
+            lineNumber: 642,
             columnNumber: 7
         }, this);
     }
@@ -609,7 +998,7 @@ function CampaignsPage() {
                                     children: "Campaigns"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/campaigns/page.tsx",
-                                    lineNumber: 231,
+                                    lineNumber: 656,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -620,13 +1009,13 @@ function CampaignsPage() {
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/campaigns/page.tsx",
-                                    lineNumber: 232,
+                                    lineNumber: 657,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/campaigns/page.tsx",
-                            lineNumber: 230,
+                            lineNumber: 655,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -639,515 +1028,26 @@ function CampaignsPage() {
                                         className: "h-4 w-4 mr-2"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/campaigns/page.tsx",
-                                        lineNumber: 241,
+                                        lineNumber: 666,
                                         columnNumber: 15
                                     }, this),
                                     "New Campaign"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                lineNumber: 237,
+                                lineNumber: 662,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/src/app/campaigns/page.tsx",
-                            lineNumber: 236,
+                            lineNumber: 661,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/campaigns/page.tsx",
-                    lineNumber: 229,
+                    lineNumber: 654,
                     columnNumber: 9
-                }, this),
-                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    className: "bg-white rounded-lg shadow-sm border border-gray-200 p-6",
-                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "flex items-center space-x-6",
-                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            children: [
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
-                                    className: "block text-sm font-medium text-gray-700 mb-1",
-                                    children: "Status"
-                                }, void 0, false, {
-                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                    lineNumber: 251,
-                                    columnNumber: 15
-                                }, this),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
-                                    value: selectedStatus,
-                                    onChange: (e)=>setSelectedStatus(e.target.value),
-                                    className: "px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent",
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
-                                            value: "all",
-                                            children: "All Statuses"
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/app/campaigns/page.tsx",
-                                            lineNumber: 257,
-                                            columnNumber: 17
-                                        }, this),
-                                        [
-                                            'active',
-                                            'queued',
-                                            'completed'
-                                        ].map((status)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
-                                                value: status,
-                                                className: "capitalize",
-                                                children: status
-                                            }, status, false, {
-                                                fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 259,
-                                                columnNumber: 19
-                                            }, this))
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                    lineNumber: 252,
-                                    columnNumber: 15
-                                }, this)
-                            ]
-                        }, void 0, true, {
-                            fileName: "[project]/src/app/campaigns/page.tsx",
-                            lineNumber: 250,
-                            columnNumber: 13
-                        }, this)
-                    }, void 0, false, {
-                        fileName: "[project]/src/app/campaigns/page.tsx",
-                        lineNumber: 249,
-                        columnNumber: 11
-                    }, this)
-                }, void 0, false, {
-                    fileName: "[project]/src/app/campaigns/page.tsx",
-                    lineNumber: 248,
-                    columnNumber: 9
-                }, this),
-                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
-                    children: filteredCampaigns.map((campaign)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            onClick: ()=>handleViewCampaign(campaign),
-                            className: "bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer",
-                            children: [
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "flex items-start justify-between mb-4",
-                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "flex-1",
-                                        children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "flex items-center space-x-2 mb-2",
-                                                children: [
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                        className: `w-3 h-3 rounded-full ${campaign.company === 'CraftyCode' ? 'bg-blue-500' : 'bg-purple-500'}`
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/src/app/campaigns/page.tsx",
-                                                        lineNumber: 278,
-                                                        columnNumber: 21
-                                                    }, this),
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                        className: "text-sm text-gray-600",
-                                                        children: campaign.company
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/src/app/campaigns/page.tsx",
-                                                        lineNumber: 279,
-                                                        columnNumber: 21
-                                                    }, this)
-                                                ]
-                                            }, void 0, true, {
-                                                fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 277,
-                                                columnNumber: 19
-                                            }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
-                                                className: "text-lg font-semibold text-gray-900 mb-1",
-                                                children: campaign.name
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 281,
-                                                columnNumber: 19
-                                            }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "flex items-center space-x-2 mb-2",
-                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                    className: `inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(campaign.status || 'queued')}`,
-                                                    children: [
-                                                        getStatusIcon(campaign.status || 'queued'),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                            className: "ml-1 capitalize",
-                                                            children: campaign.status || 'queued'
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/src/app/campaigns/page.tsx",
-                                                            lineNumber: 285,
-                                                            columnNumber: 23
-                                                        }, this)
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                                    lineNumber: 283,
-                                                    columnNumber: 21
-                                                }, this)
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 282,
-                                                columnNumber: 19
-                                            }, this),
-                                            campaign.outreach_sequence && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "inline-flex items-center px-2 py-1 text-xs bg-indigo-100 text-indigo-800 rounded-full",
-                                                children: [
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$target$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Target$3e$__["Target"], {
-                                                        className: "h-3 w-3 mr-1"
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/src/app/campaigns/page.tsx",
-                                                        lineNumber: 291,
-                                                        columnNumber: 23
-                                                    }, this),
-                                                    campaign.outreach_sequence.name
-                                                ]
-                                            }, void 0, true, {
-                                                fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 290,
-                                                columnNumber: 21
-                                            }, this)
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "[project]/src/app/campaigns/page.tsx",
-                                        lineNumber: 276,
-                                        columnNumber: 17
-                                    }, this)
-                                }, void 0, false, {
-                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                    lineNumber: 275,
-                                    columnNumber: 15
-                                }, this),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "space-y-3 mb-4",
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "flex items-center justify-between",
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                    className: "flex items-center text-sm text-gray-600",
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$users$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Users$3e$__["Users"], {
-                                                            className: "h-4 w-4 mr-2"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/src/app/campaigns/page.tsx",
-                                                            lineNumber: 302,
-                                                            columnNumber: 21
-                                                        }, this),
-                                                        "Leads"
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                                    lineNumber: 301,
-                                                    columnNumber: 19
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                    className: "font-semibold",
-                                                    children: campaign.leadCount
-                                                }, void 0, false, {
-                                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                                    lineNumber: 305,
-                                                    columnNumber: 19
-                                                }, this)
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/src/app/campaigns/page.tsx",
-                                            lineNumber: 300,
-                                            columnNumber: 17
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "flex items-center justify-between",
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                    className: "flex items-center text-sm text-gray-600",
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$mail$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Mail$3e$__["Mail"], {
-                                                            className: "h-4 w-4 mr-2"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/src/app/campaigns/page.tsx",
-                                                            lineNumber: 310,
-                                                            columnNumber: 21
-                                                        }, this),
-                                                        "Emails Sent"
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                                    lineNumber: 309,
-                                                    columnNumber: 19
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                    className: "font-semibold",
-                                                    children: campaign.emailsSent
-                                                }, void 0, false, {
-                                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                                    lineNumber: 313,
-                                                    columnNumber: 19
-                                                }, this)
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/src/app/campaigns/page.tsx",
-                                            lineNumber: 308,
-                                            columnNumber: 17
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "flex items-center justify-between",
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                    className: "flex items-center text-sm text-gray-600",
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$phone$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Phone$3e$__["Phone"], {
-                                                            className: "h-4 w-4 mr-2"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/src/app/campaigns/page.tsx",
-                                                            lineNumber: 318,
-                                                            columnNumber: 21
-                                                        }, this),
-                                                        "Calls Made"
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                                    lineNumber: 317,
-                                                    columnNumber: 19
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                    className: "font-semibold",
-                                                    children: campaign.callsMade
-                                                }, void 0, false, {
-                                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                                    lineNumber: 321,
-                                                    columnNumber: 19
-                                                }, this)
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/src/app/campaigns/page.tsx",
-                                            lineNumber: 316,
-                                            columnNumber: 17
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "flex items-center justify-between",
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                    className: "flex items-center text-sm text-gray-600",
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$calendar$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Calendar$3e$__["Calendar"], {
-                                                            className: "h-4 w-4 mr-2"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/src/app/campaigns/page.tsx",
-                                                            lineNumber: 326,
-                                                            columnNumber: 21
-                                                        }, this),
-                                                        "Engaged Leads"
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                                    lineNumber: 325,
-                                                    columnNumber: 19
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                    className: "font-semibold text-blue-600",
-                                                    children: campaign.appointmentsBooked
-                                                }, void 0, false, {
-                                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                                    lineNumber: 329,
-                                                    columnNumber: 19
-                                                }, this)
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/src/app/campaigns/page.tsx",
-                                            lineNumber: 324,
-                                            columnNumber: 17
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "flex items-center justify-between",
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                    className: "flex items-center text-sm text-gray-600",
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trending$2d$up$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__TrendingUp$3e$__["TrendingUp"], {
-                                                            className: "h-4 w-4 mr-2"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/src/app/campaigns/page.tsx",
-                                                            lineNumber: 334,
-                                                            columnNumber: 21
-                                                        }, this),
-                                                        "Sales"
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                                    lineNumber: 333,
-                                                    columnNumber: 19
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                    className: "font-semibold text-green-600",
-                                                    children: campaign.sales
-                                                }, void 0, false, {
-                                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                                    lineNumber: 337,
-                                                    columnNumber: 19
-                                                }, this)
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/src/app/campaigns/page.tsx",
-                                            lineNumber: 332,
-                                            columnNumber: 17
-                                        }, this)
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                    lineNumber: 299,
-                                    columnNumber: 15
-                                }, this),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "border-t border-gray-200 pt-4",
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "flex items-center justify-between mb-2",
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                    className: "text-sm text-gray-600",
-                                                    children: "Conversion Rate"
-                                                }, void 0, false, {
-                                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                                    lineNumber: 344,
-                                                    columnNumber: 19
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                    className: "text-lg font-bold text-gray-900",
-                                                    children: [
-                                                        campaign.conversionRate,
-                                                        "%"
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                                    lineNumber: 345,
-                                                    columnNumber: 19
-                                                }, this)
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/src/app/campaigns/page.tsx",
-                                            lineNumber: 343,
-                                            columnNumber: 17
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "w-full bg-gray-200 rounded-full h-2",
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "bg-blue-600 h-2 rounded-full transition-all duration-300",
-                                                style: {
-                                                    width: `${Math.min(campaign.conversionRate, 10) * 10}%`
-                                                }
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 348,
-                                                columnNumber: 19
-                                            }, this)
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/app/campaigns/page.tsx",
-                                            lineNumber: 347,
-                                            columnNumber: 17
-                                        }, this)
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                    lineNumber: 342,
-                                    columnNumber: 15
-                                }, this),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "mt-4 flex items-center justify-between text-xs text-gray-500",
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "flex items-center",
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$calendar$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Calendar$3e$__["Calendar"], {
-                                                    className: "h-3 w-3 mr-1"
-                                                }, void 0, false, {
-                                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                                    lineNumber: 358,
-                                                    columnNumber: 19
-                                                }, this),
-                                                "Launch: ",
-                                                new Date(campaign.launch_date).toLocaleDateString()
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/src/app/campaigns/page.tsx",
-                                            lineNumber: 357,
-                                            columnNumber: 17
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            children: [
-                                                "Created: ",
-                                                new Date(campaign.created_at).toLocaleDateString()
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/src/app/campaigns/page.tsx",
-                                            lineNumber: 361,
-                                            columnNumber: 17
-                                        }, this)
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                    lineNumber: 356,
-                                    columnNumber: 15
-                                }, this)
-                            ]
-                        }, campaign.id, true, {
-                            fileName: "[project]/src/app/campaigns/page.tsx",
-                            lineNumber: 269,
-                            columnNumber: 13
-                        }, this))
-                }, void 0, false, {
-                    fileName: "[project]/src/app/campaigns/page.tsx",
-                    lineNumber: 267,
-                    columnNumber: 9
-                }, this),
-                filteredCampaigns.length === 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    className: "text-center py-12",
-                    children: [
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$target$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Target$3e$__["Target"], {
-                            className: "h-12 w-12 text-gray-400 mx-auto mb-4"
-                        }, void 0, false, {
-                            fileName: "[project]/src/app/campaigns/page.tsx",
-                            lineNumber: 372,
-                            columnNumber: 13
-                        }, this),
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
-                            className: "text-lg font-medium text-gray-900 mb-2",
-                            children: "No campaigns found"
-                        }, void 0, false, {
-                            fileName: "[project]/src/app/campaigns/page.tsx",
-                            lineNumber: 373,
-                            columnNumber: 13
-                        }, this),
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                            className: "text-gray-500 mb-4",
-                            children: selectedStatus !== 'all' ? `No ${selectedStatus} campaigns found for ${selectedCompany}.` : `No campaigns found for ${selectedCompany}. Get started by creating your first campaign.`
-                        }, void 0, false, {
-                            fileName: "[project]/src/app/campaigns/page.tsx",
-                            lineNumber: 374,
-                            columnNumber: 13
-                        }, this),
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                            onClick: ()=>setShowCreateModal(true),
-                            className: "inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700",
-                            children: [
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$plus$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Plus$3e$__["Plus"], {
-                                    className: "h-4 w-4 mr-2"
-                                }, void 0, false, {
-                                    fileName: "[project]/src/app/campaigns/page.tsx",
-                                    lineNumber: 384,
-                                    columnNumber: 15
-                                }, this),
-                                "Create Campaign"
-                            ]
-                        }, void 0, true, {
-                            fileName: "[project]/src/app/campaigns/page.tsx",
-                            lineNumber: 380,
-                            columnNumber: 13
-                        }, this)
-                    ]
-                }, void 0, true, {
-                    fileName: "[project]/src/app/campaigns/page.tsx",
-                    lineNumber: 371,
-                    columnNumber: 11
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "bg-white rounded-lg shadow-sm border border-gray-200 p-6",
@@ -1160,7 +1060,7 @@ function CampaignsPage() {
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/campaigns/page.tsx",
-                            lineNumber: 392,
+                            lineNumber: 674,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1174,7 +1074,7 @@ function CampaignsPage() {
                                             children: filteredCampaigns.length
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/campaigns/page.tsx",
-                                            lineNumber: 395,
+                                            lineNumber: 677,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1182,13 +1082,13 @@ function CampaignsPage() {
                                             children: "Total Campaigns"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/campaigns/page.tsx",
-                                            lineNumber: 396,
+                                            lineNumber: 678,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/campaigns/page.tsx",
-                                    lineNumber: 394,
+                                    lineNumber: 676,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1199,7 +1099,7 @@ function CampaignsPage() {
                                             children: filteredCampaigns.filter((c)=>c.status === 'active').length
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/campaigns/page.tsx",
-                                            lineNumber: 399,
+                                            lineNumber: 681,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1207,13 +1107,13 @@ function CampaignsPage() {
                                             children: "Active"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/campaigns/page.tsx",
-                                            lineNumber: 402,
+                                            lineNumber: 684,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/campaigns/page.tsx",
-                                    lineNumber: 398,
+                                    lineNumber: 680,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1224,7 +1124,7 @@ function CampaignsPage() {
                                             children: filteredCampaigns.reduce((sum, c)=>sum + c.leadCount, 0)
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/campaigns/page.tsx",
-                                            lineNumber: 405,
+                                            lineNumber: 687,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1232,13 +1132,13 @@ function CampaignsPage() {
                                             children: "Total Leads"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/campaigns/page.tsx",
-                                            lineNumber: 408,
+                                            lineNumber: 690,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/campaigns/page.tsx",
-                                    lineNumber: 404,
+                                    lineNumber: 686,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1246,36 +1146,723 @@ function CampaignsPage() {
                                     children: [
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                             className: "text-2xl font-bold text-purple-600",
-                                            children: filteredCampaigns.reduce((sum, c)=>sum + c.sales, 0)
+                                            children: filteredCampaigns.reduce((sum, c)=>sum + (c.linkedinMessages || 0), 0)
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/campaigns/page.tsx",
-                                            lineNumber: 411,
+                                            lineNumber: 693,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                             className: "text-sm text-gray-600",
-                                            children: "Total Sales"
+                                            children: "LinkedIn Messages"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/campaigns/page.tsx",
-                                            lineNumber: 414,
+                                            lineNumber: 696,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/campaigns/page.tsx",
-                                    lineNumber: 410,
+                                    lineNumber: 692,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/campaigns/page.tsx",
-                            lineNumber: 393,
+                            lineNumber: 675,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/campaigns/page.tsx",
-                    lineNumber: 391,
+                    lineNumber: 673,
+                    columnNumber: 9
+                }, this),
+                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                    className: "bg-white rounded-lg shadow-sm border border-gray-200 p-6",
+                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "flex items-center justify-between",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "flex items-center space-x-6",
+                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                            className: "block text-sm font-medium text-gray-700 mb-1",
+                                            children: "Status"
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/app/campaigns/page.tsx",
+                                            lineNumber: 706,
+                                            columnNumber: 17
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                            value: selectedStatus,
+                                            onChange: (e)=>setSelectedStatus(e.target.value),
+                                            className: "px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                    value: "all",
+                                                    children: "All Statuses"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/campaigns/page.tsx",
+                                                    lineNumber: 712,
+                                                    columnNumber: 19
+                                                }, this),
+                                                [
+                                                    'active',
+                                                    'queued',
+                                                    'completed'
+                                                ].map((status)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                        value: status,
+                                                        className: "capitalize",
+                                                        children: status
+                                                    }, status, false, {
+                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                        lineNumber: 714,
+                                                        columnNumber: 21
+                                                    }, this))
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/src/app/campaigns/page.tsx",
+                                            lineNumber: 707,
+                                            columnNumber: 17
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/src/app/campaigns/page.tsx",
+                                    lineNumber: 705,
+                                    columnNumber: 15
+                                }, this)
+                            }, void 0, false, {
+                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                lineNumber: 704,
+                                columnNumber: 13
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "text-sm text-gray-600",
+                                children: [
+                                    "Showing ",
+                                    startIndex + 1,
+                                    " to ",
+                                    Math.min(endIndex, filteredCampaigns.length),
+                                    " of ",
+                                    filteredCampaigns.length,
+                                    " campaigns"
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                lineNumber: 720,
+                                columnNumber: 13
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/src/app/campaigns/page.tsx",
+                        lineNumber: 703,
+                        columnNumber: 11
+                    }, this)
+                }, void 0, false, {
+                    fileName: "[project]/src/app/campaigns/page.tsx",
+                    lineNumber: 702,
+                    columnNumber: 9
+                }, this),
+                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                    className: "bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden",
+                    children: filteredCampaigns.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "text-center py-12",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$target$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Target$3e$__["Target"], {
+                                className: "h-12 w-12 text-gray-400 mx-auto mb-4"
+                            }, void 0, false, {
+                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                lineNumber: 730,
+                                columnNumber: 15
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                className: "text-lg font-medium text-gray-900 mb-2",
+                                children: "No campaigns found"
+                            }, void 0, false, {
+                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                lineNumber: 731,
+                                columnNumber: 15
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                className: "text-gray-500 mb-4",
+                                children: selectedStatus !== 'all' ? `No ${selectedStatus} campaigns found for ${selectedCompany}.` : `No campaigns found for ${selectedCompany}. Get started by creating your first campaign.`
+                            }, void 0, false, {
+                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                lineNumber: 732,
+                                columnNumber: 15
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                onClick: ()=>setShowCreateModal(true),
+                                className: "inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$plus$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Plus$3e$__["Plus"], {
+                                        className: "h-4 w-4 mr-2"
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                        lineNumber: 742,
+                                        columnNumber: 17
+                                    }, this),
+                                    "Create Campaign"
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                lineNumber: 738,
+                                columnNumber: 15
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/src/app/campaigns/page.tsx",
+                        lineNumber: 729,
+                        columnNumber: 13
+                    }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "overflow-x-auto",
+                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("table", {
+                                    className: "min-w-full divide-y divide-gray-200",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("thead", {
+                                            className: "bg-gray-50",
+                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tr", {
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
+                                                        className: "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
+                                                        children: "Campaign"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                        lineNumber: 752,
+                                                        columnNumber: 23
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
+                                                        className: "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
+                                                        children: "Status"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                        lineNumber: 755,
+                                                        columnNumber: 23
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
+                                                        className: "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
+                                                        children: "Leads"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                        lineNumber: 758,
+                                                        columnNumber: 23
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
+                                                        className: "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
+                                                        children: "Email"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                        lineNumber: 761,
+                                                        columnNumber: 23
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
+                                                        className: "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
+                                                        children: "Calls"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                        lineNumber: 764,
+                                                        columnNumber: 46
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
+                                                        className: "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
+                                                        children: "LinkedIn"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                        lineNumber: 767,
+                                                        columnNumber: 24
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
+                                                        className: "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
+                                                        children: "Engaged"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                        lineNumber: 770,
+                                                        columnNumber: 24
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
+                                                        className: "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
+                                                        children: "Launch Date"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                        lineNumber: 773,
+                                                        columnNumber: 23
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
+                                                        className: "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
+                                                        children: "Actions"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                        lineNumber: 776,
+                                                        columnNumber: 23
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                lineNumber: 751,
+                                                columnNumber: 21
+                                            }, this)
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/app/campaigns/page.tsx",
+                                            lineNumber: 750,
+                                            columnNumber: 19
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
+                                            className: "bg-white divide-y divide-gray-200",
+                                            children: currentCampaigns.map((campaign)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tr", {
+                                                    className: "hover:bg-gray-50 cursor-pointer",
+                                                    onClick: ()=>handleViewCampaign(campaign),
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                                            className: "px-6 py-4 whitespace-nowrap",
+                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                className: "flex items-center",
+                                                                children: [
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                        className: `w-3 h-3 rounded-full mr-3 ${campaign.company === 'CraftyCode' ? 'bg-blue-500' : 'bg-purple-500'}`
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                        lineNumber: 790,
+                                                                        columnNumber: 29
+                                                                    }, this),
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                        children: [
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                                className: "text-sm font-medium text-gray-900",
+                                                                                children: campaign.name
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                                lineNumber: 792,
+                                                                                columnNumber: 31
+                                                                            }, this),
+                                                                            campaign.outreach_sequence && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                                className: "text-xs text-gray-500 flex items-center mt-1",
+                                                                                children: [
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$target$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Target$3e$__["Target"], {
+                                                                                        className: "h-3 w-3 mr-1"
+                                                                                    }, void 0, false, {
+                                                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                                        lineNumber: 795,
+                                                                                        columnNumber: 35
+                                                                                    }, this),
+                                                                                    campaign.outreach_sequence.name
+                                                                                ]
+                                                                            }, void 0, true, {
+                                                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                                lineNumber: 794,
+                                                                                columnNumber: 33
+                                                                            }, this)
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                        lineNumber: 791,
+                                                                        columnNumber: 29
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                lineNumber: 789,
+                                                                columnNumber: 27
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/campaigns/page.tsx",
+                                                            lineNumber: 788,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                                            className: "px-6 py-4 whitespace-nowrap",
+                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                className: `inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(campaign.status || 'queued')}`,
+                                                                children: [
+                                                                    getStatusIcon(campaign.status || 'queued'),
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                        className: "ml-1 capitalize",
+                                                                        children: campaign.status || 'queued'
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                        lineNumber: 805,
+                                                                        columnNumber: 29
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                lineNumber: 803,
+                                                                columnNumber: 27
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/campaigns/page.tsx",
+                                                            lineNumber: 802,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                                            className: "px-6 py-4 whitespace-nowrap",
+                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                className: "flex items-center text-sm text-gray-900",
+                                                                children: [
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$users$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Users$3e$__["Users"], {
+                                                                        className: "h-4 w-4 mr-2 text-gray-400"
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                        lineNumber: 810,
+                                                                        columnNumber: 29
+                                                                    }, this),
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                        className: "font-semibold",
+                                                                        children: campaign.leadCount
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                        lineNumber: 811,
+                                                                        columnNumber: 29
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                lineNumber: 809,
+                                                                columnNumber: 27
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/campaigns/page.tsx",
+                                                            lineNumber: 808,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                                            className: "px-6 py-4 whitespace-nowrap",
+                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                className: "flex items-center text-sm text-gray-900",
+                                                                children: [
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$mail$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Mail$3e$__["Mail"], {
+                                                                        className: "h-4 w-4 mr-2 text-gray-400"
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                        lineNumber: 816,
+                                                                        columnNumber: 29
+                                                                    }, this),
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                        children: campaign.emailsSent
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                        lineNumber: 817,
+                                                                        columnNumber: 29
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                lineNumber: 815,
+                                                                columnNumber: 27
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/campaigns/page.tsx",
+                                                            lineNumber: 814,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                                            className: "px-6 py-4 whitespace-nowrap",
+                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                className: "flex items-center text-sm text-gray-900",
+                                                                children: [
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$phone$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Phone$3e$__["Phone"], {
+                                                                        className: "h-4 w-4 mr-2 text-gray-400"
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                        lineNumber: 822,
+                                                                        columnNumber: 30
+                                                                    }, this),
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                        children: campaign.callsMade
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                        lineNumber: 823,
+                                                                        columnNumber: 30
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                lineNumber: 821,
+                                                                columnNumber: 28
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/campaigns/page.tsx",
+                                                            lineNumber: 820,
+                                                            columnNumber: 50
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                                            className: "px-6 py-4 whitespace-nowrap",
+                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                className: "flex items-center text-sm text-gray-900",
+                                                                children: [
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$message$2d$square$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__MessageSquare$3e$__["MessageSquare"], {
+                                                                        className: "h-4 w-4 mr-2 text-gray-400"
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                        lineNumber: 828,
+                                                                        columnNumber: 30
+                                                                    }, this),
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                        children: campaign.linkedinMessages || 0
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                        lineNumber: 829,
+                                                                        columnNumber: 30
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                lineNumber: 827,
+                                                                columnNumber: 28
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/campaigns/page.tsx",
+                                                            lineNumber: 826,
+                                                            columnNumber: 26
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                                            className: "px-6 py-4 whitespace-nowrap",
+                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                className: "flex items-center text-sm text-blue-600",
+                                                                children: [
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$calendar$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Calendar$3e$__["Calendar"], {
+                                                                        className: "h-4 w-4 mr-2"
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                        lineNumber: 834,
+                                                                        columnNumber: 30
+                                                                    }, this),
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                        className: "font-semibold",
+                                                                        children: campaign.appointmentsBooked
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                        lineNumber: 835,
+                                                                        columnNumber: 30
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                lineNumber: 833,
+                                                                columnNumber: 28
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/campaigns/page.tsx",
+                                                            lineNumber: 832,
+                                                            columnNumber: 26
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                                            className: "px-6 py-4 whitespace-nowrap text-sm text-gray-500",
+                                                            children: new Date(campaign.launch_date).toLocaleDateString()
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/campaigns/page.tsx",
+                                                            lineNumber: 838,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                                            className: "px-6 py-4 whitespace-nowrap text-right text-sm font-medium",
+                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                onClick: (e)=>{
+                                                                    e.stopPropagation();
+                                                                    handleViewCampaign(campaign);
+                                                                },
+                                                                className: "text-blue-600 hover:text-blue-900 inline-flex items-center",
+                                                                children: [
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$eye$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Eye$3e$__["Eye"], {
+                                                                        className: "h-4 w-4 mr-1"
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                        lineNumber: 849,
+                                                                        columnNumber: 29
+                                                                    }, this),
+                                                                    "View"
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                lineNumber: 842,
+                                                                columnNumber: 27
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/campaigns/page.tsx",
+                                                            lineNumber: 841,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    ]
+                                                }, campaign.id, true, {
+                                                    fileName: "[project]/src/app/campaigns/page.tsx",
+                                                    lineNumber: 783,
+                                                    columnNumber: 23
+                                                }, this))
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/app/campaigns/page.tsx",
+                                            lineNumber: 781,
+                                            columnNumber: 19
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/src/app/campaigns/page.tsx",
+                                    lineNumber: 749,
+                                    columnNumber: 17
+                                }, this)
+                            }, void 0, false, {
+                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                lineNumber: 748,
+                                columnNumber: 15
+                            }, this),
+                            totalPages > 1 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "flex-1 flex justify-between sm:hidden",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                onClick: ()=>setCurrentPage(Math.max(1, currentPage - 1)),
+                                                disabled: currentPage === 1,
+                                                className: "relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                children: "Previous"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                lineNumber: 863,
+                                                columnNumber: 21
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                onClick: ()=>setCurrentPage(Math.min(totalPages, currentPage + 1)),
+                                                disabled: currentPage === totalPages,
+                                                className: "ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                children: "Next"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                lineNumber: 870,
+                                                columnNumber: 21
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                        lineNumber: 862,
+                                        columnNumber: 19
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "hidden sm:flex-1 sm:flex sm:items-center sm:justify-between",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: "text-sm text-gray-700",
+                                                    children: [
+                                                        "Showing ",
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "font-medium",
+                                                            children: startIndex + 1
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/campaigns/page.tsx",
+                                                            lineNumber: 881,
+                                                            columnNumber: 33
+                                                        }, this),
+                                                        " to",
+                                                        ' ',
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "font-medium",
+                                                            children: Math.min(endIndex, filteredCampaigns.length)
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/campaigns/page.tsx",
+                                                            lineNumber: 882,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        " of",
+                                                        ' ',
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "font-medium",
+                                                            children: filteredCampaigns.length
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/campaigns/page.tsx",
+                                                            lineNumber: 883,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        " campaigns"
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/campaigns/page.tsx",
+                                                    lineNumber: 880,
+                                                    columnNumber: 23
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                lineNumber: 879,
+                                                columnNumber: 21
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("nav", {
+                                                    className: "relative z-0 inline-flex rounded-md shadow-sm -space-x-px",
+                                                    "aria-label": "Pagination",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                            onClick: ()=>setCurrentPage(Math.max(1, currentPage - 1)),
+                                                            disabled: currentPage === 1,
+                                                            className: "relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$left$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronLeft$3e$__["ChevronLeft"], {
+                                                                className: "h-5 w-5"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                lineNumber: 893,
+                                                                columnNumber: 27
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/campaigns/page.tsx",
+                                                            lineNumber: 888,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        Array.from({
+                                                            length: totalPages
+                                                        }, (_, i)=>i + 1).map((page)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                onClick: ()=>setCurrentPage(page),
+                                                                className: `relative inline-flex items-center px-4 py-2 border text-sm font-medium ${page === currentPage ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'}`,
+                                                                children: page
+                                                            }, page, false, {
+                                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                lineNumber: 897,
+                                                                columnNumber: 27
+                                                            }, this)),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                            onClick: ()=>setCurrentPage(Math.min(totalPages, currentPage + 1)),
+                                                            disabled: currentPage === totalPages,
+                                                            className: "relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$right$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronRight$3e$__["ChevronRight"], {
+                                                                className: "h-5 w-5"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                                lineNumber: 915,
+                                                                columnNumber: 27
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/campaigns/page.tsx",
+                                                            lineNumber: 910,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/campaigns/page.tsx",
+                                                    lineNumber: 887,
+                                                    columnNumber: 23
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                lineNumber: 886,
+                                                columnNumber: 21
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                        lineNumber: 878,
+                                        columnNumber: 19
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                lineNumber: 861,
+                                columnNumber: 17
+                            }, this)
+                        ]
+                    }, void 0, true)
+                }, void 0, false, {
+                    fileName: "[project]/src/app/campaigns/page.tsx",
+                    lineNumber: 727,
                     columnNumber: 9
                 }, this),
                 showCreateModal && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1292,12 +1879,12 @@ function CampaignsPage() {
                                             className: "h-5 w-5 text-blue-600"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/campaigns/page.tsx",
-                                            lineNumber: 425,
+                                            lineNumber: 932,
                                             columnNumber: 19
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/campaigns/page.tsx",
-                                        lineNumber: 424,
+                                        lineNumber: 931,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1307,7 +1894,7 @@ function CampaignsPage() {
                                                 children: "Create New Campaign"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 428,
+                                                lineNumber: 935,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1315,19 +1902,19 @@ function CampaignsPage() {
                                                 children: "Set up your outreach campaign with automated touchpoints"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 429,
+                                                lineNumber: 936,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/campaigns/page.tsx",
-                                        lineNumber: 427,
+                                        lineNumber: 934,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                lineNumber: 423,
+                                lineNumber: 930,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1340,7 +1927,7 @@ function CampaignsPage() {
                                                 children: "Campaign Name *"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 434,
+                                                lineNumber: 941,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1354,13 +1941,13 @@ function CampaignsPage() {
                                                 placeholder: "Enter campaign name"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 435,
+                                                lineNumber: 942,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/campaigns/page.tsx",
-                                        lineNumber: 433,
+                                        lineNumber: 940,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1370,7 +1957,7 @@ function CampaignsPage() {
                                                 children: "Company"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 445,
+                                                lineNumber: 952,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1382,19 +1969,19 @@ function CampaignsPage() {
                                                             className: `w-3 h-3 rounded-full mr-2 ${selectedCompany === 'CraftyCode' ? 'bg-blue-500' : 'bg-purple-500'}`
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/campaigns/page.tsx",
-                                                            lineNumber: 448,
+                                                            lineNumber: 955,
                                                             columnNumber: 23
                                                         }, this),
                                                         selectedCompany
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/campaigns/page.tsx",
-                                                    lineNumber: 447,
+                                                    lineNumber: 954,
                                                     columnNumber: 21
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 446,
+                                                lineNumber: 953,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1402,13 +1989,13 @@ function CampaignsPage() {
                                                 children: "Campaign will be created for the currently selected company"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 452,
+                                                lineNumber: 959,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/campaigns/page.tsx",
-                                        lineNumber: 444,
+                                        lineNumber: 951,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1418,39 +2005,90 @@ function CampaignsPage() {
                                                 children: "Launch Date"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 456,
+                                                lineNumber: 963,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
                                                 type: "date",
                                                 value: formData.launchDate,
-                                                onChange: (e)=>setFormData({
-                                                        ...formData,
-                                                        launchDate: e.target.value
-                                                    }),
+                                                onChange: (e)=>handleLaunchDateChange(e.target.value),
                                                 className: "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-colors"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 457,
+                                                lineNumber: 964,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/campaigns/page.tsx",
-                                        lineNumber: 455,
+                                        lineNumber: 962,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         children: [
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
                                                 className: "block text-sm font-medium text-gray-700 mb-2",
-                                                children: "End Date *"
-                                            }, void 0, false, {
+                                                children: [
+                                                    "End Date *",
+                                                    selectedSequenceSteps.length > 0 && (()=>{
+                                                        console.log('Rendering with steps:', selectedSequenceSteps);
+                                                        return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "text-xs font-bold text-green-600 ml-1",
+                                                            children: [
+                                                                "(Fixed - Based on Sequence with ",
+                                                                selectedSequenceSteps.length,
+                                                                " steps)"
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/campaigns/page.tsx",
+                                                            lineNumber: 978,
+                                                            columnNumber: 25
+                                                        }, this);
+                                                    })()
+                                                ]
+                                            }, void 0, true, {
                                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 466,
+                                                lineNumber: 973,
                                                 columnNumber: 19
                                             }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                            selectedSequenceSteps.length > 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "relative",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                        type: "date",
+                                                        value: formData.endDate,
+                                                        readOnly: true,
+                                                        disabled: true,
+                                                        className: "w-full px-4 py-3 border border-green-300 rounded-lg bg-green-50 text-green-800 cursor-not-allowed"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                        lineNumber: 986,
+                                                        columnNumber: 23
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "absolute inset-0 bg-green-50 bg-opacity-50 flex items-center justify-center pointer-events-none",
+                                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "text-sm font-medium text-green-800 bg-green-50 px-2 py-1 rounded",
+                                                            children: [
+                                                                new Date(formData.endDate).toLocaleDateString(),
+                                                                " (Fixed)"
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/campaigns/page.tsx",
+                                                            lineNumber: 994,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                        lineNumber: 993,
+                                                        columnNumber: 23
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                lineNumber: 985,
+                                                columnNumber: 21
+                                            }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
                                                 type: "date",
                                                 value: formData.endDate,
                                                 onChange: (e)=>setFormData({
@@ -1461,13 +2099,25 @@ function CampaignsPage() {
                                                 className: "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-colors"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 467,
-                                                columnNumber: 19
+                                                lineNumber: 1000,
+                                                columnNumber: 21
+                                            }, this),
+                                            selectedSequenceSteps.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "text-xs text-green-700 mt-1 font-medium",
+                                                children: [
+                                                    "This date is fixed based on the last scheduled touchpoint in your sequence (",
+                                                    selectedSequenceSteps.length,
+                                                    " steps)"
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                lineNumber: 1009,
+                                                columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/campaigns/page.tsx",
-                                        lineNumber: 465,
+                                        lineNumber: 972,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1477,42 +2127,53 @@ function CampaignsPage() {
                                                 children: "Outreach Sequence *"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 477,
+                                                lineNumber: 1016,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
                                                 value: formData.outreachSequenceId,
-                                                onChange: (e)=>setFormData({
-                                                        ...formData,
-                                                        outreachSequenceId: e.target.value
-                                                    }),
-                                                className: "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-colors",
+                                                onChange: (e)=>handleSequenceChange(e.target.value),
+                                                disabled: fetchingSteps,
+                                                className: "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-colors disabled:opacity-50",
                                                 children: [
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
                                                         value: "",
                                                         children: "Select an outreach sequence..."
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/campaigns/page.tsx",
-                                                        lineNumber: 483,
+                                                        lineNumber: 1023,
                                                         columnNumber: 21
                                                     }, this),
                                                     outreachSequences.map((sequence)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
                                                             value: sequence.id,
-                                                            children: [
-                                                                sequence.name,
-                                                                " ",
-                                                                sequence.description && `- ${sequence.description}`
-                                                            ]
-                                                        }, sequence.id, true, {
+                                                            children: sequence.name
+                                                        }, sequence.id, false, {
                                                             fileName: "[project]/src/app/campaigns/page.tsx",
-                                                            lineNumber: 485,
+                                                            lineNumber: 1025,
                                                             columnNumber: 23
                                                         }, this))
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 478,
+                                                lineNumber: 1017,
                                                 columnNumber: 19
+                                            }, this),
+                                            fetchingSteps && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "text-xs text-blue-600 mt-1 flex items-center",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: "animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-2"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/campaigns/page.tsx",
+                                                        lineNumber: 1032,
+                                                        columnNumber: 23
+                                                    }, this),
+                                                    "Calculating campaign timeline..."
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/app/campaigns/page.tsx",
+                                                lineNumber: 1031,
+                                                columnNumber: 21
                                             }, this),
                                             outreachSequences.length === 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                 className: "text-xs text-red-500 mt-2 flex items-center",
@@ -1521,7 +2182,7 @@ function CampaignsPage() {
                                                         className: "w-1 h-1 bg-red-500 rounded-full mr-2"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/campaigns/page.tsx",
-                                                        lineNumber: 492,
+                                                        lineNumber: 1038,
                                                         columnNumber: 23
                                                     }, this),
                                                     "No outreach sequences available for ",
@@ -1529,13 +2190,13 @@ function CampaignsPage() {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 491,
+                                                lineNumber: 1037,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/campaigns/page.tsx",
-                                        lineNumber: 476,
+                                        lineNumber: 1015,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1545,7 +2206,7 @@ function CampaignsPage() {
                                                 children: "Description"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 499,
+                                                lineNumber: 1045,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("textarea", {
@@ -1559,19 +2220,19 @@ function CampaignsPage() {
                                                 placeholder: "Optional campaign description..."
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 500,
+                                                lineNumber: 1046,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/campaigns/page.tsx",
-                                        lineNumber: 498,
+                                        lineNumber: 1044,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                lineNumber: 432,
+                                lineNumber: 939,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1583,7 +2244,7 @@ function CampaignsPage() {
                                         children: "Cancel"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/campaigns/page.tsx",
-                                        lineNumber: 525,
+                                        lineNumber: 1057,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1595,7 +2256,7 @@ function CampaignsPage() {
                                                 className: "w-4 h-4 mr-2"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                                lineNumber: 536,
+                                                lineNumber: 1068,
                                                 columnNumber: 19
                                             }, this),
                                             "Continue to ",
@@ -1604,39 +2265,39 @@ function CampaignsPage() {
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/campaigns/page.tsx",
-                                        lineNumber: 531,
+                                        lineNumber: 1063,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/campaigns/page.tsx",
-                                lineNumber: 524,
+                                lineNumber: 1056,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/campaigns/page.tsx",
-                        lineNumber: 422,
+                        lineNumber: 929,
                         columnNumber: 13
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/src/app/campaigns/page.tsx",
-                    lineNumber: 421,
+                    lineNumber: 928,
                     columnNumber: 11
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/src/app/campaigns/page.tsx",
-            lineNumber: 227,
+            lineNumber: 652,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/src/app/campaigns/page.tsx",
-        lineNumber: 226,
+        lineNumber: 651,
         columnNumber: 5
     }, this);
 }
-_s(CampaignsPage, "/kzbS9wR/ZwrJ0sLu+lmUBrIiyw=", false, function() {
+_s(CampaignsPage, "5SvwWNsSIFN0wbeiLX026jXpE68=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$CompanyContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCompany"]
     ];

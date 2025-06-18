@@ -243,9 +243,6 @@ export default function SelectDistrictsPage() {
         .in('district_lead_id', selectedDistricts)
         .eq('status', 'Valid') // Only schedule touchpoints for valid contacts
 
-      console.log('Fetched district contacts:', districtContacts?.length || 0)
-      console.log('Sample district contact:', districtContacts?.[0])
-
       if (contactsError) {
         console.error('Error fetching district contacts:', contactsError)
         alert('Campaign created but failed to fetch district contacts')
@@ -253,9 +250,6 @@ export default function SelectDistrictsPage() {
       }
 
       // Schedule touchpoints for all district contacts
-      console.log('Campaign outreach sequence:', campaign.outreach_sequence)
-      console.log('Outreach sequence steps:', campaign.outreach_sequence?.steps)
-      
       if (districtContacts && districtContacts.length > 0 && campaign.outreach_sequence?.steps) {
         const campaignStartDate = new Date(launchDate)
         const dbSteps = campaign.outreach_sequence.steps as any[]
@@ -342,7 +336,7 @@ export default function SelectDistrictsPage() {
       }
 
       alert(`Campaign "${campaignName}" created successfully with ${selectedDistricts.length} districts and ${districtContacts?.length || 0} contacts!`)
-      router.push('/campaigns')
+      router.push(`/campaigns/${campaign.id}`)
       
     } catch (error) {
       console.error('Error creating campaign:', error)

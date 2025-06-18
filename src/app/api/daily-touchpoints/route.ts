@@ -22,69 +22,153 @@ export async function GET(request: NextRequest) {
     const nextDay = new Date(targetDate)
     nextDay.setDate(nextDay.getDate() + 1)
 
-    let query = supabase
-      .from('touchpoints')
-      .select(`
-        *,
-        lead:leads!inner(
-          id,
-          first_name,
-          last_name,
-          email,
-          phone,
-          city,
-          company,
-          campaign_id,
-          campaign:campaigns(name)
-        )
-      `)
-      .is('completed_at', null) // Only get uncompleted touchpoints
+    let touchpoints = []
+    
+    if (company === 'Avalern') {
+      // For Avalern, fetch touchpoints for district contacts
+      let query = supabase
+        .from('touchpoints')
+        .select(`
+          *,
+          district_contact:district_contacts!inner(
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            title,
+            district_lead:district_leads!inner(
+              id,
+              district_name,
+              county,
+              company,
+              campaign_id,
+              campaign:campaigns(id, name, company)
+            )
+          )
+        `)
+        .is('completed_at', null) // Only get uncompleted touchpoints
+        .eq('district_contact.district_lead.company', 'Avalern')
 
-    // Filter by company if specified
-    if (company) {
-      query = query.eq('lead.company', company)
-    }
+      // Filter by campaign if specified
+      if (campaignId) {
+        query = query.eq('district_contact.district_lead.campaign_id', campaignId)
+      }
 
-    // Filter by campaign if specified
-    if (campaignId) {
-      query = query.eq('lead.campaign_id', campaignId)
-    }
-
-    // If specific date is provided, get touchpoints for that date
-    if (date) {
-      query = query
-        .gte('scheduled_at', targetDate.toISOString())
-        .lt('scheduled_at', nextDay.toISOString())
-    } else {
-      // Filter by type for legacy support
-      if (type === 'today') {
+      // If specific date is provided, get touchpoints for that date
+      if (date) {
         query = query
           .gte('scheduled_at', targetDate.toISOString())
           .lt('scheduled_at', nextDay.toISOString())
-    } else if (type === 'overdue') {
-        query = query.lt('scheduled_at', targetDate.toISOString())
-    } else {
-      // Get both today and overdue
-        query = query.lt('scheduled_at', nextDay.toISOString())
+      } else {
+        // Filter by type for legacy support
+        if (type === 'today') {
+          query = query
+            .gte('scheduled_at', targetDate.toISOString())
+            .lt('scheduled_at', nextDay.toISOString())
+        } else if (type === 'overdue') {
+          query = query.lt('scheduled_at', targetDate.toISOString())
+        } else {
+          // Get both today and overdue
+          query = query.lt('scheduled_at', nextDay.toISOString())
+        }
       }
-    }
 
-    const { data: touchpoints, error } = await query
-      .order('scheduled_at', { ascending: true })
+      const { data: districtTouchpoints, error } = await query
+        .order('scheduled_at', { ascending: true })
 
-    if (error) {
-      return NextResponse.json(
-        { error: 'Failed to fetch touchpoints' },
-        { status: 500 }
-      )
+      if (error) {
+        console.error('Error fetching district touchpoints:', error)
+        return NextResponse.json(
+          { error: 'Failed to fetch touchpoints' },
+          { status: 500 }
+        )
+      }
+
+      // Transform district touchpoints to match the expected format
+      touchpoints = (districtTouchpoints || []).map(tp => ({
+        ...tp,
+        lead: {
+          id: tp.district_contact.id,
+          first_name: tp.district_contact.first_name,
+          last_name: tp.district_contact.last_name,
+          email: tp.district_contact.email,
+          phone: tp.district_contact.phone,
+          city: tp.district_contact.district_lead.county,
+          company: tp.district_contact.district_lead.district_name,
+          campaign_id: tp.district_contact.district_lead.campaign_id,
+          campaign: tp.district_contact.district_lead.campaign
+        }
+      }))
+    } else {
+      // For other companies (like CraftyCode), fetch regular lead touchpoints
+      let query = supabase
+        .from('touchpoints')
+        .select(`
+          *,
+          lead:leads!inner(
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            city,
+            company,
+            campaign_id,
+            campaign:campaigns(name, company)
+          )
+        `)
+        .is('completed_at', null) // Only get uncompleted touchpoints
+
+      // Filter by company if specified
+      if (company) {
+        query = query.eq('lead.campaign.company', company)
+      }
+
+      // Filter by campaign if specified
+      if (campaignId) {
+        query = query.eq('lead.campaign_id', campaignId)
+      }
+
+      // If specific date is provided, get touchpoints for that date
+      if (date) {
+        query = query
+          .gte('scheduled_at', targetDate.toISOString())
+          .lt('scheduled_at', nextDay.toISOString())
+      } else {
+        // Filter by type for legacy support
+        if (type === 'today') {
+          query = query
+            .gte('scheduled_at', targetDate.toISOString())
+            .lt('scheduled_at', nextDay.toISOString())
+        } else if (type === 'overdue') {
+          query = query.lt('scheduled_at', targetDate.toISOString())
+        } else {
+          // Get both today and overdue
+          query = query.lt('scheduled_at', nextDay.toISOString())
+        }
+      }
+
+      const { data: leadTouchpoints, error } = await query
+        .order('scheduled_at', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching lead touchpoints:', error)
+        return NextResponse.json(
+          { error: 'Failed to fetch touchpoints' },
+          { status: 500 }
+        )
+      }
+
+      touchpoints = leadTouchpoints || []
     }
 
     // If specific date is provided, return touchpoints for that date
     if (date) {
       return NextResponse.json({
-        touchpoints: touchpoints || [],
+        touchpoints: touchpoints,
         date: date,
-        total: touchpoints?.length || 0
+        total: touchpoints.length
       })
     }
 
@@ -92,7 +176,7 @@ export async function GET(request: NextRequest) {
     const todayTouchpoints = []
     const overdueTouchpoints = []
 
-    for (const touchpoint of touchpoints || []) {
+    for (const touchpoint of touchpoints) {
       const scheduledDate = new Date(touchpoint.scheduled_at)
       scheduledDate.setHours(0, 0, 0, 0)
 
@@ -158,7 +242,14 @@ export async function POST(request: NextRequest) {
       .eq('id', touchpointId)
       .select(`
         *,
-        lead:leads(id, email, first_name, last_name)
+        lead:leads(id, email, first_name, last_name),
+        district_contact:district_contacts(
+          id, 
+          email, 
+          first_name, 
+          last_name,
+          district_lead:district_leads(id)
+        )
       `)
       .single()
 
@@ -169,11 +260,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Update lead's last_contacted_at
-    await supabase
-      .from('leads')
-      .update({ last_contacted_at: new Date().toISOString() })
-      .eq('id', touchpoint.lead.id)
+    // Update appropriate record's last_contacted_at
+    if (touchpoint.lead) {
+      await supabase
+        .from('leads')
+        .update({ last_contacted_at: new Date().toISOString() })
+        .eq('id', touchpoint.lead.id)
+    } else if (touchpoint.district_contact) {
+      await supabase
+        .from('district_leads')
+        .update({ last_contacted_at: new Date().toISOString() })
+        .eq('id', touchpoint.district_contact.district_lead.id)
+    }
 
     return NextResponse.json({
       success: true,

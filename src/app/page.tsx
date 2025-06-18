@@ -13,7 +13,12 @@ import {
   Upload,
   Download,
   TrendingUp,
-  Target
+  Target,
+  School,
+  Building,
+  MapPin,
+  FileText,
+  BarChart3
 } from 'lucide-react'
 import CalendarPopup from '@/components/CalendarPopup'
 
@@ -24,6 +29,8 @@ interface DashboardStats {
   conversions: number
   activeLeads: number
   totalCampaigns: number
+  totalDistricts?: number
+  districtContacts?: number
 }
 
 interface CampaignStats extends Campaign {
@@ -41,7 +48,9 @@ export default function Dashboard() {
     callsMade: 0,
     conversions: 0,
     activeLeads: 0,
-    totalCampaigns: 0
+    totalCampaigns: 0,
+    totalDistricts: 0,
+    districtContacts: 0
   })
   const [campaigns, setCampaigns] = useState<CampaignStats[]>([])
   const [recentLeads, setRecentLeads] = useState<Lead[]>([])
@@ -54,6 +63,30 @@ export default function Dashboard() {
   const [touchpointCounts, setTouchpointCounts] = useState<Record<string, number>>({})
   const [currentPage, setCurrentPage] = useState(1)
   const touchpointsPerPage = 20
+
+  // Company-specific configurations
+  const companyConfig = {
+    CraftyCode: {
+      color: 'blue',
+      primaryColor: 'bg-blue-500',
+      lightColor: 'bg-blue-50',
+      borderColor: 'border-blue-200',
+      textColor: 'text-blue-600',
+      description: 'Real Estate Lead Generation',
+      features: ['Lead Management', 'Email Outreach', 'Call Tracking', 'Campaign Analytics']
+    },
+    Avalern: {
+      color: 'purple', 
+      primaryColor: 'bg-purple-500',
+      lightColor: 'bg-purple-50',
+      borderColor: 'border-purple-200',
+      textColor: 'text-purple-600',
+      description: 'School District Outreach',
+      features: ['District Management', 'Contact Tracking', 'Educational Outreach', 'Institutional Analytics']
+    }
+  }
+
+  const currentConfig = companyConfig[selectedCompany as keyof typeof companyConfig] || companyConfig.CraftyCode
 
   // Fetch dashboard data from Supabase
   useEffect(() => {
@@ -69,23 +102,32 @@ export default function Dashboard() {
 
         if (campaignsError) {
           console.error('Error fetching campaigns:', campaignsError)
-          // Continue with empty campaigns data
         }
 
         // Fetch leads for selected company campaigns
         const campaignIds = campaignsData?.map(c => c.id) || []
         
-        let leadsData = null
+        let leadsData = []
         if (campaignIds.length > 0) {
           const { data: fetchedLeadsData, error: leadsError } = await supabase
             .from('leads')
             .select('*')
             .in('campaign_id', campaignIds)
 
-          if (leadsError) {
-            console.error('Error fetching leads:', leadsError)
-          } else {
+          if (!leadsError && fetchedLeadsData) {
             leadsData = fetchedLeadsData
+          }
+        }
+
+        // For Avalern, also fetch district data
+        let districtsData = []
+        if (selectedCompany === 'Avalern') {
+          const { data: fetchedDistrictsData, error: districtsError } = await supabase
+            .from('districts')
+            .select('*')
+
+          if (!districtsError && fetchedDistrictsData) {
+            districtsData = fetchedDistrictsData
           }
         }
 
@@ -94,21 +136,13 @@ export default function Dashboard() {
         
         let touchpointsData = []
         if (leadIds.length > 0) {
-          try {
-            const { data: fetchedTouchpointsData, error: touchpointsError } = await supabase
-              .from('touchpoints')
-              .select('*')
-              .in('lead_id', leadIds)
+          const { data: fetchedTouchpointsData, error: touchpointsError } = await supabase
+            .from('touchpoints')
+            .select('*')
+            .in('lead_id', leadIds)
 
-            if (touchpointsError) {
-              console.error('Error fetching touchpoints:', touchpointsError.message || touchpointsError.details || touchpointsError.hint || 'Unknown error')
-              touchpointsData = []
-            } else {
-              touchpointsData = fetchedTouchpointsData || []
-            }
-          } catch (error) {
-            console.error('Unexpected error fetching touchpoints:', error)
-            touchpointsData = []
+          if (!touchpointsError && fetchedTouchpointsData) {
+            touchpointsData = fetchedTouchpointsData
           }
         }
 
@@ -136,9 +170,11 @@ export default function Dashboard() {
           totalLeads: totalLeads,
           emailsSent: emailsMadeToday,
           callsMade: callsMadeToday,
-          conversions: 0, // Remove conversions from display
+          conversions: leadsData?.filter(l => l.status === 'won').length || 0,
           activeLeads: activeLeads,
-          totalCampaigns: campaignsData?.length || 0
+          totalCampaigns: campaignsData?.length || 0,
+          totalDistricts: districtsData?.length || 0,
+          districtContacts: selectedCompany === 'Avalern' ? totalLeads : 0
         })
 
         // Calculate campaign stats
@@ -175,7 +211,9 @@ export default function Dashboard() {
       }
     }
 
-    fetchDashboardData()
+    if (selectedCompany) {
+      fetchDashboardData()
+    }
   }, [selectedCompany])
 
   // Load filtered touchpoints after initial data is loaded
@@ -205,44 +243,81 @@ export default function Dashboard() {
   const endIndex = startIndex + touchpointsPerPage
   const paginatedTouchpoints = scheduledTouchpoints.slice(startIndex, endIndex)
 
-  const statCards = [
-    {
-      title: 'Total Leads',
-      value: stats.totalLeads.toLocaleString(),
-      change: `${stats.activeLeads} active leads`,
-      icon: Users,
-      color: 'blue'
-    },
-    {
-      title: 'Emails Made Today',
-      value: stats.emailsSent.toLocaleString(),
-      change: 'Completed today',
-      icon: Mail,
-      color: 'green'
-    },
-    {
-      title: 'Calls Made Today',
-      value: stats.callsMade.toLocaleString(),
-      change: 'Completed today',
-      icon: Phone,
-      color: 'orange'
-    },
-    {
-      title: 'Active Campaigns',
-      value: stats.totalCampaigns.toLocaleString(),
-      change: `${selectedCompany} campaigns`,
-      icon: Target,
-      color: 'purple'
+  // Company-specific stat cards
+  const getStatCards = () => {
+    if (selectedCompany === 'Avalern') {
+      return [
+        {
+          title: 'Total Districts',
+          value: '0', // Will be populated when districts data is available
+          change: 'School districts tracked',
+          icon: School,
+          color: 'purple'
+        },
+        {
+          title: 'District Contacts',
+          value: stats.totalLeads.toLocaleString(),
+          change: 'Key personnel identified',
+          icon: Users,
+          color: 'blue'
+        },
+        {
+          title: 'Emails Sent Today',
+          value: stats.emailsSent.toLocaleString(),
+          change: 'Educational outreach',
+          icon: Mail,
+          color: 'green'
+        },
+        {
+          title: 'Active Campaigns',
+          value: stats.totalCampaigns.toLocaleString(),
+          change: 'District engagement campaigns',
+          icon: Target,
+          color: 'orange'
+        }
+      ]
+    } else {
+      return [
+        {
+          title: 'Total Leads',
+          value: stats.totalLeads.toLocaleString(),
+          change: `${stats.activeLeads} active prospects`,
+          icon: Users,
+          color: 'blue'
+        },
+        {
+          title: 'Emails Made Today',
+          value: stats.emailsSent.toLocaleString(),
+          change: 'Real estate outreach',
+          icon: Mail,
+          color: 'green'
+        },
+        {
+          title: 'Calls Made Today',
+          value: stats.callsMade.toLocaleString(),
+          change: 'Direct conversations',
+          icon: Phone,
+          color: 'orange'
+        },
+        {
+          title: 'Active Campaigns',
+          value: stats.totalCampaigns.toLocaleString(),
+          change: `${selectedCompany} campaigns`,
+          icon: Target,
+          color: 'purple'
+        }
+      ]
     }
-  ]
+  }
+
+  const statCards = getStatCards()
 
   const getColorClasses = (color: string) => {
     const colors = {
       blue: 'bg-blue-50 text-blue-600 border-blue-200',
       green: 'bg-green-50 text-green-600 border-green-200',
       orange: 'bg-orange-50 text-orange-600 border-orange-200',
-      purple: 'bg-purple-50 text-purple-600 border-purple-200',
-      indigo: 'bg-indigo-50 text-indigo-600 border-indigo-200'
+      purple: 'bg-purple-50 text-purple-600 border-purple-200'
     }
     return colors[color as keyof typeof colors] || colors.blue
   }
@@ -284,12 +359,16 @@ export default function Dashboard() {
     return labels[status as keyof typeof labels] || status
   }
 
-  const handleImportLeads = () => {
+  const handleImportData = () => {
     window.location.href = '/import'
   }
 
-  const handleExportLeads = () => {
-    window.location.href = '/leads'
+  const handleViewData = () => {
+    if (selectedCompany === 'Avalern') {
+      window.location.href = '/districts'
+    } else {
+      window.location.href = '/leads'
+    }
   }
 
   const fetchFilteredTouchpoints = async () => {
@@ -297,6 +376,7 @@ export default function Dashboard() {
       // Build query parameters for specific date
       const params = new URLSearchParams()
       params.append('date', selectedDate)
+      params.append('company', selectedCompany)
       if (selectedCampaign) {
         params.append('campaignId', selectedCampaign)
       }
@@ -335,6 +415,7 @@ export default function Dashboard() {
       const params = new URLSearchParams()
       params.append('startDate', startOfMonth.toISOString().split('T')[0])
       params.append('endDate', endOfMonth.toISOString().split('T')[0])
+      params.append('company', selectedCompany)
       if (selectedCampaign) {
         params.append('campaignId', selectedCampaign)
       }
@@ -355,6 +436,7 @@ export default function Dashboard() {
     const params = new URLSearchParams()
     params.append('startDate', startDate)
     params.append('endDate', endDate)
+    params.append('company', selectedCompany)
     if (selectedCampaign) {
       params.append('campaignId', selectedCampaign)
     }
@@ -411,9 +493,9 @@ export default function Dashboard() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900">{selectedCompany} Dashboard</h1>
             <p className="text-gray-600 mt-1">
-              Welcome back! Here's what's happening with {selectedCompany} campaigns.
+              {currentConfig.description} - Welcome back! Here's your overview.
             </p>
           </div>
           <div className="flex items-center space-x-2 text-sm text-gray-500">
@@ -422,38 +504,72 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Company Brand Bar */}
+        <div className={`${currentConfig.lightColor} ${currentConfig.borderColor} border rounded-lg p-4`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className={`w-12 h-12 ${currentConfig.primaryColor} rounded-lg flex items-center justify-center`}>
+                {selectedCompany === 'Avalern' ? (
+                  <School className="h-6 w-6 text-white" />
+                ) : (
+                  <Building className="h-6 w-6 text-white" />
+                )}
+              </div>
+              <div>
+                <h2 className={`text-lg font-semibold ${currentConfig.textColor}`}>{selectedCompany}</h2>
+                <p className="text-sm text-gray-600">{currentConfig.description}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {currentConfig.features.map((feature, index) => (
+                <span key={index} className={`px-2 py-1 text-xs rounded-full ${currentConfig.lightColor} ${currentConfig.textColor}`}>
+                  {feature}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button 
-            onClick={handleImportLeads}
-            className="flex items-center justify-between p-6 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
+            onClick={handleImportData}
+            className={`flex items-center justify-between p-6 ${currentConfig.lightColor} rounded-lg hover:opacity-80 transition-opacity border ${currentConfig.borderColor}`}
           >
             <div className="flex items-center space-x-4">
-              <div className="p-3 bg-blue-600 rounded-lg">
+              <div className={`p-3 ${currentConfig.primaryColor} rounded-lg`}>
                 <Upload className="h-6 w-6 text-white" />
               </div>
               <div className="text-left">
-                <h3 className="text-lg font-semibold text-blue-900">Import New Leads</h3>
-                <p className="text-sm text-blue-700">Upload CSV files to add prospects</p>
+                <h3 className={`text-lg font-semibold ${currentConfig.textColor}`}>
+                  {selectedCompany === 'Avalern' ? 'Import Districts' : 'Import Leads'}
+                </h3>
+                <p className="text-sm text-gray-700">
+                  {selectedCompany === 'Avalern' ? 'Upload district and contact data' : 'Upload CSV files to add prospects'}
+                </p>
               </div>
             </div>
-            <span className="text-blue-600 text-xl">→</span>
+            <span className={`${currentConfig.textColor} text-xl`}>→</span>
           </button>
           
           <button 
-            onClick={handleExportLeads}
-            className="flex items-center justify-between p-6 bg-green-50 rounded-lg hover:bg-green-100 transition-colors border border-green-200"
+            onClick={handleViewData}
+            className={`flex items-center justify-between p-6 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200`}
           >
             <div className="flex items-center space-x-4">
-              <div className="p-3 bg-green-600 rounded-lg">
+              <div className="p-3 bg-gray-600 rounded-lg">
                 <Download className="h-6 w-6 text-white" />
               </div>
               <div className="text-left">
-                <h3 className="text-lg font-semibold text-green-900">Export Leads</h3>
-                <p className="text-sm text-green-700">Download leads for campaigns</p>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {selectedCompany === 'Avalern' ? 'View Districts' : 'View Leads'}
+                </h3>
+                <p className="text-sm text-gray-700">
+                  {selectedCompany === 'Avalern' ? 'Browse district database' : 'Manage your prospects'}
+                </p>
               </div>
             </div>
-            <span className="text-green-600 text-xl">→</span>
+            <span className="text-gray-600 text-xl">→</span>
           </button>
         </div>
 
@@ -478,9 +594,25 @@ export default function Dashboard() {
           ))}
         </div>
 
+        {/* Debug Info for Avalern */}
+        {selectedCompany === 'Avalern' && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-yellow-800 mb-2">Avalern Debug Info</h3>
+            <div className="text-xs text-yellow-700 space-y-1">
+              <p>• Check browser console for touchpoint fetch logs</p>
+              <p>• Campaigns found: {campaigns.length}</p>
+              <p>• Recent contacts: {recentLeads.length}</p>
+              <p>• Scheduled touchpoints: {scheduledTouchpoints.length}</p>
+              <p>• To create touchpoints: Import districts → Create campaigns → Set up outreach sequences</p>
+            </div>
+          </div>
+        )}
+
         {/* Touchpoint Filters */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Filter Touchpoints</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            {selectedCompany === 'Avalern' ? 'Filter District Outreach' : 'Filter Touchpoints'}
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
@@ -541,22 +673,17 @@ export default function Dashboard() {
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Scheduled Touchpoints</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {selectedCompany === 'Avalern' ? 'Scheduled District Outreach' : 'Scheduled Touchpoints'}
+                </h3>
                 <p className="text-sm text-gray-600 mt-1">
-                  {selectedDate ? `Touchpoints for ${new Date(selectedDate).toLocaleDateString()}` : `Upcoming touchpoints for ${selectedCompany}`}
+                  {selectedDate ? `Scheduled for ${new Date(selectedDate).toLocaleDateString()}` : `Upcoming outreach for ${selectedCompany}`}
                 </p>
               </div>
               <div className="flex items-center space-x-4 text-sm text-gray-500">
                 <span>Total: {scheduledTouchpoints.length}</span>
-                {totalPages > 1 && (
-                  <span>Page {currentPage} of {totalPages}</span>
-                )}
-                {!selectedDate && (
-                  <>
-                    <span>Today: {scheduledTouchpoints.filter(tp => new Date(tp.scheduled_at).toDateString() === new Date().toDateString()).length}</span>
-                    <span>Overdue: {scheduledTouchpoints.filter(tp => new Date(tp.scheduled_at) < new Date()).length}</span>
-                  </>
-                )}
+                <span>Today: {scheduledTouchpoints.filter(tp => new Date(tp.scheduled_at).toDateString() === new Date().toDateString()).length}</span>
+                <span>Overdue: {scheduledTouchpoints.filter(tp => new Date(tp.scheduled_at) < new Date()).length}</span>
               </div>
             </div>
           </div>
@@ -566,13 +693,15 @@ export default function Dashboard() {
                 <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-500">No scheduled touchpoints found</p>
                 <p className="text-sm text-gray-400 mt-2">
-                  Go to the Outreach page to create touchpoint sequences for your leads
+                  {selectedCompany === 'Avalern' ? 
+                    'Go to the Outreach page to create district engagement sequences' :
+                    'Go to the Outreach page to create touchpoint sequences for your leads'
+                  }
                 </p>
               </div>
             ) : (
-              <>
-                <div className="space-y-3">
-                  {paginatedTouchpoints.map((touchpoint) => {
+              <div className="space-y-3">
+                {scheduledTouchpoints.map((touchpoint) => {
                   const scheduledDate = new Date(touchpoint.scheduled_at)
                   const isOverdue = scheduledDate < new Date()
                   const isToday = scheduledDate.toDateString() === new Date().toDateString()
@@ -617,7 +746,7 @@ export default function Dashboard() {
                         <div className="flex items-center space-x-4 mt-1">
                           <p className="text-xs text-gray-500">{touchpoint.lead?.email}</p>
                           <p className="text-xs text-gray-500">
-                                                                Scheduled: {scheduledDate.toLocaleDateString()}
+                            Scheduled: {scheduledDate.toLocaleDateString()}
                           </p>
                         </div>
                       </div>
@@ -626,63 +755,36 @@ export default function Dashboard() {
                           onClick={() => markTouchpointComplete(touchpoint.id, 'replied')}
                           className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
                         >
-                          Replied
+                          {selectedCompany === 'Avalern' ? 'Responded' : 'Replied'}
                         </button>
                         <button
                           onClick={() => markTouchpointComplete(touchpoint.id, 'no_answer')}
                           className="px-3 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors"
                         >
-                          No Answer
+                          No Response
                         </button>
                       </div>
                     </div>
                   )
                 })}
-                </div>
-
-                {/* Pagination Controls */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
-                    <div className="text-sm text-gray-500">
-                      Showing {startIndex + 1} to {Math.min(endIndex, scheduledTouchpoints.length)} of {scheduledTouchpoints.length} touchpoints
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setCurrentPage(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Previous
-                      </button>
-                      <span className="text-sm text-gray-700">
-                        Page {currentPage} of {totalPages}
-                      </span>
-                      <button
-                        onClick={() => setCurrentPage(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Recent Activity & Campaign Performance */}
+        {/* Activity Overview */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Leads */}
+          {/* Recent Contacts/Leads */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Leads</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              {selectedCompany === 'Avalern' ? 'Recent District Contacts' : 'Recent Leads'}
+            </h3>
             <div className="space-y-4">
               {recentLeads.length > 0 ? (
                 recentLeads.map((lead, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-3">
-                      <div className={`w-2 h-2 rounded-full ${selectedCompany === 'CraftyCode' ? 'bg-blue-500' : 'bg-purple-500'}`}></div>
+                      <div className={`w-2 h-2 rounded-full ${currentConfig.primaryColor}`}></div>
                       <div>
                         <p className="text-sm font-medium text-gray-900">
                           {lead.first_name} {lead.last_name}
@@ -697,30 +799,34 @@ export default function Dashboard() {
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-center py-8">No leads found. Import some leads to get started!</p>
+                <p className="text-gray-500 text-center py-8">
+                  {selectedCompany === 'Avalern' ? 'No district contacts found. Import district data to get started!' : 'No leads found. Import some leads to get started!'}
+                </p>
               )}
             </div>
           </div>
 
           {/* Campaign Performance */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">{selectedCompany} Campaign Performance</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              {selectedCompany === 'Avalern' ? 'District Engagement Campaigns' : 'Lead Generation Campaigns'}
+            </h3>
             <div className="space-y-4">
               {campaigns.length > 0 ? (
                 campaigns.map((campaign, index) => (
                   <div key={index} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center space-x-3">
-                        <div className={`w-3 h-3 rounded-full ${campaign.company === 'CraftyCode' ? 'bg-blue-500' : 'bg-purple-500'}`}></div>
+                        <div className={`w-3 h-3 rounded-full ${currentConfig.primaryColor}`}></div>
                         <h4 className="font-medium text-gray-900">{campaign.name}</h4>
                       </div>
                       <span className="text-sm font-medium text-gray-600">
-                        {campaign.lead_count > 0 ? Math.round((campaign.conversion_count / campaign.lead_count) * 100) : 0}% conversion
+                        {campaign.lead_count > 0 ? Math.round((campaign.conversion_count / campaign.lead_count) * 100) : 0}% success
                       </span>
                     </div>
                     <div className="grid grid-cols-4 gap-4 text-center">
                       <div>
-                        <p className="text-sm text-gray-500">Leads</p>
+                        <p className="text-sm text-gray-500">{selectedCompany === 'Avalern' ? 'Contacts' : 'Leads'}</p>
                         <p className="font-semibold text-gray-900">{campaign.lead_count}</p>
                       </div>
                       <div>
@@ -732,14 +838,16 @@ export default function Dashboard() {
                         <p className="font-semibold text-gray-900">{campaign.call_count}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Conversions</p>
+                        <p className="text-sm text-gray-500">{selectedCompany === 'Avalern' ? 'Engaged' : 'Conversions'}</p>
                         <p className="font-semibold text-gray-900">{campaign.conversion_count}</p>
                       </div>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-center py-8">No campaigns found for {selectedCompany}.</p>
+                <p className="text-gray-500 text-center py-8">
+                  No campaigns found for {selectedCompany}. Create a campaign to start tracking performance.
+                </p>
               )}
             </div>
           </div>

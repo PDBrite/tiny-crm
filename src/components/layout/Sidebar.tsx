@@ -12,16 +12,9 @@ import {
   Building2,
   Calendar,
   School,
-  MessageSquare
+  MessageSquare,
+  User
 } from 'lucide-react'
-
-const baseNavigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Outreach', href: '/outreach', icon: Calendar },
-  { name: 'Campaigns', href: '/campaigns', icon: Target },
-  { name: 'Import', href: '/import', icon: Upload },
-  { name: 'Settings', href: '/settings', icon: Settings },
-]
 
 const craftyCodeNavigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -29,7 +22,6 @@ const craftyCodeNavigation = [
   { name: 'Outreach', href: '/outreach', icon: MessageSquare },
   { name: 'Campaigns', href: '/campaigns', icon: Target },
   { name: 'Import', href: '/import', icon: Upload },
-  { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
 const avalernNav = [
@@ -39,17 +31,16 @@ const avalernNav = [
   { name: 'Outreach', href: '/outreach', icon: MessageSquare },
   { name: 'Campaigns', href: '/campaigns', icon: Target },
   { name: 'Import', href: '/import', icon: Upload },
-  { name: 'Settings', href: '/settings', icon: Settings }
 ]
 
-const companies = [
-  { name: 'CraftyCode', color: 'bg-blue-500' },
-  { name: 'Avalern', color: 'bg-purple-500' }
-]
+const companyColors: Record<string, string> = {
+  'CraftyCode': 'bg-blue-500',
+  'Avalern': 'bg-purple-500'
+}
 
 export default function Sidebar() {
   const pathname = usePathname()
-  const { selectedCompany, setSelectedCompany } = useCompany()
+  const { selectedCompany, setSelectedCompany, availableCompanies } = useCompany()
 
   return (
     <div className="flex h-screen w-64 flex-col bg-white shadow-lg">
@@ -59,30 +50,49 @@ export default function Sidebar() {
         <span className="ml-3 text-xl font-bold text-gray-900">Lead Manager</span>
       </div>
 
-      {/* Company Selector - Moved to top */}
+      {/* User Info */}
       <div className="border-b border-gray-200 p-4">
-        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-          Active Companies
-        </div>
-        <div className="space-y-2">
-          {companies.map((company) => (
-            <button
-              key={company.name}
-              onClick={() => setSelectedCompany(company.name)}
-              className={`
-                flex items-center w-full px-3 py-2 text-sm font-medium rounded-lg transition-colors
-                ${selectedCompany === company.name
-                  ? 'bg-gray-100 text-gray-900 border-l-4 border-blue-500'
-                  : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                }
-              `}
-            >
-              <div className={`w-3 h-3 ${company.color} rounded-full mr-3`}></div>
-              <span>{company.name}</span>
-            </button>
-          ))}
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+            <User className="h-4 w-4 text-gray-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-900 truncate">
+              Current User
+            </p>
+            <p className="text-xs text-gray-500 truncate">
+              User
+            </p>
+          </div>
         </div>
       </div>
+
+      {/* Company Selector */}
+      {availableCompanies.length > 0 && (
+        <div className="border-b border-gray-200 p-4">
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+            Active Companies
+          </div>
+          <div className="space-y-2">
+            {availableCompanies.map((company) => (
+              <button
+                key={company}
+                onClick={() => setSelectedCompany(company)}
+                className={`
+                  flex items-center w-full px-3 py-2 text-sm font-medium rounded-lg transition-colors
+                  ${selectedCompany === company
+                    ? 'bg-gray-100 text-gray-900 border-l-4 border-blue-500'
+                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                  }
+                `}
+              >
+                <div className={`w-3 h-3 ${companyColors[company] || 'bg-gray-500'} rounded-full mr-3`}></div>
+                <span>{company}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 px-4 py-6 space-y-2">

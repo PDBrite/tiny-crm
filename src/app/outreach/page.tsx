@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import { useCompany } from '../../contexts/CompanyContext'
-import { Calendar, Phone, Mail, MessageSquare, Plus, Target, Edit2, Trash2, List, ArrowRight, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Calendar, Phone, Mail, MessageSquare, Plus, Target, Edit2, Trash2, List, ArrowRight, RefreshCw, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import CalendarPopup from '../../components/CalendarPopup'
 import LeadDetailPanel from '../../components/leads/LeadDetailPanel'
 import { Lead, STATUS_DISPLAY_MAP } from '../../types/leads'
@@ -197,21 +197,27 @@ export default function OutreachPage() {
         params.append('campaignId', selectedCampaign)
       }
 
+      console.log(`Fetching touchpoints for ${selectedCompany} on ${selectedDate}:`, params.toString())
       const response = await fetch(`/api/daily-touchpoints?${params.toString()}`)
       const result = await response.json()
       
+      console.log('Touchpoints response:', result)
+      
       if (response.ok) {
         let allTouchpoints = result.touchpoints || []
+        console.log(`Found ${allTouchpoints.length} touchpoints for ${selectedCompany}`)
 
         // Apply type filter if selected
         if (selectedType) {
           allTouchpoints = allTouchpoints.filter((tp: any) => tp.type === selectedType)
+          console.log(`After type filter (${selectedType}): ${allTouchpoints.length} touchpoints`)
         }
 
         setFilteredTouchpoints(allTouchpoints)
         setTouchpoints(result) // Keep original data for summary cards
         setCurrentPage(1) // Reset to first page when filters change
       } else {
+        console.error('API Error:', result.error)
         alert(`Error: ${result.error}`)
       }
     } catch (error) {
@@ -248,17 +254,26 @@ export default function OutreachPage() {
       }
 
       // Create a new touchpoint record representing the actual interaction
+      // Check if this is a district contact (Avalern) or regular lead
+      const touchpointData: any = {
+        type: originalTouchpoint.type,
+        subject: `${originalTouchpoint.type.replace('_', ' ').toUpperCase()} - ${outcome === 'replied' ? 'Replied' : 'No Answer'}`,
+        content: `${outcome === 'replied' ? 'Contact replied to' : 'No answer from'} ${originalTouchpoint.type.replace('_', ' ')} outreach: ${originalTouchpoint.subject || 'N/A'}`,
+        completed_at: new Date().toISOString(),
+        outcome: outcome === 'replied' ? 'Replied' : 'No Answer'
+      }
+
+      // For Avalern campaigns, use district_contact_id; for others, use lead_id
+      if (originalTouchpoint.district_contact_id) {
+        touchpointData.district_contact_id = originalTouchpoint.district_contact_id
+      } else {
+        touchpointData.lead_id = originalTouchpoint.lead.id
+      }
+
       const newTouchpointResponse = await fetch('/api/touchpoints', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lead_id: originalTouchpoint.lead.id,
-          type: originalTouchpoint.type,
-          subject: `${originalTouchpoint.type.replace('_', ' ').toUpperCase()} - ${outcome === 'replied' ? 'Replied' : 'No Answer'}`,
-          content: `${outcome === 'replied' ? 'Lead replied to' : 'No answer from'} ${originalTouchpoint.type.replace('_', ' ')} outreach: ${originalTouchpoint.subject || 'N/A'}`,
-          completed_at: new Date().toISOString(),
-          outcome: outcome === 'replied' ? 'Replied' : 'No Answer'
-        })
+        body: JSON.stringify(touchpointData)
       })
 
       if (newTouchpointResponse.ok) {
@@ -428,6 +443,77 @@ export default function OutreachPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleExportTouchpoints = () => {
+    if (!filteredTouchpoints || filteredTouchpoints.length === 0) {
+      alert('No touchpoints to export')
+      return
+    }
+
+    // Create CSV headers based on company type
+    const headers = selectedCompany === 'Avalern' 
+      ? ['First Name', 'Last Name', 'Email', 'Phone', 'Title', 'District', 'County', 'Touchpoint Type', 'Subject', 'Scheduled Date', 'Status', 'Campaign']
+      : ['First Name', 'Last Name', 'Email', 'Phone', 'Company', 'Touchpoint Type', 'Subject', 'Scheduled Date', 'Status', 'Campaign']
+
+    // Create CSV rows
+    const csvRows = filteredTouchpoints.map(touchpoint => {
+      if (selectedCompany === 'Avalern') {
+        // Avalern uses district_contacts
+        const contact = touchpoint.district_contact || {}
+        const district = touchpoint.district_lead || {}
+        return [
+          contact.first_name || '',
+          contact.last_name || '',
+          contact.email || '',
+          contact.phone || '',
+          contact.title || '',
+          district.district_name || '',
+          district.county || '',
+          touchpoint.type || '',
+          touchpoint.subject || '',
+          touchpoint.scheduled_at ? new Date(touchpoint.scheduled_at).toLocaleDateString() : '',
+          touchpoint.status || '',
+          touchpoint.campaign?.name || ''
+        ]
+      } else {
+        // CraftyCode uses leads
+        const lead = touchpoint.lead || {}
+        return [
+          lead.first_name || '',
+          lead.last_name || '',
+          lead.email || '',
+          lead.phone || '',
+          lead.company || '',
+          touchpoint.type || '',
+          touchpoint.subject || '',
+          touchpoint.scheduled_at ? new Date(touchpoint.scheduled_at).toLocaleDateString() : '',
+          touchpoint.status || '',
+          touchpoint.campaign?.name || ''
+        ]
+      }
+    })
+
+    // Combine headers and rows
+    const csvContent = [headers, ...csvRows]
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n')
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    
+    // Generate filename with date and company
+    const dateStr = selectedDate || new Date().toISOString().split('T')[0]
+    const filename = `${selectedCompany.toLowerCase()}_touchpoints_${dateStr}.csv`
+    link.setAttribute('download', filename)
+    
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   // const handleSyncInstantly = async () => {
@@ -660,14 +746,14 @@ export default function OutreachPage() {
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">Touchpoints</h3>
-                {/* <button
-                  onClick={handleSyncInstantly}
-                  disabled={syncing}
-                  className="flex items-center px-3 py-1 text-sm text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                <button
+                  onClick={handleExportTouchpoints}
+                  disabled={!filteredTouchpoints || filteredTouchpoints.length === 0}
+                  className="flex items-center px-3 py-2 text-sm text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <RefreshCw className={`h-4 w-4 mr-1 ${syncing ? 'animate-spin' : ''}`} />
-                  {syncing ? 'Syncing...' : 'Sync Instantly'}
-                </button> */}
+                  <Download className="h-4 w-4 mr-1" />
+                  Export CSV
+                </button>
               </div>
             </div>
             <div className="p-6">

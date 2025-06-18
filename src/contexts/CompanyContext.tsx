@@ -6,31 +6,48 @@ interface CompanyContextType {
   selectedCompany: string
   setSelectedCompany: (company: string) => void
   isLoading: boolean
+  availableCompanies: string[]
 }
 
 const CompanyContext = createContext<CompanyContextType | undefined>(undefined)
 
 export function CompanyProvider({ children }: { children: ReactNode }) {
-  const [selectedCompany, setSelectedCompanyState] = useState<string>('CraftyCode')
+  const [selectedCompany, setSelectedCompanyState] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
+
+  // Both companies are available to all users
+  const availableCompanies = ['CraftyCode', 'Avalern']
 
   // Load company from localStorage on mount
   useEffect(() => {
     const savedCompany = localStorage.getItem('selectedCompany')
-    if (savedCompany && (savedCompany === 'CraftyCode' || savedCompany === 'Avalern')) {
+    
+    // Check if saved company is valid
+    if (savedCompany && availableCompanies.includes(savedCompany)) {
       setSelectedCompanyState(savedCompany)
+    } else {
+      // Default to first available company
+      setSelectedCompanyState(availableCompanies[0])
+      localStorage.setItem('selectedCompany', availableCompanies[0])
     }
     setIsLoading(false)
   }, [])
 
   // Save to localStorage when company changes
   const setSelectedCompany = (company: string) => {
-    setSelectedCompanyState(company)
-    localStorage.setItem('selectedCompany', company)
+    if (availableCompanies.includes(company)) {
+      setSelectedCompanyState(company)
+      localStorage.setItem('selectedCompany', company)
+    }
   }
 
   return (
-    <CompanyContext.Provider value={{ selectedCompany, setSelectedCompany, isLoading }}>
+    <CompanyContext.Provider value={{ 
+      selectedCompany, 
+      setSelectedCompany, 
+      isLoading,
+      availableCompanies
+    }}>
       {children}
     </CompanyContext.Provider>
   )

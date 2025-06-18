@@ -24,31 +24,44 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist
 ;
 const CompanyContext = /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createContext"])(undefined);
 function CompanyProvider({ children }) {
-    const [selectedCompany, setSelectedCompanyState] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])('CraftyCode');
+    const [selectedCompany, setSelectedCompanyState] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])('');
     const [isLoading, setIsLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(true);
+    // Both companies are available to all users
+    const availableCompanies = [
+        'CraftyCode',
+        'Avalern'
+    ];
     // Load company from localStorage on mount
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
         const savedCompany = localStorage.getItem('selectedCompany');
-        if (savedCompany && (savedCompany === 'CraftyCode' || savedCompany === 'Avalern')) {
+        // Check if saved company is valid
+        if (savedCompany && availableCompanies.includes(savedCompany)) {
             setSelectedCompanyState(savedCompany);
+        } else {
+            // Default to first available company
+            setSelectedCompanyState(availableCompanies[0]);
+            localStorage.setItem('selectedCompany', availableCompanies[0]);
         }
         setIsLoading(false);
     }, []);
     // Save to localStorage when company changes
     const setSelectedCompany = (company)=>{
-        setSelectedCompanyState(company);
-        localStorage.setItem('selectedCompany', company);
+        if (availableCompanies.includes(company)) {
+            setSelectedCompanyState(company);
+            localStorage.setItem('selectedCompany', company);
+        }
     };
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(CompanyContext.Provider, {
         value: {
             selectedCompany,
             setSelectedCompany,
-            isLoading
+            isLoading,
+            availableCompanies
         },
         children: children
     }, void 0, false, {
         fileName: "[project]/src/contexts/CompanyContext.tsx",
-        lineNumber: 33,
+        lineNumber: 45,
         columnNumber: 5
     }, this);
 }
