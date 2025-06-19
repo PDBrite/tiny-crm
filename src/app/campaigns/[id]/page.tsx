@@ -365,7 +365,7 @@ export default function CampaignDetailPage() {
           sales: wonCount,
           conversionRate,
           launch_date: campaignData.start_date || campaignData.created_at,
-          status: leadCount > 0 ? 'active' : 'queued',
+          status: campaignData.status || 'active', // Keep the actual status from the database
           outreach_sequence: Array.isArray((campaignData as any).outreach_sequence) ? (campaignData as any).outreach_sequence[0] : (campaignData as any).outreach_sequence
         } as Campaign
 
@@ -766,23 +766,17 @@ export default function CampaignDetailPage() {
   const getStatusColor = (status: string) => {
     const colors = {
       'active': 'bg-green-100 text-green-800',
-      'queued': 'bg-yellow-100 text-yellow-800',
-      'completed': 'bg-blue-100 text-blue-800',
-      'paused': 'bg-orange-100 text-orange-800'
+      'complete': 'bg-blue-100 text-blue-800'
     }
-    return colors[status as keyof typeof colors] || colors['queued']
+    return colors[status as keyof typeof colors] || colors['active']
   }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'active':
         return <Target className="h-4 w-4" />
-      case 'queued':
-        return <Calendar className="h-4 w-4" />
-      case 'completed':
+      case 'complete':
         return <CheckCircle className="h-4 w-4" />
-      case 'paused':
-        return <Clock className="h-4 w-4" />
       default:
         return <Target className="h-4 w-4" />
     }
@@ -873,9 +867,9 @@ export default function CampaignDetailPage() {
                 <div className={`w-3 h-3 rounded-full ${campaign.company === 'CraftyCode' ? 'bg-blue-500' : 'bg-purple-500'}`}></div>
                 <span className="text-sm font-medium text-gray-600">{campaign.company}</span>
               </div>
-              <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(campaign.status || 'queued')}`}>
-                {getStatusIcon(campaign.status || 'queued')}
-                <span className="ml-1 capitalize">{campaign.status || 'queued'}</span>
+              <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(campaign.status || 'active')}`}>
+                {getStatusIcon(campaign.status || 'active')}
+                <span className="ml-1 capitalize">{campaign.status || 'active'}</span>
               </span>
             </div>
             {campaign.description && (
@@ -1010,9 +1004,7 @@ export default function CampaignDetailPage() {
                       className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-colors"
                     >
                       <option value="active">Active</option>
-                      <option value="queued">Queued</option>
-                      <option value="paused">Paused</option>
-                      <option value="completed">Completed</option>
+                      <option value="complete">Complete</option>
                     </select>
                   </div>
                   

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import DashboardLayout from '../../../components/layout/DashboardLayout'
 import { useCompany } from '../../../contexts/CompanyContext'
@@ -23,6 +23,14 @@ import {
 } from 'lucide-react'
 
 export default function SelectDistrictsPage() {
+  return (
+    <Suspense fallback={<DashboardLayout><div className="p-4">Loading...</div></DashboardLayout>}>
+      <SelectDistrictsContent />
+    </Suspense>
+  )
+}
+
+function SelectDistrictsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { selectedCompany, isLoading: companyLoading } = useCompany()

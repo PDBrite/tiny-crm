@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import DashboardLayout from '../../../components/layout/DashboardLayout'
 import { useCompany } from '../../../contexts/CompanyContext'
@@ -28,6 +28,14 @@ interface Lead {
 }
 
 export default function SelectLeadsPage() {
+  return (
+    <Suspense fallback={<div className="p-4">Loading...</div>}>
+      <SelectLeadsContent />
+    </Suspense>
+  )
+}
+
+function SelectLeadsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { selectedCompany } = useCompany()

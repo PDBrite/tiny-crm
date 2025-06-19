@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import { useCompany } from '../../contexts/CompanyContext'
@@ -20,6 +20,18 @@ import {
 } from '../../components/leads'
 
 export default function LeadsPage() {
+  return (
+    <Suspense fallback={<DashboardLayout>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    </DashboardLayout>}>
+      <LeadsContent />
+    </Suspense>
+  )
+}
+
+function LeadsContent() {
   const { selectedCompany } = useCompany()
   const searchParams = useSearchParams()
   const districtFilter = searchParams?.get('district')
@@ -148,14 +160,14 @@ export default function LeadsPage() {
         id: contact.id,
         first_name: contact.first_name,
         last_name: contact.last_name,
-        email: contact.email,
-        phone: contact.phone || '',
+        email: contact.email || '',
+        phone: contact.phone || '', // Convert null to empty string
         city: contact.district_lead?.county || '', // Use county as city for districts
-        state: '', // Not applicable for districts
-        company: contact.district_lead?.district_name || '',
-        linkedin_url: '',
-        website_url: '',
-        online_profile: '',
+        state: 'CA', // Default to CA
+        company: contact.district_lead?.district_name || '', // Use district name as company
+        linkedin_url: '', // Not available in DistrictContact
+        website_url: '', // Not available in DistrictContact
+        online_profile: '', // Not available in DistrictContact
         source: 'District Import',
         status: contact.district_lead?.status || 'not_contacted',
         notes: contact.notes || '',

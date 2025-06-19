@@ -13,14 +13,18 @@ import {
   Calendar,
   School,
   MessageSquare,
-  User
+  User,
+  List,
+  LogOut
 } from 'lucide-react'
+import { signOut } from "next-auth/react"
 
 const craftyCodeNavigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Leads', href: '/leads', icon: Users },
   { name: 'Outreach', href: '/outreach', icon: MessageSquare },
   { name: 'Campaigns', href: '/campaigns', icon: Target },
+  { name: 'Outreach Sequences', href: '/outreach-sequences', icon: List },
   { name: 'Import', href: '/import', icon: Upload },
 ]
 
@@ -30,6 +34,7 @@ const avalernNav = [
   { name: 'District Contacts', href: '/leads', icon: Users },
   { name: 'Outreach', href: '/outreach', icon: MessageSquare },
   { name: 'Campaigns', href: '/campaigns', icon: Target },
+  { name: 'Outreach Sequences', href: '/outreach-sequences', icon: List },
   { name: 'Import', href: '/import', icon: Upload },
 ]
 
@@ -41,6 +46,10 @@ const companyColors: Record<string, string> = {
 export default function Sidebar() {
   const pathname = usePathname()
   const { selectedCompany, setSelectedCompany, availableCompanies } = useCompany()
+
+  const handleSignOut = async () => {
+    await signOut({ redirect: true, callbackUrl: "/login" });
+  };
 
   return (
     <div className="flex h-screen w-64 flex-col bg-white shadow-lg">
@@ -135,6 +144,17 @@ export default function Sidebar() {
           )
         })}
       </nav>
+
+      {/* Sign out button */}
+      <div className="mt-auto border-t border-gray-200 p-4">
+        <button
+          onClick={handleSignOut}
+          className="flex w-full items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50 hover:text-gray-900"
+        >
+          <LogOut className="mr-3 h-5 w-5 text-gray-400" />
+          Sign Out
+        </button>
+      </div>
     </div>
   )
 } 

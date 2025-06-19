@@ -280,7 +280,6 @@ export default function LeadDetailPanel({
                   >
                     <option value="email">Email</option>
                     <option value="call">Phone Call</option>
-                    <option value="meeting">Meeting</option>
                     <option value="linkedin_message">LinkedIn Message</option>
                     <option value="note">Note</option>
                   </select>
@@ -357,7 +356,6 @@ export default function LeadDetailPanel({
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                         touchpoint.type === 'email' ? 'bg-blue-100 text-blue-800' :
                         touchpoint.type === 'call' ? 'bg-green-100 text-green-800' :
-                        touchpoint.type === 'meeting' ? 'bg-purple-100 text-purple-800' :
                         touchpoint.type === 'linkedin_message' ? 'bg-indigo-100 text-indigo-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
