@@ -53,11 +53,21 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role;
         token.allowedCompanies = user.allowedCompanies;
       }
+      
+      // Add custom claims for Supabase RLS
+      if (token.role) {
+        token.user_role = token.role; // For frontend session
+        token.claims = {
+          ...(token.claims as object || {}),
+          role: token.role,
+        };
+      }
+
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.role = token.role;
+        session.user.role = token.user_role as string;
         session.user.allowedCompanies = token.allowedCompanies;
       }
       return session;
