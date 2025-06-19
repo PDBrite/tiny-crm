@@ -1,14 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '../../../lib/supabase'
 import { getTouchpointsDueToday, getOverdueTouchpoints } from '../../../utils/outreach-scheduler'
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth"
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
+
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const userRole = session.user.role
+    const allowedCompanies = session.user.allowedCompanies || []
+
     const url = new URL(request.url)
     const type = url.searchParams.get('type') // 'today', 'overdue', or 'all'
     const date = url.searchParams.get('date') // Specific date in YYYY-MM-DD format
     const campaignId = url.searchParams.get('campaignId') // Filter by campaign
-    const company = url.searchParams.get('company') // Filter by company
+    
+    // Determine company from session, not from query param for security
+    let company: string | undefined;
+    const requestedCompany = url.searchParams.get('company')
+    
+    if (userRole === 'member') {
+      company = 'Avalern';
+      if (!allowedCompanies.includes('avalern')) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    } else if (requestedCompany && allowedCompanies.includes(requestedCompany.toLowerCase())) {
+      company = requestedCompany;
+    } else if (allowedCompanies.length > 0) {
+      // Default to the first allowed company if none specified or invalid
+      company = allowedCompanies[0].charAt(0).toUpperCase() + allowedCompanies[0].slice(1);
+    }
+
+    if (!company) {
+      return NextResponse.json({ error: 'No company access configured for this user.' }, { status: 403 });
+    }
     
     // If specific date is provided, use that; otherwise use today
     let targetDate: Date
@@ -122,7 +152,11 @@ export async function GET(request: NextRequest) {
 
       // Filter by company if specified
       if (company) {
-        query = query.eq('lead.campaign.company', company)
+        query = query.eq('lead.company', company)
+      } else {
+        // If no company is determined (which shouldn't happen with the new logic),
+        // we should prevent fetching all data.
+        return NextResponse.json({ touchpoints: [] });
       }
 
       // Filter by campaign if specified
@@ -222,6 +256,15 @@ export async function GET(request: NextRequest) {
 // POST endpoint to mark touchpoints as completed
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userRole = session.user.role;
+    const allowedCompanies = session.user.allowedCompanies || [];
+
     const { touchpointId, outcome, outcomeEnum, notes } = await request.json()
     
     if (!touchpointId) {
@@ -229,6 +272,37 @@ export async function POST(request: NextRequest) {
         { error: 'Touchpoint ID is required' },
         { status: 400 }
       )
+    }
+
+    // Security check: Verify the user has permission to update this touchpoint
+    const { data: touchpointToUpdate, error: fetchError } = await supabase
+      .from('touchpoints')
+      .select(`
+        id,
+        lead:leads(id, company),
+        district_contact:district_contacts(id, district_lead:district_leads(id, company))
+      `)
+      .eq('id', touchpointId)
+      .single();
+
+    if (fetchError || !touchpointToUpdate) {
+      return NextResponse.json({ error: 'Touchpoint not found' }, { status: 404 });
+    }
+    
+    const touchpointCompany = touchpointToUpdate.lead?.company || touchpointToUpdate.district_contact?.district_lead?.company;
+
+    if (!touchpointCompany) {
+       return NextResponse.json({ error: 'Could not determine touchpoint company' }, { status: 400 });
+    }
+    
+    const touchpointCompanyNormalized = touchpointCompany.toLowerCase();
+
+    if (!allowedCompanies.includes(touchpointCompanyNormalized)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    
+    if (userRole === 'member' && touchpointCompanyNormalized !== 'avalern') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { data: touchpoint, error } = await supabase
