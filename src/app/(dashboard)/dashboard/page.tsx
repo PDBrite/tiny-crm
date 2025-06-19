@@ -630,7 +630,6 @@ export default function Dashboard() {
               <option value="email">Email</option>
               <option value="call">Call</option>
               <option value="linkedin_message">LinkedIn Message</option>
-              <option value="meeting">Meeting</option>
             </select>
           </div>
           
