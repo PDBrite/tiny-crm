@@ -289,7 +289,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Touchpoint not found' }, { status: 404 });
     }
     
-    const touchpointCompany = touchpointToUpdate.lead?.company || touchpointToUpdate.district_contact?.district_lead?.company;
+    // Type-safe access to company information - handle Supabase array relationships
+    let touchpointCompany: string | undefined;
+    
+    // Handle lead company (lead is returned as an array from Supabase)
+    const lead = Array.isArray((touchpointToUpdate as any).lead) 
+      ? (touchpointToUpdate as any).lead[0] 
+      : (touchpointToUpdate as any).lead;
+    
+    if (lead?.company) {
+      touchpointCompany = lead.company;
+    } else {
+      // Handle district_contact (also returned as an array from Supabase)
+      const districtContact = Array.isArray((touchpointToUpdate as any).district_contact) 
+        ? (touchpointToUpdate as any).district_contact[0] 
+        : (touchpointToUpdate as any).district_contact;
+      
+      if (districtContact?.district_lead) {
+        const districtLead = Array.isArray(districtContact.district_lead) 
+          ? districtContact.district_lead[0]
+          : districtContact.district_lead;
+        touchpointCompany = districtLead?.company;
+      }
+    }
 
     if (!touchpointCompany) {
        return NextResponse.json({ error: 'Could not determine touchpoint company' }, { status: 400 });

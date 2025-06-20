@@ -102,39 +102,130 @@ export interface Database {
       touchpoints: {
         Row: {
           id: string
-          lead_id: string
+          lead_id?: string
+          district_contact_id?: string
           type: string
           subject?: string
           content?: string
           scheduled_at?: string
           completed_at?: string
           outcome?: string
+          outcome_enum?: string
           created_at: string
           created_by?: string
         }
         Insert: {
           id?: string
-          lead_id: string
+          lead_id?: string
+          district_contact_id?: string
           type: string
           subject?: string
           content?: string
           scheduled_at?: string
           completed_at?: string
           outcome?: string
+          outcome_enum?: string
           created_at?: string
           created_by?: string
         }
         Update: {
           id?: string
           lead_id?: string
+          district_contact_id?: string
           type?: string
           subject?: string
           content?: string
           scheduled_at?: string
           completed_at?: string
           outcome?: string
+          outcome_enum?: string
           created_at?: string
           created_by?: string
+        }
+      }
+      district_leads: {
+        Row: {
+          id: string
+          district_name: string
+          county: string
+          company: string
+          status: string
+          campaign_id?: string
+          staff_directory_link?: string
+          notes?: string
+          assigned_to?: string
+          created_at: string
+          updated_at: string
+          last_contacted_at?: string
+        }
+        Insert: {
+          id?: string
+          district_name: string
+          county: string
+          company: string
+          status?: string
+          campaign_id?: string
+          staff_directory_link?: string
+          notes?: string
+          assigned_to?: string
+          created_at?: string
+          updated_at?: string
+          last_contacted_at?: string
+        }
+        Update: {
+          id?: string
+          district_name?: string
+          county?: string
+          company?: string
+          status?: string
+          campaign_id?: string
+          staff_directory_link?: string
+          notes?: string
+          assigned_to?: string
+          created_at?: string
+          updated_at?: string
+          last_contacted_at?: string
+        }
+      }
+      district_contacts: {
+        Row: {
+          id: string
+          district_lead_id: string
+          first_name: string
+          last_name: string
+          title: string
+          email?: string
+          phone?: string
+          status: string
+          notes?: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          district_lead_id: string
+          first_name: string
+          last_name: string
+          title: string
+          email?: string
+          phone?: string
+          status?: string
+          notes?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          district_lead_id?: string
+          first_name?: string
+          last_name?: string
+          title?: string
+          email?: string
+          phone?: string
+          status?: string
+          notes?: string
+          created_at?: string
+          updated_at?: string
         }
       }
     }
@@ -145,6 +236,8 @@ export interface Database {
 export type Lead = Database['public']['Tables']['leads']['Row']
 export type Campaign = Database['public']['Tables']['campaigns']['Row']
 export type Touchpoint = Database['public']['Tables']['touchpoints']['Row']
+export type DistrictLead = Database['public']['Tables']['district_leads']['Row']
+export type DistrictContact = Database['public']['Tables']['district_contacts']['Row']
 
 export type LeadWithCampaign = Lead & {
   campaign?: Campaign
@@ -157,6 +250,27 @@ export type LeadWithTouchpoints = Lead & {
 export type CampaignWithStats = Campaign & {
   lead_count?: number
   conversion_rate?: number
+}
+
+export type TouchpointWithLead = Touchpoint & {
+  lead?: Lead
+}
+
+export type TouchpointWithDistrictContact = Touchpoint & {
+  district_contact?: DistrictContact & {
+    district_lead?: DistrictLead
+  }
+}
+
+export type TouchpointFull = Touchpoint & {
+  lead?: Lead & {
+    campaign?: Campaign
+  }
+  district_contact?: DistrictContact & {
+    district_lead?: DistrictLead & {
+      campaign?: Campaign
+    }
+  }
 }
 
 // CSV import types
