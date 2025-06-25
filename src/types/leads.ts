@@ -98,6 +98,27 @@ export const STATUS_DESCRIPTIONS: Record<string, string> = {
   'not_interested': 'Said no, ghosted after multiple follow-ups, or clearly not a fit.'
 }
 
+// Helper function to add business days to a date (skipping weekends)
+function addBusinessDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  let addedDays = 0;
+  while (addedDays < days) {
+    result.setDate(result.getDate() + 1);
+    if (result.getDay() !== 0 && result.getDay() !== 6) { // Skip weekends (0 = Sunday, 6 = Saturday)
+      addedDays++;
+    }
+  }
+  return result;
+}
+
+// Helper function to replace template variables in strings
+function replaceTemplateVariables(template: string, data: Record<string, any>): string {
+  return template.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
+    const trimmedKey = key.trim();
+    return data[trimmedKey] !== undefined ? data[trimmedKey] : match;
+  });
+}
+
 export function scheduleTouchpointsForLead(
   ids: { leadId?: string; districtContactId?: string },
   campaignStartDate: Date,
