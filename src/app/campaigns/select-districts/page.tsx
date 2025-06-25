@@ -77,71 +77,56 @@ function SelectDistrictsContent() {
     }
   }, [selectedCompany, companyLoading, router])
 
-  // Fetch available districts
+  // Apply filters
   useEffect(() => {
-    const fetchDistricts = async () => {
+    const fetchFilteredDistricts = async () => {
       try {
         setLoading(true)
-        const { data, error } = await supabase
-          .from('district_leads')
-          .select(`
-            *,
-            district_contacts(id, first_name, last_name, title, email, status),
-            campaign:campaigns(id, name)
-          `)
-          .eq('company', selectedCompany)
-          .order('created_at', { ascending: false })
-
-        if (error) {
-          console.error('Error fetching districts:', error)
+        
+        // Build query parameters for API
+        const params = new URLSearchParams()
+        
+        if (searchTerm) {
+          params.append('search', searchTerm)
+        }
+        
+        if (selectedStatus) {
+          params.append('status', selectedStatus)
+        }
+        
+        if (selectedCounty) {
+          params.append('county', selectedCounty)
+        }
+        
+        // Use the API endpoint with filters
+        const response = await fetch(`/api/campaign-districts?${params.toString()}`)
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          console.error('Error fetching filtered districts from API:', response.status, errorData)
           return
         }
-
-        // Enrich with computed fields
-        const enriched = data.map(district => ({
-          ...district,
-          contacts_count: district.district_contacts?.length || 0,
-          valid_contacts_count: district.district_contacts?.filter((c: any) => c.status === 'Valid').length || 0,
-          touchpoints_count: 0
-        }))
-
-        setDistricts(enriched)
+        
+        const data = await response.json()
+        
+        // Set districts and filtered districts from API response
+        setDistricts(data.districts || [])
+        setFilteredDistricts(data.districts || [])
+        
+        // Reset to first page when filters change
+        setCurrentPage(1)
+        
       } catch (error) {
-        console.error('Error fetching districts:', error)
+        console.error('Error fetching filtered districts:', error)
       } finally {
         setLoading(false)
       }
     }
 
     if (selectedCompany === 'Avalern') {
-      fetchDistricts()
+      fetchFilteredDistricts()
     }
-  }, [selectedCompany])
-
-  // Apply filters
-  useEffect(() => {
-    let filtered = districts || []
-
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase()
-      filtered = filtered.filter(district => 
-        (district.district_name || '').toLowerCase().includes(searchLower) ||
-        (district.county || '').toLowerCase().includes(searchLower)
-      )
-    }
-
-    if (selectedStatus) {
-      filtered = filtered.filter(district => district.status === selectedStatus)
-    }
-
-    if (selectedCounty) {
-      filtered = filtered.filter(district => district.county === selectedCounty)
-    }
-
-    setFilteredDistricts(filtered)
-    // Reset to first page when filters change
-    setCurrentPage(1)
-  }, [districts, searchTerm, selectedStatus, selectedCounty])
+  }, [selectedCompany, searchTerm, selectedStatus, selectedCounty])
 
   // Pagination logic
   useEffect(() => {
@@ -201,6 +186,8 @@ function SelectDistrictsContent() {
 
     setCreating(true)
     try {
+      console.log(`Creating campaign "${campaignName}" with ${selectedDistricts.length} districts`);
+      
       // Create campaign
       const { data: campaign, error: campaignError } = await supabase
         .from('campaigns')
@@ -229,22 +216,31 @@ function SelectDistrictsContent() {
         return
       }
 
-      // Assign selected districts to the campaign and update status to actively_contacting
-      const { error: districtsError } = await supabase
-        .from('district_leads')
-        .update({ 
+      console.log(`Campaign created successfully with ID: ${campaign.id}`);
+      
+      // Assign selected districts to the campaign using the new API endpoint
+      console.log(`Assigning ${selectedDistricts.length} districts to campaign ${campaign.id}`);
+      const assignResponse = await fetch('/api/assign-districts-to-campaign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           campaign_id: campaign.id,
-          status: 'actively_contacting'
+          district_ids: selectedDistricts
         })
-        .in('id', selectedDistricts)
+      });
 
-      if (districtsError) {
-        console.error('Error assigning districts to campaign:', districtsError)
-        alert('Campaign created but failed to assign districts')
-        return
+      if (!assignResponse.ok) {
+        const errorData = await assignResponse.json();
+        console.error('Error assigning districts to campaign:', errorData);
+        alert(`Campaign created but failed to assign districts: ${errorData.details || errorData.error}`);
+        return;
       }
 
+      const assignResult = await assignResponse.json();
+      console.log('District assignment result:', assignResult);
+
       // Get all district contacts from selected districts
+      console.log(`Fetching district contacts for ${selectedDistricts.length} districts`);
       const { data: districtContacts, error: contactsError } = await supabase
         .from('district_contacts')
         .select('*')
@@ -257,6 +253,23 @@ function SelectDistrictsContent() {
         return
       }
 
+      console.log(`Found ${districtContacts?.length || 0} district contacts`);
+      
+      // Double-check that districts were properly assigned
+      const { data: verifyDistricts, error: verifyError } = await supabase
+        .from('district_leads')
+        .select('id, district_name, campaign_id')
+        .eq('campaign_id', campaign.id);
+        
+      if (verifyError) {
+        console.error('Error verifying district assignment:', verifyError);
+      } else {
+        console.log(`Verified ${verifyDistricts?.length || 0} districts assigned to campaign ${campaign.id}`);
+        if (verifyDistricts?.length === 0) {
+          console.warn('No districts found assigned to the campaign after assignment!');
+        }
+      }
+
       // Schedule touchpoints for all district contacts
       if (districtContacts && districtContacts.length > 0 && campaign.outreach_sequence?.steps) {
         const campaignStartDate = new Date(launchDate)
@@ -265,8 +278,8 @@ function SelectDistrictsContent() {
         // Map database steps to OutreachStep interface
         const outreachSteps: OutreachStep[] = dbSteps.map(step => ({
           id: step.id,
-          sequence_id: step.outreach_sequence_id,
-          step_order: step.step_number,
+          sequence_id: step.sequence_id || step.outreach_sequence_id,
+          step_order: step.step_order || step.step_number,
           type: step.type,
           name: step.name,
           content_link: step.content_link,
@@ -275,11 +288,12 @@ function SelectDistrictsContent() {
           updated_at: step.updated_at
         }))
         
+        console.log(`Using ${outreachSteps.length} outreach steps for scheduling touchpoints`);
         const touchpointsToCreate = []
         
         for (const contact of districtContacts) {
           const scheduledTouchpoints = scheduleTouchpointsForLead(
-            '', // No lead_id for district contacts
+            { districtContactId: contact.id },
             campaignStartDate,
             outreachSteps,
             {
@@ -307,17 +321,7 @@ function SelectDistrictsContent() {
             return true
           })
           
-          // Convert to district contact touchpoints (remove lead_id and add district_contact_id)
-          const districtTouchpoints = filteredTouchpoints.map(tp => ({
-            lead_id: null, // Explicitly set to null for district contacts
-            district_contact_id: contact.id,
-            type: tp.type,
-            subject: tp.subject,
-            content: tp.content,
-            scheduled_at: tp.scheduled_at
-          }))
-          
-          touchpointsToCreate.push(...districtTouchpoints)
+          touchpointsToCreate.push(...filteredTouchpoints)
         }
 
         if (touchpointsToCreate.length > 0) {
@@ -325,18 +329,43 @@ function SelectDistrictsContent() {
           console.log('Sample touchpoint (full data):', JSON.stringify(touchpointsToCreate[0], null, 2))
           console.log('All touchpoint types:', touchpointsToCreate.map(tp => tp.type))
           
-          const { data: insertedTouchpoints, error: touchpointsError } = await supabase
-            .from('touchpoints')
-            .insert(touchpointsToCreate)
-            .select()
-
-          if (touchpointsError) {
-            console.error('Error creating touchpoints:', touchpointsError)
-            console.error('Error details:', JSON.stringify(touchpointsError, null, 2))
-            console.error('Failed touchpoints data (first 3):', JSON.stringify(touchpointsToCreate.slice(0, 3), null, 2))
-            alert('Campaign created and districts assigned, but failed to schedule some touchpoints. Check console for details.')
+          // Use the API endpoint instead of direct Supabase access
+          console.log(`Creating ${touchpointsToCreate.length} touchpoints via API`)
+          
+          // Create touchpoints in smaller batches to avoid timeouts
+          const BATCH_SIZE = 50;
+          let successCount = 0;
+          
+          for (let i = 0; i < touchpointsToCreate.length; i += BATCH_SIZE) {
+            const batch = touchpointsToCreate.slice(i, i + BATCH_SIZE);
+            
+            try {
+              // Create touchpoints using the API endpoint
+              const response = await fetch('/api/touchpoints/batch', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ touchpoints: batch }),
+              });
+              
+              if (!response.ok) {
+                const errorData = await response.json();
+                console.error(`Error creating touchpoints batch ${i/BATCH_SIZE + 1}:`, errorData);
+              } else {
+                const result = await response.json();
+                successCount += result.count || 0;
+                console.log(`Successfully created batch ${i/BATCH_SIZE + 1} with ${result.count} touchpoints`);
+              }
+            } catch (batchError) {
+              console.error(`Error processing batch ${i/BATCH_SIZE + 1}:`, batchError);
+            }
+          }
+          
+          if (successCount < touchpointsToCreate.length) {
+            alert(`Campaign created and districts assigned, but only ${successCount} of ${touchpointsToCreate.length} touchpoints were scheduled. Check console for details.`);
           } else {
-            console.log(`Successfully created ${insertedTouchpoints?.length || 0} touchpoints`)
+            console.log(`Successfully created ${successCount} touchpoints`);
           }
         } else {
           console.log('No touchpoints to create - all contacts may be missing required contact information')
@@ -600,13 +629,18 @@ function SelectDistrictsContent() {
                   paginatedDistricts.map((district) => (
                     <tr 
                       key={district.id}
-                      className={`hover:bg-gray-50 ${selectedDistricts.includes(district.id) ? 'bg-purple-50' : ''}`}
+                      className={`hover:bg-gray-50 ${selectedDistricts.includes(district.id) ? 'bg-purple-50' : ''} cursor-pointer`}
+                      onClick={() => handleSelectDistrict(district.id)}
                     >
                       <td className="px-6 py-4">
                         <input
                           type="checkbox"
                           checked={selectedDistricts.includes(district.id)}
-                          onChange={() => handleSelectDistrict(district.id)}
+                          onChange={(e) => {
+                            // Stop propagation to prevent double-toggle when clicking directly on checkbox
+                            e.stopPropagation();
+                            handleSelectDistrict(district.id);
+                          }}
                           className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                         />
                       </td>

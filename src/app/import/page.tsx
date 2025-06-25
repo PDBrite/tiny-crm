@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import Papa from 'papaparse'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import { useCompany } from '../../contexts/CompanyContext'
 import { parseCSV, validateLeads, convertToLeadInsert, CSVLead } from '../../lib/csv-utils'
+import { supabase } from '../../lib/supabase'
 import { readDistrictCSVFile, processDistrictData, validateDistrictData } from '../../lib/district-csv-utils'
 import { ProcessedDistrictData, CSVDistrictData } from '../../types/districts'
-import { supabase } from '../../lib/supabase'
 import {
   Upload,
   FileText,
@@ -39,6 +40,10 @@ interface DistrictValidationResult {
   valid: ProcessedDistrictData[]
   invalid: { district: ProcessedDistrictData; errors: string[] }[]
   warnings: { district: ProcessedDistrictData; warnings: string[] }[]
+  duplicates: { 
+    districtDuplicates: { original: ProcessedDistrictData; duplicates: ProcessedDistrictData[] }[]
+    contactDuplicates: { district: string; contact: any; duplicateOf: any }[]
+  }
 }
 
 interface ImportResult {
@@ -46,6 +51,15 @@ interface ImportResult {
   failed: number
   duplicatesSkipped: number
   errors: string[]
+}
+
+// Define Campaign type
+interface Campaign {
+  id: string
+  name: string
+  company: string
+  launch_date?: string
+  status?: string
 }
 
 export default function ImportPage() {
@@ -59,7 +73,94 @@ export default function ImportPage() {
   const [previewDistricts, setPreviewDistricts] = useState<ProcessedDistrictData[]>([])
   const [showAllInvalid, setShowAllInvalid] = useState(false)
   const [showAllDuplicates, setShowAllDuplicates] = useState(false)
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
   
+  // Fetch campaigns for the dropdown
+  const fetchAvailableCampaigns = async () => {
+    try {
+      // Check if supabase client is initialized and environment variables are set
+      if (!supabase || !process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        console.warn('Supabase client not properly initialized. Check your environment variables.')
+        setCampaigns([]) // Set empty campaigns to avoid undefined errors
+        return
+      }
+      
+      // Make sure we have a company selected
+      if (!selectedCompany) {
+        setCampaigns([])
+        return
+      }
+      
+      // Add error handling and logging
+      console.log(`Fetching campaigns for company: ${selectedCompany}`)
+      
+      const { data, error } = await supabase
+        .from('campaigns')
+        .select('id, name, company, status')
+        .eq('company', selectedCompany)
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        console.error('Error fetching campaigns:', error)
+        // Continue with empty campaigns instead of returning
+        setCampaigns([])
+        return
+      }
+      
+      console.log(`Found ${data?.length || 0} campaigns for ${selectedCompany}`)
+      setCampaigns(data || [])
+    } catch (error) {
+      console.error('Error in fetchAvailableCampaigns:', error)
+      setCampaigns([]) // Set empty campaigns to avoid undefined errors
+    }
+  }
+  
+  // Function to detect if CSV is CraftyCode format
+  const detectCSVFormat = async (file: File): Promise<'craftycode' | 'avalern' | 'unknown'> => {
+    return new Promise((resolve) => {
+      Papa.parse(file, {
+        header: true,
+        preview: 3, // Read a few rows to check headers
+        complete: (results) => {
+          if (results.data.length === 0 || !results.meta.fields || results.meta.fields.length === 0) {
+            resolve('unknown')
+            return
+          }
+          
+          // Get headers from meta.fields which is more reliable
+          const headers = results.meta.fields.map(h => h.toLowerCase())
+          console.log('CSV Headers:', headers)
+          
+          // CraftyCode headers
+          const craftyCodeHeaders = ['first name', 'last name', 'email', 'online profile', 'phone number', 'linkedin url', 'company', 'city/state']
+          
+          // Avalern headers  
+          const avernHeaders = ['school district name', 'county', 'first name', 'last name', 'title', 'email address']
+          
+          // Check if it matches CraftyCode format - more flexible matching
+          const craftyCodeMatches = craftyCodeHeaders.filter(header => 
+            headers.some(h => h.includes(header.toLowerCase()) || header.toLowerCase().includes(h))
+          ).length
+          
+          // Check if it matches Avalern format - more flexible matching
+          const avernMatches = avernHeaders.filter(header => 
+            headers.some(h => h.includes(header.toLowerCase()) || header.toLowerCase().includes(h))
+          ).length
+          
+          console.log('Format matches - CraftyCode:', craftyCodeMatches, 'Avalern:', avernMatches)
+          
+          if (craftyCodeMatches >= 3 && craftyCodeMatches > avernMatches) {
+            resolve('craftycode')
+          } else if (avernMatches >= 3 && avernMatches >= craftyCodeMatches) {
+            resolve('avalern')
+          } else {
+            resolve('unknown')
+          }
+        },
+        error: () => resolve('unknown')
+      })
+    })
+  }
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -79,6 +180,14 @@ export default function ImportPage() {
       processFile(selectedFile)
     }
   }
+  
+  // Fetch campaigns when component mounts or when company changes
+  useEffect(() => {
+    // Only fetch if we're in the browser and have a selected company
+    if (typeof window !== 'undefined' && selectedCompany) {
+      fetchAvailableCampaigns()
+    }
+  }, [selectedCompany, /* eslint-disable-line react-hooks/exhaustive-deps */])
 
   const processFile = async (file: File) => {
     setIsProcessing(true)
@@ -86,9 +195,46 @@ export default function ImportPage() {
     try {
       console.log('Processing file:', file.name, 'Size:', file.size, 'Type:', file.type)
       
+      // Detect CSV format to prevent wrong company imports
+      const csvFormat = await detectCSVFormat(file)
+      console.log('Detected CSV format:', csvFormat)
+      
+      // Only enforce format checking if we're confident about the format
+      if (csvFormat === 'craftycode' && selectedCompany === 'Avalern') {
+        setValidationResult({
+          valid: [],
+          invalid: [{
+            lead: { firstName: '', lastName: '', email: '' },
+            errors: ['This appears to be a CraftyCode spreadsheet format. Please upload an Avalern district CSV file with columns: School District Name, County, First Name, Last Name, Title, Email Address.'],
+            rowIndex: 1
+          }],
+          duplicates: []
+        })
+        setPreviewLeads([])
+        setIsProcessing(false)
+        return
+      }
+      
+      // Prevent importing Avalern spreadsheets when CraftyCode is selected
+      if (csvFormat === 'avalern' && selectedCompany === 'CraftyCode') {
+        setValidationResult({
+          valid: [],
+          invalid: [{
+            lead: { firstName: '', lastName: '', email: '' },
+            errors: ['This appears to be an Avalern district spreadsheet format. Please upload a CraftyCode leads CSV file with columns: First Name, Last Name, Email, Company, etc.'],
+            rowIndex: 1
+          }],
+          duplicates: []
+        })
+        setPreviewLeads([])
+        setIsProcessing(false)
+        return
+      }
+      
       if (selectedCompany === 'Avalern') {
         // Process district CSV for Avalern
         try {
+          // Read CSV file and extract data
           const csvData = await readDistrictCSVFile(file)
           console.log('Parsed district CSV:', csvData.length, 'rows')
           
@@ -96,6 +242,10 @@ export default function ImportPage() {
             throw new Error('No valid district data found in CSV. Please check the file format.')
           }
           
+          // Get any warnings from the CSV parsing (rows with issues)
+          const warnings = (csvData as any).warnings || []
+          
+          // Process the valid rows into districts
           const processedDistricts = processDistrictData(csvData)
           console.log('Processed districts:', processedDistricts.length)
           
@@ -103,10 +253,72 @@ export default function ImportPage() {
             throw new Error('No districts could be processed from the CSV data. Please check the required columns: School District Name, County, First Name, Last Name, Title, Email Address.')
           }
           
-          const { valid, invalid, warnings } = validateDistrictData(processedDistricts)
-          console.log('Validation results - Valid:', valid.length, 'Invalid:', invalid.length, 'Warnings:', warnings.length)
+          // Validate the processed districts
+          const validationResult = validateDistrictData(processedDistricts)
+          const { valid, invalid, warnings: validationWarnings, duplicates } = validationResult
           
-          setDistrictValidationResult({ valid, invalid, warnings: warnings || [] })
+          console.log('Validation results - Valid:', valid.length, 'Invalid:', invalid.length, 'Warnings:', validationWarnings.length)
+          console.log('Duplicate results - District duplicates:', duplicates.districtDuplicates.length, 'Contact duplicates:', duplicates.contactDuplicates.length)
+          
+          // Combine CSV warnings with validation warnings
+          const allWarnings = [...validationWarnings]
+          
+          // Process CSV warnings to include row numbers and district names
+          if (warnings.length > 0) {
+            // Group warnings by district if possible
+            const warningsByDistrict = new Map<string, {district: string, rows: string[], issues: string[]}>()
+            
+            warnings.forEach((warning: string) => {
+              // Extract row number and district name if possible
+              const rowMatch = warning.match(/^Row (\d+):/)
+              const rowNum = rowMatch ? rowMatch[1] : 'Unknown'
+              
+              // Try to find the district name from the original CSV data
+              let districtName = 'Unknown'
+              let warningText = warning
+              
+              if (rowMatch && csvData[parseInt(rowNum) - 2]) { // -2 because row numbers start at 1 and header is row 1
+                const rowData = csvData[parseInt(rowNum) - 2]
+                districtName = rowData['School District Name'] || 'Unknown'
+                // Keep the full warning text with row number
+              }
+              
+              // Group by district name
+              if (!warningsByDistrict.has(districtName)) {
+                warningsByDistrict.set(districtName, {
+                  district: districtName,
+                  rows: [],
+                  issues: []
+                })
+              }
+              
+              const districtWarnings = warningsByDistrict.get(districtName)!
+              districtWarnings.rows.push(rowNum)
+              districtWarnings.issues.push(warningText)
+            })
+            
+            // Convert grouped warnings to district warnings
+            warningsByDistrict.forEach((warningGroup) => {
+              allWarnings.push({
+                district: { 
+                  districtName: warningGroup.district, 
+                  county: 'Various', 
+                  contacts: [] 
+                },
+                warnings: warningGroup.issues.map(issue => issue)
+              })
+            })
+          }
+          
+          // Set the validation result with all warnings
+          setDistrictValidationResult({ 
+            valid, 
+            invalid, 
+            warnings: allWarnings, 
+            duplicates 
+          })
+          
+          // Show preview of valid districts
           setPreviewDistricts(valid.slice(0, 3)) // Show first 3 districts
           
           // Clear individual lead results
@@ -115,9 +327,25 @@ export default function ImportPage() {
           
         } catch (districtError) {
           console.error('District processing error:', districtError)
-          // If district processing fails, try as regular leads CSV
-          console.log('District processing failed, trying as regular leads CSV...')
-          await processAsLeads(file)
+          
+          // Show error in validation UI instead of alert
+          const errorMessage = districtError instanceof Error ? districtError.message : 'Unknown error'
+          
+          // For Avalern, we should use the district validation result UI instead of lead validation
+          setDistrictValidationResult({
+            valid: [],
+            invalid: [{
+              district: { districtName: 'Error', county: 'Unknown', contacts: [] },
+              errors: [`Error processing district CSV: ${errorMessage}`]
+            }],
+            warnings: [],
+            duplicates: { districtDuplicates: [], contactDuplicates: [] }
+          })
+          
+          // Clear any lead results
+          setValidationResult(null)
+          setPreviewLeads([])
+          setPreviewDistricts([])
         }
         
       } else {
@@ -128,112 +356,157 @@ export default function ImportPage() {
     } catch (error) {
       console.error('Detailed error processing file:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      alert(`Error processing CSV file: ${errorMessage}\n\nPlease check the format and try again.`)
+      
+      // Show error in UI instead of alert
+      setValidationResult({
+        valid: [],
+        invalid: [{
+          lead: { firstName: '', lastName: '', email: '' },
+          errors: [`Error processing CSV file: ${errorMessage}`],
+          rowIndex: 1
+        }],
+        duplicates: []
+      })
+      setPreviewLeads([])
     } finally {
       setIsProcessing(false)
     }
   }
 
-  const processAsLeads = async (file: File) => {
-    const leads = await parseCSV(file)
-    console.log('Parsed leads:', leads.length, 'Sample:', leads[0])
-    
-    if (leads.length === 0) {
-      throw new Error('No valid lead data found in CSV. Please check the file format.')
-    }
-    
-    // Validate leads
-    const { valid, invalid } = validateLeads(leads)
-    console.log('Validation results - Valid:', valid.length, 'Invalid:', invalid.length)
-    
-    // Check for existing emails in database - using batching to avoid URL length limits
-    const emailsToCheck = valid.map(lead => lead.email.toLowerCase())
-    
-    if (emailsToCheck.length === 0) {
+    const processAsLeads = async (file: File) => {
+    try {
+      const leads = await parseCSV(file)
+      console.log('Parsed leads:', leads.length, 'Sample:', leads[0])
+      
+      if (leads.length === 0) {
+        // Still show empty validation result instead of throwing
+        setValidationResult({
+          valid: [],
+          invalid: [],
+          duplicates: []
+        })
+        setPreviewLeads([])
+        return
+      }
+      
+      // Validate leads
+      const { valid, invalid } = validateLeads(leads)
+      console.log('Validation results - Valid:', valid.length, 'Invalid:', invalid.length)
+      
+      // Check for existing emails in database - using batching to avoid URL length limits
+      const emailsToCheck = valid.map(lead => lead.email.toLowerCase())
+      
+      if (emailsToCheck.length === 0) {
+        setValidationResult({
+          valid: [],
+          invalid,
+          duplicates: []
+        })
+        setPreviewLeads([])
+        return
+      }
+      
+      console.log('Checking', emailsToCheck.length, 'emails for duplicates...')
+      
+      // Batch emails into smaller chunks to avoid URL length limits
+      const batchSize = 50 // Check 50 emails at a time
+      const allExistingLeads: any[] = []
+      
+      for (let i = 0; i < emailsToCheck.length; i += batchSize) {
+        const batch = emailsToCheck.slice(i, i + batchSize)
+        console.log(`Checking batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(emailsToCheck.length / batchSize)} (${batch.length} emails)`)
+        
+        const { data: batchExistingLeads, error: dbError } = await supabase
+          .from('leads')
+          .select('email, first_name, last_name')
+          .eq('company', selectedCompany) // Filter by company
+          .in('email', batch)
+        
+        if (dbError) {
+          console.error('Database error in batch:', dbError)
+          // Instead of throwing, show error in validation result
+          setValidationResult({
+            valid: [],
+            invalid: [{
+              lead: { firstName: '', lastName: '', email: '' },
+              errors: [`Database error checking for duplicates: ${dbError.message}`],
+              rowIndex: 1
+            }],
+            duplicates: []
+          })
+          setPreviewLeads([])
+          return
+        }
+        
+        if (batchExistingLeads) {
+          allExistingLeads.push(...batchExistingLeads)
+        }
+      }
+      
+      console.log('Total existing leads found:', allExistingLeads.length)
+      
+      // Create duplicate info with existing lead names
+      const existingEmailMap = new Map(
+        allExistingLeads.map(lead => [
+          lead.email?.toLowerCase(), 
+          `${lead.first_name || ''} ${lead.last_name || ''}`.trim()
+        ])
+      )
+      
+      const duplicates: { email: string; existingLeadName?: string; rowIndex: number; lead: CSVLead }[] = []
+      const deduplicated: CSVLead[] = []
+      
+      // We need to track the original row indices from the full leads array
+      const validLeadRowMap = new Map<string, number>()
+      leads.forEach((lead, index) => {
+        if (lead.email) {
+          validLeadRowMap.set(lead.email.toLowerCase(), index + 2) // +2 because CSV rows start at 2 (1 is header)
+        }
+      })
+      
+      valid.forEach((lead) => {
+        const emailLower = lead.email.toLowerCase()
+        if (existingEmailMap.has(emailLower)) {
+          duplicates.push({
+            email: lead.email,
+            existingLeadName: existingEmailMap.get(emailLower),
+            rowIndex: validLeadRowMap.get(emailLower) || 0,
+            lead
+          })
+        } else {
+          deduplicated.push(lead)
+        }
+      })
+      
+      console.log('Deduplication results - Clean:', deduplicated.length, 'Duplicates:', duplicates.length)
+      
+      setValidationResult({
+        valid: deduplicated,
+        invalid,
+        duplicates
+      })
+      
+      // Set preview leads (first 5)
+      setPreviewLeads(deduplicated.slice(0, 5))
+      
+      // Clear district results
+      setDistrictValidationResult(null)
+      setPreviewDistricts([])
+      
+    } catch (parseError) {
+      console.error('Error parsing CSV as leads:', parseError)
+      // Show validation result with just the error information
       setValidationResult({
         valid: [],
-        invalid,
+        invalid: [{
+          lead: { firstName: '', lastName: '', email: '' },
+          errors: [`CSV parsing error: ${parseError instanceof Error ? parseError.message : 'Unknown parsing error'}`],
+          rowIndex: 1
+        }],
         duplicates: []
       })
       setPreviewLeads([])
-      return
     }
-    
-    console.log('Checking', emailsToCheck.length, 'emails for duplicates...')
-    
-    // Batch emails into smaller chunks to avoid URL length limits
-    const batchSize = 50 // Check 50 emails at a time
-    const allExistingLeads: any[] = []
-    
-    for (let i = 0; i < emailsToCheck.length; i += batchSize) {
-      const batch = emailsToCheck.slice(i, i + batchSize)
-      console.log(`Checking batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(emailsToCheck.length / batchSize)} (${batch.length} emails)`)
-      
-      const { data: batchExistingLeads, error: dbError } = await supabase
-        .from('leads')
-        .select('email, first_name, last_name')
-        .eq('company', selectedCompany) // Filter by company
-        .in('email', batch)
-      
-      if (dbError) {
-        console.error('Database error in batch:', dbError)
-        throw new Error(`Failed to check for duplicate emails: ${dbError.message}`)
-      }
-      
-      if (batchExistingLeads) {
-        allExistingLeads.push(...batchExistingLeads)
-      }
-    }
-    
-    console.log('Total existing leads found:', allExistingLeads.length)
-    
-    // Create duplicate info with existing lead names
-    const existingEmailMap = new Map(
-      allExistingLeads.map(lead => [
-        lead.email?.toLowerCase(), 
-        `${lead.first_name || ''} ${lead.last_name || ''}`.trim()
-      ])
-    )
-    
-    const duplicates: { email: string; existingLeadName?: string; rowIndex: number; lead: CSVLead }[] = []
-    const deduplicated: CSVLead[] = []
-    
-    // We need to track the original row indices from the full leads array
-    const validLeadRowMap = new Map<string, number>()
-    leads.forEach((lead, index) => {
-      if (lead.email) {
-        validLeadRowMap.set(lead.email.toLowerCase(), index + 2) // +2 because CSV rows start at 2 (1 is header)
-      }
-    })
-    
-    valid.forEach((lead) => {
-      const emailLower = lead.email.toLowerCase()
-      if (existingEmailMap.has(emailLower)) {
-        duplicates.push({
-          email: lead.email,
-          existingLeadName: existingEmailMap.get(emailLower),
-          rowIndex: validLeadRowMap.get(emailLower) || 0,
-          lead
-        })
-      } else {
-        deduplicated.push(lead)
-      }
-    })
-    
-    console.log('Deduplication results - Clean:', deduplicated.length, 'Duplicates:', duplicates.length)
-    
-    setValidationResult({
-      valid: deduplicated,
-      invalid,
-      duplicates
-    })
-    
-    // Set preview leads (first 5)
-    setPreviewLeads(deduplicated.slice(0, 5))
-    
-    // Clear district results
-    setDistrictValidationResult(null)
-    setPreviewDistricts([])
   }
 
   const handleImport = async () => {
@@ -244,6 +517,8 @@ export default function ImportPage() {
     }
   }
 
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>('')
+  
   const handleDistrictImport = async () => {
     if (!districtValidationResult) return
     
@@ -257,7 +532,8 @@ export default function ImportPage() {
         },
         body: JSON.stringify({
           districts: districtValidationResult.valid,
-          company: selectedCompany
+          company: selectedCompany,
+          campaign_id: selectedCampaignId || undefined
         }),
       })
 
@@ -399,22 +675,71 @@ Robert,Kim,rkim@compass.com,https://www.zillow.com/profile/robertkim,(818) 555-0
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {selectedCompany === 'Avalern' 
-                ? 'Import District Leads for Avalern' 
-                : 'Import Leads for CraftyCode'
-              }
-            </h1>
-            <p className="text-gray-600 mt-1">
-              {selectedCompany === 'Avalern'
-                ? 'Upload CSV files to import school district leads for Avalern'
-                : 'Upload CSV files to import real estate leads for CraftyCode'
-              }
-            </p>
-          </div>
+        {/* Action Buttons - Moved to Very Top */}
+        <div className="flex items-center justify-end space-x-3">
+          {/* Action Buttons - All aligned to the right */}
+          
+                      {/* Campaign Selector (only for Avalern districts) */}
+            {selectedCompany === 'Avalern' && districtValidationResult && districtValidationResult.valid.length > 0 && (
+              <select
+                value={selectedCampaignId}
+                onChange={(e) => setSelectedCampaignId(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                disabled={isProcessing}
+              >
+                <option value="">No Campaign (Optional)</option>
+                {campaigns && campaigns.length > 0 ? (
+                  campaigns.map((campaign) => (
+                    <option key={campaign.id} value={campaign.id}>
+                      {campaign.name}
+                    </option>
+                  ))
+                ) : (
+                  <option value="" disabled>No campaigns available</option>
+                )}
+              </select>
+            )}
+            
+            {/* Import Button - Now with purple color */}
+            {(validationResult && validationResult.valid.length > 0) || (districtValidationResult && districtValidationResult.valid.length > 0) ? (
+              <button
+                onClick={handleImport}
+                disabled={isProcessing}
+                className="flex items-center px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isProcessing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import {validationResult ? `${validationResult.valid.length} Leads` : `${districtValidationResult?.valid.length || 0} Districts`}
+                    {selectedCompany === 'Avalern' && selectedCampaignId ? ` to ${campaigns.find(c => c.id === selectedCampaignId)?.name || 'Campaign'}` : ''}
+                  </>
+                )}
+              </button>
+            ) : null}
+          
+          {/* Start Over Button */}
+          {(validationResult || districtValidationResult) && (
+            <button
+              onClick={() => {
+                setValidationResult(null)
+                setDistrictValidationResult(null)
+                setFile(null)
+                setPreviewLeads([])
+                setPreviewDistricts([])
+              }}
+              className="flex items-center px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Start Over
+            </button>
+          )}
+          
+          {/* Download Sample Button */}
           <button
             onClick={downloadSampleCSV}
             className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -422,6 +747,22 @@ Robert,Kim,rkim@compass.com,https://www.zillow.com/profile/robertkim,(818) 555-0
             <Download className="h-4 w-4 mr-2" />
             Download Sample CSV
           </button>
+        </div>
+
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {selectedCompany === 'Avalern' 
+              ? 'Import District Leads for Avalern' 
+              : 'Import Leads for CraftyCode'
+            }
+          </h1>
+          <p className="text-gray-600 mt-1">
+            {selectedCompany === 'Avalern'
+              ? 'Upload CSV files to import school district leads for Avalern'
+              : 'Upload CSV files to import real estate leads for CraftyCode'
+            }
+          </p>
         </div>
 
         {/* Upload Section */}
@@ -476,7 +817,7 @@ Robert,Kim,rkim@compass.com,https://www.zillow.com/profile/robertkim,(818) 555-0
                 <h4 className="font-medium text-purple-900 mb-2">Expected District CSV Format:</h4>
                 <div className="text-sm text-purple-800 space-y-1">
                   <p><strong>Required columns:</strong> School District Name, County, First Name, Last Name, Title, Email Address</p>
-                  <p><strong>Optional columns:</strong> Phone Number, Staff Directory Link, Status, Assigned, Notes</p>
+                  <p><strong>Optional columns:</strong> Phone Number, State (defaults to California), Staff Directory Link, Status, Assigned, Notes</p>
                   <p><strong>Multiple contacts per district:</strong> Use separate rows for each contact in the same district</p>
                 </div>
               </div>
@@ -578,27 +919,7 @@ Robert,Kim,rkim@compass.com,https://www.zillow.com/profile/robertkim,(818) 555-0
               </div>
             )}
 
-            {/* Import Button */}
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => {
-                  setValidationResult(null)
-                  setFile(null)
-                  setPreviewLeads([])
-                }}
-                className="px-6 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Start Over
-              </button>
-              
-              <button
-                onClick={handleImport}
-                disabled={isProcessing || validationResult.valid.length === 0}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isProcessing ? 'Importing...' : `Import ${validationResult.valid.length} Real Estate Leads`}
-              </button>
-            </div>
+
 
             {/* Issues */}
             {(validationResult.invalid.length > 0 || validationResult.duplicates.length > 0) && (
@@ -717,24 +1038,101 @@ Robert,Kim,rkim@compass.com,https://www.zillow.com/profile/robertkim,(818) 555-0
             {/* Warnings */}
             {districtValidationResult.warnings && districtValidationResult.warnings.length > 0 && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Districts with Contact Issues</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Districts with Issues</h3>
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <p className="text-sm text-yellow-800 mb-3">
-                    The following districts will be imported but have some contacts with issues:
+                    The following districts will be imported but have some rows with issues:
                   </p>
-                  <div className="space-y-3">
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
                     {districtValidationResult.warnings.map((item, index) => (
                       <div key={index} className="border-b border-yellow-200 pb-2 last:border-b-0">
-                        <p className="font-medium text-yellow-800">{item.district.districtName} ({item.district.county})</p>
+                        <p className="font-medium text-yellow-800">
+                          {item.district.districtName} 
+                          {item.district.county !== 'Various' ? ` (${item.district.county})` : ''}
+                        </p>
                         <ul className="text-sm text-yellow-700 mt-1 list-disc list-inside ml-4">
-                          {item.warnings.map((warning, warningIndex) => (
-                            <li key={warningIndex}>{warning}</li>
-                          ))}
+                          {item.warnings.map((warning, warningIndex) => {
+                            // Extract row number from warning if it exists
+                            const rowMatch = typeof warning === 'string' ? warning.match(/^Row (\d+):/) : null
+                            const formattedWarning = rowMatch 
+                              ? <span><strong>Row {rowMatch[1]}:</strong> {warning.replace(/^Row \d+: /, '')}</span>
+                              : warning
+                              
+                            return <li key={warningIndex}>{formattedWarning}</li>
+                          })}
                         </ul>
                       </div>
                     ))}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Duplicates */}
+            {districtValidationResult.duplicates && 
+             (districtValidationResult.duplicates.districtDuplicates.length > 0 || 
+              districtValidationResult.duplicates.contactDuplicates.length > 0) && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Duplicate Detection Results</h3>
+                
+                {/* District Duplicates */}
+                {districtValidationResult.duplicates.districtDuplicates.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="font-medium text-orange-800 mb-3">
+                      Duplicate Districts ({districtValidationResult.duplicates.districtDuplicates.length})
+                    </h4>
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                      <p className="text-sm text-orange-800 mb-3">
+                        The following districts appear multiple times in your CSV:
+                      </p>
+                      <div className="space-y-3">
+                        {districtValidationResult.duplicates.districtDuplicates.map((item, index) => (
+                          <div key={index} className="border-b border-orange-200 pb-2 last:border-b-0">
+                            <p className="font-medium text-orange-800">
+                              {item.original.districtName} ({item.original.county})
+                            </p>
+                            <p className="text-sm text-orange-700">
+                              Appears {item.duplicates.length + 1} time(s) in the CSV. Only the first occurrence will be processed.
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Contact Duplicates */}
+                {districtValidationResult.duplicates.contactDuplicates.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-orange-800 mb-3">
+                      Duplicate Contacts ({districtValidationResult.duplicates.contactDuplicates.length})
+                    </h4>
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                      <p className="text-sm text-orange-800 mb-3">
+                        The following contacts appear to be duplicates (same name, email, or phone):
+                      </p>
+                      <div className="space-y-3 max-h-60 overflow-y-auto">
+                        {districtValidationResult.duplicates.contactDuplicates.slice(0, 10).map((item, index) => (
+                          <div key={index} className="border-b border-orange-200 pb-2 last:border-b-0">
+                            <p className="font-medium text-orange-800">
+                              {item.contact.firstName} {item.contact.lastName} 
+                              <span className="text-orange-600"> ({item.district})</span>
+                            </p>
+                            <p className="text-sm text-orange-700">
+                              Duplicate of: {item.duplicateOf.contact.firstName} {item.duplicateOf.contact.lastName} 
+                              <span className="text-orange-600"> ({item.duplicateOf.district})</span>
+                            </p>
+                          </div>
+                        ))}
+                        {districtValidationResult.duplicates.contactDuplicates.length > 10 && (
+                          <p className="text-sm text-orange-700 italic">
+                            ... and {districtValidationResult.duplicates.contactDuplicates.length - 10} more duplicates
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -791,54 +1189,40 @@ Robert,Kim,rkim@compass.com,https://www.zillow.com/profile/robertkim,(818) 555-0
               </div>
             )}
 
-            {/* Import Button */}
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => {
-                  setDistrictValidationResult(null)
-                  setFile(null)
-                  setPreviewDistricts([])
-                }}
-                className="px-6 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Start Over
-              </button>
-              
-              <button
-                onClick={handleImport}
-                disabled={isProcessing || districtValidationResult.valid.length === 0}
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isProcessing ? 'Importing...' : `Import ${districtValidationResult.valid.length} Districts`}
-              </button>
-            </div>
 
-            {/* Issues */}
-            {districtValidationResult.invalid.length > 0 && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Issues Found</h3>
-                
-                <div className="mb-6">
-                  <h4 className="font-medium text-red-800 mb-2">
-                    Invalid Districts ({districtValidationResult.invalid.length})
-                  </h4>
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <div className="space-y-3">
-                      {districtValidationResult.invalid.map((item, index) => (
-                        <div key={index} className="border-b border-red-200 pb-2 last:border-b-0">
-                          <p className="font-medium text-red-800">{item.district.districtName} ({item.district.county})</p>
-                          <ul className="text-sm text-red-700 mt-1 list-disc list-inside">
-                            {item.errors.map((error, errorIndex) => (
-                              <li key={errorIndex}>{error}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
+
+                          {/* Issues */}
+              {districtValidationResult.invalid.length > 0 && (
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Issues Found</h3>
+                  
+                  <div className="mb-6">
+                    <h4 className="font-medium text-red-800 mb-2">
+                      Invalid Districts ({districtValidationResult.invalid.length})
+                    </h4>
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {districtValidationResult.invalid.map((item, index) => (
+                          <div key={index} className="border-b border-red-200 pb-2 last:border-b-0">
+                            <p className="font-medium text-red-800">{item.district.districtName} ({item.district.county})</p>
+                            <ul className="text-sm text-red-700 mt-1 list-disc list-inside ml-4">
+                              {item.errors.map((error, errorIndex) => {
+                                // Extract row number from error if it exists
+                                const rowMatch = typeof error === 'string' ? error.match(/^Row (\d+):/) : null
+                                const formattedError = rowMatch 
+                                  ? <span><strong>Row {rowMatch[1]}:</strong> {error.replace(/^Row \d+: /, '')}</span>
+                                  : error
+                                  
+                                return <li key={errorIndex}>{formattedError}</li>
+                              })}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
         )}
       </div>

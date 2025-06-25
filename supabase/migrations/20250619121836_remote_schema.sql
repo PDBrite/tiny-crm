@@ -1,8 +1,7 @@
-alter table "public"."campaigns" alter column "status" drop default;
-
-alter type "public"."campaign_status_type" rename to "campaign_status_type__old_version_to_be_dropped";
-
-create type "public"."campaign_status_type" as enum ('active', 'queued', 'completed', 'paused');
+-- Skip the campaign status changes as we'll handle them in a separate migration
+-- alter table "public"."campaigns" alter column "status" drop default;
+-- alter type "public"."campaign_status_type" rename to "campaign_status_type__old_version_to_be_dropped";
+-- create type "public"."campaign_status_type" as enum ('active', 'queued', 'completed', 'paused');
 
 create table "public"."app_users" (
     "id" uuid not null default uuid_generate_v4(),
@@ -28,11 +27,10 @@ create table "public"."user_company_access" (
 );
 
 
-alter table "public"."campaigns" alter column status type "public"."campaign_status_type" using status::text::"public"."campaign_status_type";
-
-alter table "public"."campaigns" alter column "status" set default 'active'::campaign_status_type;
-
-drop type "public"."campaign_status_type__old_version_to_be_dropped";
+-- Skip the campaign status changes as we'll handle them in a separate migration
+-- alter table "public"."campaigns" alter column status type "public"."campaign_status_type" using status::text::"public"."campaign_status_type";
+-- alter table "public"."campaigns" alter column "status" set default 'active'::campaign_status_type;
+-- drop type "public"."campaign_status_type__old_version_to_be_dropped";
 
 CREATE UNIQUE INDEX app_users_email_key ON public.app_users USING btree (email);
 

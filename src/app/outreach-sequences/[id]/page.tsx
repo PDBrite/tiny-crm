@@ -22,6 +22,7 @@ interface OutreachStep {
   name?: string
   content_link?: string
   day_offset: number
+  days_after_previous?: number
   created_at: string
 }
 
@@ -208,6 +209,11 @@ export default function OutreachSequenceDetailPage() {
                             <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full">
                               Day {step.day_offset}
                             </span>
+                            {step.days_after_previous !== undefined && step.step_order > 1 && (
+                              <span className="ml-2 bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded-full">
+                                +{step.days_after_previous} days after previous
+                              </span>
+                            )}
                             <span className="ml-2 text-sm font-medium text-gray-900">
                               Step {step.step_order}
                             </span>

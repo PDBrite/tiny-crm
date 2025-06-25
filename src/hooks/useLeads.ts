@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { createClientComponentClient } from '../lib/supabase'
 import { Lead, Campaign, Touchpoint, SyncResults, STATUS_DISPLAY_MAP } from '../types/leads'
 import { DistrictContact } from '../types/districts'
 import { useCompany } from '../contexts/CompanyContext'
 
 export function useLeads(selectedCompany: string, districtFilter?: string | null) {
+  const supabase = createClientComponentClient()
   const [leads, setLeads] = useState<Lead[]>([])
   const [districtContacts, setDistrictContacts] = useState<DistrictContact[]>([])
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([])
@@ -46,17 +47,25 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
   // Fetch campaigns
   const fetchCampaigns = async () => {
     try {
-      const { data: campaignsData, error } = await supabase
-        .from('campaigns')
-        .select('*')
-        .eq('company', selectedCompany)
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.error('Error fetching campaigns:', error)
+      // Skip if no company selected yet
+      if (!selectedCompany) {
+        console.log('No company selected yet, skipping campaign fetch')
         return
       }
-
+      
+      console.log('Fetching campaigns for company:', selectedCompany)
+      
+      // Use the API endpoint instead of direct supabase access
+      const response = await fetch(`/api/campaigns?company=${selectedCompany}`)
+      
+      if (!response.ok) {
+        console.error('Error fetching campaigns from API:', response.status)
+        return
+      }
+      
+      const campaignsData = await response.json()
+      console.log('Fetched campaigns:', campaignsData.length)
+      
       setCampaigns(campaignsData || [])
     } catch (error) {
       console.error('Error fetching campaigns:', error)
@@ -144,63 +153,27 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
   const fetchDistrictContacts = async () => {
     try {
       setLoading(true)
+      console.log('Fetching district contacts for company:', selectedCompany)
       
-      let query = supabase
-        .from('district_contacts')
-        .select(`
-          *,
-          district_lead:district_leads!inner(
-            id,
-            district_name,
-            county,
-            company,
-            status,
-            campaign_id,
-            campaign:campaigns(id, name, company)
-          )
-        `)
-        .eq('district_lead.company', selectedCompany)
-
-      // Add district filter if provided
+      // Build query parameters
+      const params = new URLSearchParams()
       if (districtFilter) {
-        query = query.eq('district_lead_id', districtFilter)
+        params.append('district_id', districtFilter)
       }
-
-      const { data: contactsData, error: contactsError } = await query.order('created_at', { ascending: false })
-
-      if (contactsError) {
-        console.error('Error fetching district contacts:', contactsError)
+      
+      // Use the API endpoint instead of direct supabase access
+      const response = await fetch(`/api/district-contacts?${params.toString()}`)
+      
+      if (!response.ok) {
+        console.error('Error fetching district contacts from API:', response.status)
         return
       }
-
-      // Fetch touchpoints count for each contact
-      const contactsWithCounts = await Promise.all(
-        (contactsData || []).map(async (contact) => {
-          // Get completed touchpoints count
-          const { count: completedCount } = await supabase
-            .from('touchpoints')
-            .select('*', { count: 'exact', head: true })
-            .eq('district_contact_id', contact.id)
-            .not('completed_at', 'is', null)
-            .not('outcome', 'is', null)
-          
-          // Get scheduled touchpoints count (not completed yet)
-          const { count: scheduledCount } = await supabase
-            .from('touchpoints')
-            .select('*', { count: 'exact', head: true })
-            .eq('district_contact_id', contact.id)
-            .is('completed_at', null)
-            .not('scheduled_at', 'is', null)
-          
-          return {
-            ...contact,
-            touchpoints_count: completedCount || 0,
-            scheduled_touchpoints_count: scheduledCount || 0
-          }
-        })
-      )
-
-      setDistrictContacts(contactsWithCounts)
+      
+      const data = await response.json()
+      console.log('Fetched district contacts:', data.contacts?.length || 0)
+      
+      // The contacts are already enriched with touchpoint counts from the API
+      setDistrictContacts(data.contacts || [])
     } catch (error) {
       console.error('Error fetching district contacts:', error)
     } finally {

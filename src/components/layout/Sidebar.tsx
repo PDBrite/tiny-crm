@@ -47,6 +47,13 @@ export default function Sidebar() {
   const pathname = usePathname()
   const { selectedCompany, setSelectedCompany, availableCompanies } = useCompany()
 
+  // Debug logging
+  console.log('Sidebar Debug:', {
+    selectedCompany,
+    availableCompanies,
+    pathname
+  })
+
   const handleSignOut = async () => {
     await signOut({ redirect: true, callbackUrl: "/login" });
   };

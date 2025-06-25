@@ -33,18 +33,15 @@ export interface DistrictContact {
   last_name: string
   title: string
   email: string | null
-  phone?: string | null
-  status: 'Valid' | 'Not Found' | 'Null'
-  notes?: string
+  phone: string | null
+  status: string
+  notes: string | null
   created_at: string
-  updated_at: string
-  
-  // Computed fields
+  updated_at: string | null
+  state: string | null
+  district_lead?: DistrictLead
   touchpoints_count?: number
   scheduled_touchpoints_count?: number
-  
-  // Relationships
-  district_lead?: DistrictLead
 }
 
 export interface CSVDistrictData {
@@ -55,6 +52,7 @@ export interface CSVDistrictData {
   'Title': string
   'Email Address': string
   'Phone Number'?: string
+  'State'?: string
   'Staff Directory Link'?: string
   'Status': string
   'Assigned'?: string
@@ -70,6 +68,7 @@ export interface ProcessedDistrictData {
     title: string
     email: string | null
     phone?: string | null
+    state?: string | null
     status: 'Valid' | 'Not Found' | 'Null'
     notes?: string
   }[]

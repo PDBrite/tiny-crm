@@ -344,6 +344,41 @@ The Lead Manager includes integration with Instantly.ai to automatically sync se
 - **All Leads**: If no leads are selected, all visible leads will be synced
 - **Batch Processing**: The system handles large numbers of leads efficiently
 
+## Authentication and Deployment
+
+### Environment Variables
+
+When deploying to Vercel, make sure to set the following environment variables:
+
+```
+# NextAuth Configuration
+NEXTAUTH_URL=https://your-deployed-url.vercel.app
+NEXTAUTH_SECRET=your-secure-random-string
+
+# User Authentication
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=secure-admin-password
+MEMBER_EMAIL=member@example.com
+MEMBER_PASSWORD=secure-member-password
+
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+### Fixing Row-Level Security (RLS) Errors
+
+If you encounter errors like `new row violates row-level security policy for table "district_leads"`, it means your authentication isn't properly set up. Make sure:
+
+1. You're logged in with a user that has the correct role ('admin' or 'member')
+2. The JWT claims are properly being sent to Supabase
+3. All environment variables are correctly set in your Vercel deployment
+
+The application uses NextAuth.js for authentication and sets JWT claims for Supabase RLS policies. When properly configured, this ensures that:
+- Admin users can access all data
+- Member users can only access Avalern company data
+- Unauthenticated users have limited access
+
 ---
 
 Built with ❤️ for efficient lead management across multiple brands.

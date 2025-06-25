@@ -42,7 +42,8 @@ export const config = {
   // Match all routes except for:
   // - API routes (/api/, /trpc/)
   // - Static files (/_next/, /static/, /favicon.ico, etc.)
+  // - NextAuth routes (/api/auth/)
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)'
+    '/((?!api/auth|api|_next/static|_next/image|favicon.ico).*)'
   ],
 }; 

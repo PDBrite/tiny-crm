@@ -142,7 +142,7 @@ export default function LeadsTable({
                         contact.district_lead?.status === 'not_interested' ? 'bg-red-100 text-red-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
-                          {DISTRICT_STATUS_DISPLAY_MAP[contact.district_lead?.status as keyof typeof DISTRICT_STATUS_DISPLAY_MAP] || contact.district_lead?.status}
+                          {DISTRICT_STATUS_DISPLAY_MAP[contact.district_lead?.status as keyof typeof DISTRICT_STATUS_DISPLAY_MAP] || 'Unknown'}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -151,7 +151,7 @@ export default function LeadsTable({
                         </div>
                         <div className="text-xs text-gray-500 flex items-center">
                           <MapPin className="h-3 w-3 mr-1" />
-                          {contact.district_lead?.county}
+                          {contact.district_lead?.county || 'Unknown County'}
                         </div>
                       </td>
                       <td className="px-6 py-4">

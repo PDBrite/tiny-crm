@@ -31,22 +31,46 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     const userRole = session?.user?.role
     const userAllowedCompanies = session?.user?.allowedCompanies || []
 
-    // Normalize company names from auth to match component names (lowercase to PascalCase)
-    const allowed = userAllowedCompanies.map(c => c.charAt(0).toUpperCase() + c.slice(1))
+    // Normalize company names from auth to match component names (lowercase to proper casing)
+    const companyNameMap: Record<string, string> = {
+      'avalern': 'Avalern',
+      'craftycode': 'CraftyCode'
+    }
+    
+    // Make sure to apply mapping to all company names
+    const allowed = userAllowedCompanies.map(c => {
+      // Ensure lowercase comparison for mapping
+      const companyLower = typeof c === 'string' ? c.toLowerCase() : '';
+      return companyNameMap[companyLower] || c;
+    });
+    
     setAvailableCompanies(allowed);
+
+    // Debug logging
+    console.log('CompanyContext Debug:', {
+      userRole,
+      userAllowedCompanies,
+      allowedAfterMapping: allowed,
+      sessionStatus: status
+    });
 
     if (userRole === 'member') {
       // For 'member', force 'Avalern' and lock it.
       const fixedCompany = 'Avalern';
+      console.log('Setting fixed company for member:', fixedCompany);
       setSelectedCompanyState(fixedCompany);
       localStorage.setItem('selectedCompany', fixedCompany);
     } else {
       // For 'admin' or other roles, use localStorage or default.
       const savedCompany = localStorage.getItem('selectedCompany')
+      console.log('Admin user - saved company from localStorage:', savedCompany);
+      
       if (savedCompany && allowed.includes(savedCompany)) {
         setSelectedCompanyState(savedCompany)
       } else {
-        const defaultCompany = allowed[0] || '';
+        // Default to Avalern if available, otherwise first available company
+        const defaultCompany = allowed.includes('Avalern') ? 'Avalern' : (allowed[0] || '');
+        console.log('Setting default company:', defaultCompany);
         setSelectedCompanyState(defaultCompany)
         if(defaultCompany) localStorage.setItem('selectedCompany', defaultCompany)
       }

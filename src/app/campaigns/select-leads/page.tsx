@@ -38,7 +38,7 @@ export default function SelectLeadsPage() {
 function SelectLeadsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { selectedCompany } = useCompany()
+  const { selectedCompany, isLoading: companyLoading } = useCompany()
   
   // Get campaign data from URL params
   const campaignName = searchParams.get('campaignName') || ''
@@ -47,6 +47,14 @@ function SelectLeadsContent() {
   const endDate = searchParams.get('endDate') || ''
   const description = searchParams.get('description') || ''
   const instantlyCampaignId = searchParams.get('instantlyCampaignId') || ''
+
+  // Redirect if Avalern user lands here by mistake
+  useEffect(() => {
+    if (!companyLoading && selectedCompany === 'Avalern') {
+      const params = new URLSearchParams(searchParams.toString())
+      router.replace(`/campaigns/select-districts?${params.toString()}`)
+    }
+  }, [selectedCompany, companyLoading, router, searchParams])
 
   // State
   const [leads, setLeads] = useState<Lead[]>([])
@@ -76,6 +84,17 @@ function SelectLeadsContent() {
   const totalFilteredCount = filteredLeads.length
   const startIndex = (currentPage - 1) * itemsPerPage + 1
   const endIndex = Math.min(currentPage * itemsPerPage, filteredLeads.length)
+
+  // Don't render anything if we're redirecting
+  if (companyLoading || selectedCompany === 'Avalern') {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </DashboardLayout>
+    )
+  }
 
   // Fetch available leads
   useEffect(() => {
@@ -235,6 +254,22 @@ function SelectLeadsContent() {
         return
       }
 
+      // Verify leads were updated correctly
+      const { data: verifyLeads, error: verifyError } = await supabase
+        .from('leads')
+        .select('id, campaign_id')
+        .in('id', selectedLeads)
+      
+      if (verifyError) {
+        console.error('Error verifying lead updates:', verifyError)
+      } else {
+        console.log(`Verification found ${verifyLeads?.length || 0} leads:`, 
+          verifyLeads?.map(l => ({ id: l.id, campaign_id: l.campaign_id })) || []
+        )
+        const correctlyUpdated = verifyLeads?.filter(l => l.campaign_id === campaign.id).length || 0
+        console.log(`${correctlyUpdated} of ${verifyLeads?.length || 0} leads correctly updated with campaign_id`)
+      }
+
       // Schedule touchpoints for all selected leads
       if (campaign.outreach_sequence?.steps) {
         const touchpointsToCreate = []
@@ -260,21 +295,49 @@ function SelectLeadsContent() {
             touchpointsToCreate.push({
               lead_id: leadId,
               type: step.type,
-                              subject: step.name || '',
-                              content: step.content_link || '',
+              subject: step.name || '',
+              content: step.content_link || '',
               scheduled_at: scheduledDate.toISOString(),
               created_at: new Date().toISOString()
             })
           }
         }
 
-        const { error: touchpointsError } = await supabase
-          .from('touchpoints')
-          .insert(touchpointsToCreate)
-
-        if (touchpointsError) {
-          console.error('Error creating touchpoints:', touchpointsError)
-          alert('Campaign and leads created but failed to schedule touchpoints')
+        // Use the API endpoint instead of direct Supabase access
+        console.log(`Creating ${touchpointsToCreate.length} touchpoints via API`)
+        
+        // Create touchpoints in smaller batches to avoid timeouts
+        const BATCH_SIZE = 50;
+        let successCount = 0;
+        
+        for (let i = 0; i < touchpointsToCreate.length; i += BATCH_SIZE) {
+          const batch = touchpointsToCreate.slice(i, i + BATCH_SIZE);
+          
+          try {
+            // Create touchpoints using the API endpoint
+            const response = await fetch('/api/touchpoints/batch', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ touchpoints: batch }),
+            });
+            
+            if (!response.ok) {
+              const errorData = await response.json();
+              console.error(`Error creating touchpoints batch ${i/BATCH_SIZE + 1}:`, errorData);
+            } else {
+              const result = await response.json();
+              successCount += result.count || 0;
+              console.log(`Successfully created batch ${i/BATCH_SIZE + 1} with ${result.count} touchpoints`);
+            }
+          } catch (batchError) {
+            console.error(`Error processing batch ${i/BATCH_SIZE + 1}:`, batchError);
+          }
+        }
+        
+        if (successCount < touchpointsToCreate.length) {
+          alert(`Campaign and leads created but only ${successCount} of ${touchpointsToCreate.length} touchpoints were scheduled. Check console for details.`);
         }
       }
 
@@ -556,7 +619,11 @@ function SelectLeadsContent() {
                       <input
                         type="checkbox"
                         checked={selectedLeads.includes(lead.id)}
-                        onChange={() => handleSelectLead(lead.id)}
+                        onChange={(e) => {
+                          // Stop propagation to prevent double-toggle when clicking directly on checkbox
+                          e.stopPropagation();
+                          handleSelectLead(lead.id);
+                        }}
                         className="h-4 w-4 text-blue-600 rounded"
                       />
                     </td>

@@ -31,7 +31,9 @@ export default function DistrictsPage() {
   
   // Redirect if not Avalern
   useEffect(() => {
-    if (selectedCompany !== 'Avalern') {
+    console.log('Districts page - checking company:', selectedCompany)
+    if (selectedCompany && selectedCompany !== 'Avalern') {
+      console.log('Redirecting from districts to leads because company is not Avalern')
       router.push('/leads')
     }
   }, [selectedCompany, router])
@@ -41,32 +43,34 @@ export default function DistrictsPage() {
     const fetchDistricts = async () => {
       try {
         setLoading(true)
-        const { data, error } = await supabase
-          .from('district_leads')
-          .select(`
-            *,
-            district_contacts(id, first_name, last_name, title, email, status),
-            campaign:campaigns(id, name)
-          `)
-          .eq('company', selectedCompany)
-          .order('created_at', { ascending: false })
-
-        if (error) {
-          console.error('Error fetching districts:', error)
+        console.log('Fetching districts for company:', selectedCompany)
+        
+        // Build query parameters
+        const params = new URLSearchParams()
+        if (statusFilter !== 'all') {
+          params.append('status', statusFilter)
+        }
+        if (countyFilter !== 'all') {
+          params.append('county', countyFilter)
+        }
+        
+        // Fetch from our API endpoint
+        const response = await fetch(`/api/districts?${params.toString()}`)
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          console.error('Error fetching districts from API:', response.status, errorData)
+          setDistricts([])
           return
         }
-
-        // Enrich with computed fields
-        const enriched = data.map(district => ({
-          ...district,
-          contacts_count: district.district_contacts?.length || 0,
-          valid_contacts_count: district.district_contacts?.filter((c: any) => c.status === 'Valid').length || 0,
-          touchpoints_count: 0 // TODO: Add touchpoints count when implementing touchpoints
-        }))
-
-        setDistricts(enriched)
+        
+        const data = await response.json()
+        console.log('Fetched districts from API:', data.length, data)
+        
+        setDistricts(data)
       } catch (error) {
         console.error('Error fetching districts:', error)
+        setDistricts([])
       } finally {
         setLoading(false)
       }
@@ -74,24 +78,45 @@ export default function DistrictsPage() {
 
     if (selectedCompany === 'Avalern') {
       fetchDistricts()
+    } else {
+      console.log('Not fetching districts because company is not Avalern:', selectedCompany)
     }
-  }, [selectedCompany])
+  }, [selectedCompany, statusFilter, countyFilter])
 
   // Fetch touchpoints for selected district
   const fetchDistrictTouchpoints = async (districtId: string) => {
     try {
-      // Get all contacts for this district
-      const { data: contacts, error: contactsError } = await supabase
-        .from('district_contacts')
-        .select('id')
-        .eq('district_lead_id', districtId)
-
-      if (contactsError) {
-        console.error('Error fetching district contacts:', contactsError)
+      console.log('Fetching district touchpoints for district:', districtId)
+      
+      // Get all contacts for this district using the API
+      const contactsResponse = await fetch(`/api/district-contacts?district_id=${districtId}`)
+      
+      console.log('District contacts API response status:', contactsResponse.status)
+      
+      if (!contactsResponse.ok) {
+        console.error('Error fetching district contacts from API:', contactsResponse.status)
+        
+        // Try to get error details
+        try {
+          const errorData = await contactsResponse.json()
+          console.error('Error details:', errorData)
+        } catch (e) {
+          console.error('Could not parse error response')
+        }
+        
         return
       }
-
-      const contactIds = contacts?.map(c => c.id) || []
+      
+      const contactsData = await contactsResponse.json()
+      console.log('District contacts data:', {
+        contactsCount: contactsData.contacts?.length || 0,
+        firstContact: contactsData.contacts && contactsData.contacts.length > 0 ? contactsData.contacts[0].id : null
+      })
+      
+      const contacts = contactsData.contacts || []
+      const contactIds = contacts.map((c: any) => c.id) || []
+      
+      console.log('Contact IDs for touchpoints:', contactIds.length)
       
       if (contactIds.length === 0) {
         setTouchpoints([])

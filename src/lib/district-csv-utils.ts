@@ -2,10 +2,33 @@ import { CSVDistrictData, ProcessedDistrictData } from '../types/districts'
 
 export function parseDistrictCSV(csvText: string): CSVDistrictData[] {
   const lines = csvText.split('\n').filter(line => line.trim())
-  if (lines.length < 2) return []
+  if (lines.length < 2) {
+    throw new Error('CSV file must contain at least a header row and one data row.')
+  }
 
   const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''))
+  
+  // Validate required headers
+  const requiredHeaders = [
+    'School District Name',
+    'County', 
+    'First Name',
+    'Last Name',
+    'Title',
+    'Email Address'
+  ]
+  
+  const missingHeaders = requiredHeaders.filter(required => 
+    !headers.some(header => header.toLowerCase().includes(required.toLowerCase()))
+  )
+  
+  if (missingHeaders.length > 0) {
+    throw new Error(`Missing required columns: ${missingHeaders.join(', ')}. ` + 
+      `Found columns: ${headers.join(', ')}`)
+  }
+
   const data: CSVDistrictData[] = []
+  const errors: string[] = []
 
   for (let i = 1; i < lines.length; i++) {
     const values = parseCSVLine(lines[i])
@@ -16,11 +39,47 @@ export function parseDistrictCSV(csvText: string): CSVDistrictData[] {
       row[header] = values[index]?.trim() || ''
     })
 
-    // Validate required fields - only require basic info, email OR phone will be validated later
-    if (row['School District Name'] && row['County'] && row['First Name'] && 
-        row['Last Name'] && row['Title']) {
+    // Validate required fields for this row
+    const rowErrors: string[] = []
+    
+    if (!row['School District Name']?.trim()) {
+      rowErrors.push('School District Name is required')
+    }
+    if (!row['County']?.trim()) {
+      rowErrors.push('County is required')
+    }
+    if (!row['First Name']?.trim()) {
+      rowErrors.push('First Name is required')
+    }
+    if (!row['Last Name']?.trim()) {
+      rowErrors.push('Last Name is required')
+    }
+    if (!row['Title']?.trim()) {
+      rowErrors.push('Title is required')
+    }
+
+    if (rowErrors.length > 0) {
+      errors.push(`Row ${i + 1}: ${rowErrors.join(', ')}`)
+    } else {
       data.push(row as CSVDistrictData)
     }
+  }
+
+  // Don't throw an error if there are some valid rows - just return what we have with warnings
+  if (data.length === 0) {
+    throw new Error('No valid data rows found in CSV file.')
+  }
+
+  // Store warnings but don't block processing
+  if (errors.length > 0) {
+    // Use console.log instead of console.warn to avoid linter error
+    console.log(`CSV validation warnings:\n${errors.slice(0, 10).join('\n')}${errors.length > 10 ? `\n... and ${errors.length - 10} more warnings` : ''}`)
+    
+    // Store warnings in a separate property
+    Object.defineProperty(data, 'warnings', {
+      value: errors,
+      enumerable: false
+    })
   }
 
   return data
@@ -89,6 +148,7 @@ export function processDistrictData(csvData: CSVDistrictData[]): ProcessedDistri
       title: row['Title'],
       email: validEmail,
       phone: validPhone,
+      state: row['State']?.trim() || 'California', // Default to California if not provided
       status: contactStatus,
       notes: row['Notes']
     })
@@ -101,11 +161,94 @@ export function validateDistrictData(data: ProcessedDistrictData[]): {
   valid: ProcessedDistrictData[]
   invalid: { district: ProcessedDistrictData; errors: string[] }[]
   warnings: { district: ProcessedDistrictData; warnings: string[] }[]
+  duplicates: { 
+    districtDuplicates: { original: ProcessedDistrictData; duplicates: ProcessedDistrictData[] }[]
+    contactDuplicates: { district: string; contact: any; duplicateOf: any }[]
+  }
 } {
   const valid: ProcessedDistrictData[] = []
   const invalid: { district: ProcessedDistrictData; errors: string[] }[] = []
   const warnings: { district: ProcessedDistrictData; warnings: string[] }[] = []
 
+  // Check for duplicate districts within the CSV
+  const districtDuplicates: { original: ProcessedDistrictData; duplicates: ProcessedDistrictData[] }[] = []
+  const districtMap = new Map<string, ProcessedDistrictData[]>()
+  
+  data.forEach(district => {
+    const key = `${district.districtName.toLowerCase()}-${district.county.toLowerCase()}`
+    if (!districtMap.has(key)) {
+      districtMap.set(key, [])
+    }
+    districtMap.get(key)!.push(district)
+  })
+
+  // Find districts that appear multiple times
+  districtMap.forEach((districts, key) => {
+    if (districts.length > 1) {
+      districtDuplicates.push({
+        original: districts[0],
+        duplicates: districts.slice(1)
+      })
+    }
+  })
+
+  // Check for duplicate contacts across all districts
+  const contactDuplicates: { district: string; contact: any; duplicateOf: any }[] = []
+  const allContactsMap = new Map<string, { district: string; contact: any }>()
+
+  // First pass: collect all contacts and check for duplicates
+  data.forEach(district => {
+    district.contacts.forEach(contact => {
+      // Create unique keys for different types of duplicates
+      const nameKey = `${contact.firstName.toLowerCase()}-${contact.lastName.toLowerCase()}`
+      const emailKey = contact.email ? contact.email.toLowerCase() : null
+      const phoneKey = contact.phone ? contact.phone.replace(/\D/g, '') : null
+
+      // Check for name duplicates
+      if (allContactsMap.has(nameKey)) {
+        const existing = allContactsMap.get(nameKey)!
+        contactDuplicates.push({
+          district: district.districtName,
+          contact,
+          duplicateOf: existing
+        })
+      } else {
+        allContactsMap.set(nameKey, { district: district.districtName, contact })
+      }
+
+      // Check for email duplicates (if email exists)
+      if (emailKey) {
+        const emailDupKey = `email:${emailKey}`
+        if (allContactsMap.has(emailDupKey)) {
+          const existing = allContactsMap.get(emailDupKey)!
+          contactDuplicates.push({
+            district: district.districtName,
+            contact,
+            duplicateOf: existing
+          })
+        } else {
+          allContactsMap.set(emailDupKey, { district: district.districtName, contact })
+        }
+      }
+
+      // Check for phone duplicates (if phone exists)
+      if (phoneKey && phoneKey.length >= 10) {
+        const phoneDupKey = `phone:${phoneKey}`
+        if (allContactsMap.has(phoneDupKey)) {
+          const existing = allContactsMap.get(phoneDupKey)!
+          contactDuplicates.push({
+            district: district.districtName,
+            contact,
+            duplicateOf: existing
+          })
+        } else {
+          allContactsMap.set(phoneDupKey, { district: district.districtName, contact })
+        }
+      }
+    })
+  })
+
+  // Second pass: validate each district
   data.forEach(district => {
     const errors: string[] = []
     const districtWarnings: string[] = []
@@ -177,7 +320,15 @@ export function validateDistrictData(data: ProcessedDistrictData[]): {
     }
   })
 
-  return { valid, invalid, warnings }
+  return { 
+    valid, 
+    invalid, 
+    warnings,
+    duplicates: {
+      districtDuplicates,
+      contactDuplicates
+    }
+  }
 }
 
 function isValidEmail(email: string): boolean {

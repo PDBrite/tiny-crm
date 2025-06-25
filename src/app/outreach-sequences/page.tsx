@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useCompany } from '@/contexts/CompanyContext'
 import DashboardLayout from '@/components/layout/DashboardLayout'
-import { List, Calendar, Target, ChevronRight, Search, Filter } from 'lucide-react'
+import { List, Calendar, Target, ChevronRight, Search, Filter, Plus } from 'lucide-react'
 
 interface OutreachSequence {
   id: string
@@ -22,6 +22,7 @@ export default function OutreachSequencesPage() {
   const [sequences, setSequences] = useState<OutreachSequence[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [showCreateModal, setShowCreateModal] = useState(false)
 
   useEffect(() => {
     fetchOutreachSequences()
@@ -74,6 +75,11 @@ export default function OutreachSequencesPage() {
     router.push(`/outreach-sequences/${sequence.id}`)
   }
 
+  const handleCreateSequence = () => {
+    // Navigate to dashboard where we have the modal
+    router.push('/dashboard?createSequence=true')
+  }
+
   const filteredSequences = sequences.filter(sequence => 
     sequence.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (sequence.description && sequence.description.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -89,6 +95,15 @@ export default function OutreachSequencesPage() {
             <p className="text-gray-600 mt-1">
               View and manage your outreach sequence templates for {selectedCompany}
             </p>
+          </div>
+          <div>
+            <button
+              onClick={handleCreateSequence}
+              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-sm"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Sequence
+            </button>
           </div>
         </div>
 

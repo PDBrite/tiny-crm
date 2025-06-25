@@ -9,7 +9,8 @@ export interface Campaign {
 
 export interface Touchpoint {
   id: string
-  lead_id: string
+  lead_id?: string
+  district_contact_id?: string
   type: 'email' | 'call' | 'linkedin_message'
   subject?: string
   content?: string
@@ -41,6 +42,7 @@ export interface OutreachStep {
   name?: string
   content_link?: string
   day_offset: number
+  days_after_previous?: number
   created_at: string
   updated_at: string
 }
@@ -94,4 +96,44 @@ export const STATUS_DESCRIPTIONS: Record<string, string> = {
   'engaged': "They've responded or shown interest (replied, booked a call, etc.).",
   'won': 'They became a customer or agreed to a pilot/demo.',
   'not_interested': 'Said no, ghosted after multiple follow-ups, or clearly not a fit.'
+}
+
+export function scheduleTouchpointsForLead(
+  ids: { leadId?: string; districtContactId?: string },
+  campaignStartDate: Date,
+  outreachSteps: OutreachStep[],
+  leadData: { first_name?: string; last_name?: string; city?: string; company?: string }
+): Partial<ContactAttempt>[] {
+  const scheduledTouchpoints: Partial<ContactAttempt>[] = [];
+  let previousDate = new Date(campaignStartDate);
+  
+  const sortedSteps = [...outreachSteps].sort((a, b) => a.step_order - b.step_order);
+  
+  sortedSteps.forEach((step) => {
+    let scheduledDate: Date;
+    
+    if (step.step_order === 1 || step.days_after_previous === undefined) {
+      scheduledDate = addBusinessDays(campaignStartDate, step.day_offset);
+    } else {
+      scheduledDate = addBusinessDays(previousDate, step.days_after_previous);
+    }
+    
+    previousDate = new Date(scheduledDate);
+    
+    scheduledDate.setHours(9, 0, 0, 0);
+    
+    const subject = replaceTemplateVariables(step.name || '', leadData);
+    const content = replaceTemplateVariables(step.content_link || '', leadData);
+    
+    scheduledTouchpoints.push({
+      lead_id: ids.leadId,
+      district_contact_id: ids.districtContactId,
+      type: step.type,
+      subject,
+      content,
+      scheduled_at: scheduledDate.toISOString().split('T')[0] + 'T09:00:00.000Z',
+    });
+  });
+  
+  return scheduledTouchpoints;
 } 

@@ -43,36 +43,53 @@ export function getNextBusinessDay(date: Date): Date {
 
 /**
  * Schedule touchpoints for a lead based on outreach sequence
- * @param leadId Lead ID
- * @param campaignStartDate Campaign start date
- * @param outreachSteps Array of outreach steps
  * @param leadData Lead data for template replacement
  * @returns Array of scheduled touchpoints
  */
 export function scheduleTouchpointsForLead(
-  leadId: string,
+  ids: { leadId?: string; districtContactId?: string },
   campaignStartDate: Date,
   outreachSteps: OutreachStep[],
   leadData: { first_name?: string; last_name?: string; city?: string; company?: string }
 ): Partial<ContactAttempt>[] {
-  return outreachSteps.map((step) => {
-    const scheduledDate = addBusinessDays(campaignStartDate, step.day_offset)
+  const scheduledTouchpoints: Partial<ContactAttempt>[] = [];
+  let previousDate = new Date(campaignStartDate);
+  
+  // Sort steps by step_order to ensure correct sequence
+  const sortedSteps = [...outreachSteps].sort((a, b) => a.step_order - b.step_order);
+  
+  sortedSteps.forEach((step) => {
+    let scheduledDate: Date;
+    
+    if (step.step_order === 1 || step.days_after_previous === undefined) {
+      // First step or no days_after_previous defined: use day_offset from campaign start
+      scheduledDate = addBusinessDays(campaignStartDate, step.day_offset);
+    } else {
+      // Use days_after_previous from the previous step's date
+      scheduledDate = addBusinessDays(previousDate, step.days_after_previous);
+    }
+    
+    // Update previous date for next iteration
+    previousDate = new Date(scheduledDate);
     
     // Set time to 9:00 AM for consistency, but only store the date part
-    scheduledDate.setHours(9, 0, 0, 0)
+    scheduledDate.setHours(9, 0, 0, 0);
     
     // Replace template variables in name and content_link
-    const subject = replaceTemplateVariables(step.name || '', leadData)
-    const content = replaceTemplateVariables(step.content_link || '', leadData)
+    const subject = replaceTemplateVariables(step.name || '', leadData);
+    const content = replaceTemplateVariables(step.content_link || '', leadData);
     
-    return {
-      lead_id: leadId,
+    scheduledTouchpoints.push({
+      lead_id: ids.leadId,
+      district_contact_id: ids.districtContactId,
       type: step.type,
       subject,
       content,
       scheduled_at: scheduledDate.toISOString().split('T')[0] + 'T09:00:00.000Z', // Only date with 9 AM time
-    }
-  })
+    });
+  });
+  
+  return scheduledTouchpoints;
 }
 
 /**
