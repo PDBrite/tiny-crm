@@ -79,14 +79,14 @@ The system includes a pre-built sequence optimized for real estate leads:
 | 7 | Call | 9 | Final call attempt | Last voice attempt |
 | 8 | Email | 10 | Final touchpoint | Graceful exit |
 
-## 🔧 API Endpoints
+## �� API Endpoints
 
-### Daily Batch Creation
-**POST** `/api/create-daily-batch`
+### Assign Districts to Campaign
+**POST** `/api/assign-districts-to-campaign`
 ```json
 {
-  "campaignId": "uuid",
-  "batchSize": 50
+  "campaign_id": "uuid",
+  "district_ids": ["uuid1", "uuid2", "uuid3"]
 }
 ```
 
@@ -94,11 +94,11 @@ The system includes a pre-built sequence optimized for real estate leads:
 ```json
 {
   "success": true,
-  "batch_date": "2024-12-01T00:00:00.000Z",
-  "campaign_name": "San Fernando Valley Q4",
-  "sequence_name": "8-Touch Real Estate Sequence",
-  "processed_count": 50,
-  "processed_leads": [...]
+  "message": "Districts assigned to campaign successfully",
+  "data": [...],
+  "contacts": [...],
+  "contacts_count": 17,
+  "touchpoints_created": 136
 }
 ```
 
@@ -202,13 +202,13 @@ Becomes:
 ```
 
 ### Touchpoint Scheduling
-When a lead is added to a campaign with an outreach sequence:
+When districts are assigned to a campaign with an outreach sequence:
 
 1. **Fetch sequence steps** from database
 2. **Calculate business days** for each step's `day_offset`
 3. **Generate personalized content** using template variables
 4. **Insert scheduled touchpoints** into database
-5. **Update lead status** to indicate active outreach
+5. **Update district status** to indicate active outreach
 
 ## 📊 Performance Tracking
 
@@ -285,7 +285,7 @@ The system tracks:
 src/
 ├── app/
 │   ├── api/
-│   │   ├── create-daily-batch/route.ts
+│   │   ├── assign-districts-to-campaign/route.ts
 │   │   ├── daily-touchpoints/route.ts
 │   │   └── campaigns/route.ts
 │   └── outreach/page.tsx

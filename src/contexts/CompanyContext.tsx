@@ -20,13 +20,21 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (status === 'loading') {
+      console.log('CompanyContext: Session is loading');
       return;
     }
 
     if (status === 'unauthenticated') {
+      console.log('CompanyContext: User is unauthenticated');
       setIsLoading(false)
       return;
     }
+
+    console.log('CompanyContext: Session data:', {
+      user: session?.user,
+      status,
+      isAuthenticated: status === 'authenticated'
+    });
 
     const userRole = session?.user?.role
     const userAllowedCompanies = session?.user?.allowedCompanies || []

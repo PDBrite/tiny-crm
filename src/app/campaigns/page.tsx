@@ -159,67 +159,35 @@ export default function CampaignsPage() {
           }
           
           if (selectedCompany === 'Avalern') {
-            // For Avalern: Fetch district_leads
+            // For Avalern: Fetch district_leads using the API endpoint
             try {
-              const { data: districtLeads, error: districtError } = await supabase
-                .from('district_leads')
-                .select('id, status')
-                .eq('campaign_id', campaign.id)
-
-              if (districtError) {
-                // Skip logging to avoid type issues
-                (campaignWithData as any).district_leads = []
-              } else if (districtLeads) {
-                // Fetch district contacts for these district leads
-                const districtLeadIds = districtLeads.map(dl => dl.id)
-                let districtContacts: any[] = []
-                
-                if (districtLeadIds.length > 0) {
-                  const { data: contacts, error: contactsError } = await supabase
-                    .from('district_contacts')
-                    .select('id, district_lead_id')
-                    .in('district_lead_id', districtLeadIds)
-
-                  if (contactsError) {
-                    // console.warn('Error fetching district contacts:', contactsError)
-                  } else if (contacts) {
-                    districtContacts = contacts
-                  }
-                }
-
-                // Fetch touchpoints for district contacts
-                const contactIds = districtContacts.map(c => c.id)
-                let touchpoints: any[] = []
-                
-                if (contactIds.length > 0) {
-                  const { data: tps, error: tpError } = await supabase
-                    .from('touchpoints')
-                    .select('type, completed_at, outcome, district_contact_id')
-                    .in('district_contact_id', contactIds)
-
-                  if (tpError) {
-                    // console.warn('Error fetching district touchpoints:', tpError)
-                  } else if (tps) {
-                    touchpoints = tps
-                  }
-                }
-
-                // Attach data to campaign
-                (campaignWithData as any).district_leads = districtLeads.map(dl => ({
-                  ...dl,
-                  district_contacts: districtContacts
-                    .filter(c => c.district_lead_id === dl.id)
-                    .map(c => ({
-                      ...c,
-                      touchpoints: touchpoints.filter(tp => tp.district_contact_id === c.id)
-                    }))
-                }))
+              // Use the API endpoint to fetch district leads for this campaign
+              const districtsResponse = await fetch(`/api/campaign-districts?campaign_id=${campaign.id}`);
+              
+              if (!districtsResponse.ok) {
+                // If API fails, set empty array
+                (campaignWithData as any).district_leads = [];
               } else {
-                (campaignWithData as any).district_leads = []
+                const districtsData = await districtsResponse.json();
+                const districts = districtsData.districts || [];
+                
+                // Just store the districts, we'll count them later
+                (campaignWithData as any).district_leads = districts;
+              }
+              
+              // Now fetch touchpoints for this campaign using the campaign-touchpoints API
+              const touchpointsResponse = await fetch(`/api/campaign-touchpoints?campaign_id=${campaign.id}`);
+              if (touchpointsResponse.ok) {
+                const touchpointsData = await touchpointsResponse.json();
+                (campaignWithData as any).touchpoints = touchpointsData.touchpoints || [];
+                console.log(`Campaign ${campaign.name} has ${touchpointsData.touchpoints?.length || 0} touchpoints`);
+              } else {
+                (campaignWithData as any).touchpoints = [];
               }
             } catch (error) {
-              // Skip logging to avoid type issues 
-              (campaignWithData as any).district_leads = []
+              // Skip logging to avoid type issues
+              (campaignWithData as any).district_leads = [];
+              (campaignWithData as any).touchpoints = [];
             }
           } else {
             // For CraftyCode: Fetch regular leads
@@ -278,15 +246,15 @@ export default function CampaignsPage() {
           if (selectedCompany === 'Avalern') {
             // Handle district_leads data structure
             const districtLeads = (campaign as any).district_leads || []
-            leadCount = districtLeads.length
+            leadCount = districtLeads.length // This correctly counts district leads
             
-            // Flatten touchpoints from all district contacts
-            allTouchpoints = districtLeads.flatMap((districtLead: any) =>
-              districtLead.district_contacts?.flatMap((contact: any) => contact.touchpoints || []) || []
-            )
+            // Get touchpoints from the campaign-touchpoints API response
+            const touchpoints = (campaign as any).touchpoints || []
+            allTouchpoints = touchpoints
             
-            engagedCount = districtLeads.filter((dl: any) => dl.status === 'engaged').length
-            wonCount = districtLeads.filter((dl: any) => dl.status === 'won').length
+            // Calculate engagement stats
+            engagedCount = districtLeads.filter((dl: any) => dl.status === 'engaged').length || 0
+            wonCount = districtLeads.filter((dl: any) => dl.status === 'won').length || 0
           } else {
             // Handle regular leads data structure
             const leads = (campaign as any).leads || []
@@ -299,9 +267,15 @@ export default function CampaignsPage() {
             wonCount = leads.filter((lead: any) => lead.status === 'won').length
           }
           
-          const emailsSent = allTouchpoints.filter((tp: any) => tp.type === 'email' && tp.completed_at && tp.outcome).length
-          const callsMade = allTouchpoints.filter((tp: any) => tp.type === 'call' && tp.completed_at && tp.outcome).length
-          const linkedinMessages = allTouchpoints.filter((tp: any) => tp.type === 'linkedin_message' && tp.completed_at && tp.outcome).length
+          // Calculate touchpoint stats based on company type
+          let emailsSent = 0;
+          let callsMade = 0;
+          let linkedinMessages = 0;
+          
+          // Calculate touchpoint stats from allTouchpoints
+          emailsSent = allTouchpoints.filter((tp: any) => tp.type === 'email' && tp.completed_at).length;
+          callsMade = allTouchpoints.filter((tp: any) => tp.type === 'call' && tp.completed_at).length;
+          linkedinMessages = allTouchpoints.filter((tp: any) => tp.type === 'linkedin_message' && tp.completed_at).length;
           
           const conversionRate = leadCount > 0 ? Number(((wonCount / leadCount) * 100).toFixed(1)) : 0
 
@@ -706,7 +680,9 @@ export default function CampaignsPage() {
               <p className="text-2xl font-bold text-gray-900">
                 {filteredCampaigns.reduce((sum, c) => sum + c.leadCount, 0)}
               </p>
-              <p className="text-sm text-gray-600">Total Leads</p>
+              <p className="text-sm text-gray-600">
+                {selectedCompany === 'Avalern' ? 'Total School Districts' : 'Total Leads'}
+              </p>
             </div>
           </div>
         </div>
@@ -769,7 +745,12 @@ export default function CampaignsPage() {
                         Status
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Leads
+                        {selectedCompany === 'Avalern' ? (
+                          <div className="flex items-center">
+                            <span>School Districts</span>
+                            <span className="ml-1 text-xs text-purple-600 lowercase normal-case font-normal">(count)</span>
+                          </div>
+                        ) : 'Leads'}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Email
@@ -822,6 +803,9 @@ export default function CampaignsPage() {
                           <div className="flex items-center text-sm text-gray-900">
                             <Users className="h-4 w-4 mr-2 text-gray-400" />
                             <span className="font-semibold">{campaign.leadCount}</span>
+                            {campaign.company === 'Avalern' && (
+                              <span className="ml-1 text-xs text-purple-600 font-medium">school districts</span>
+                            )}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">

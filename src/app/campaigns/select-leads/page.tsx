@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, Suspense, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import DashboardLayout from '../../../components/layout/DashboardLayout'
 import { useCompany } from '../../../contexts/CompanyContext'
@@ -48,14 +48,6 @@ function SelectLeadsContent() {
   const description = searchParams.get('description') || ''
   const instantlyCampaignId = searchParams.get('instantlyCampaignId') || ''
 
-  // Redirect if Avalern user lands here by mistake
-  useEffect(() => {
-    if (!companyLoading && selectedCompany === 'Avalern') {
-      const params = new URLSearchParams(searchParams.toString())
-      router.replace(`/campaigns/select-districts?${params.toString()}`)
-    }
-  }, [selectedCompany, companyLoading, router, searchParams])
-
   // State
   const [leads, setLeads] = useState<Lead[]>([])
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([])
@@ -75,8 +67,16 @@ function SelectLeadsContent() {
   const [selectedSource, setSelectedSource] = useState('')
 
   // Computed values
-  const uniqueCities = [...new Set((leads || []).map(l => l.city).filter(Boolean))].sort()
-  const uniqueSources = [...new Set((leads || []).map(l => l.source).filter(Boolean))].sort()
+  const uniqueCities = useMemo(() => 
+    [...new Set((leads || []).map(l => l.city).filter(Boolean))].sort(),
+    [leads]
+  )
+  
+  const uniqueSources = useMemo(() => 
+    [...new Set((leads || []).map(l => l.source).filter(Boolean))].sort(),
+    [leads]
+  )
+  
   const availableStatuses = Object.keys(STATUS_DISPLAY_MAP)
 
   // Pagination info
@@ -85,20 +85,22 @@ function SelectLeadsContent() {
   const startIndex = (currentPage - 1) * itemsPerPage + 1
   const endIndex = Math.min(currentPage * itemsPerPage, filteredLeads.length)
 
-  // Don't render anything if we're redirecting
-  if (companyLoading || selectedCompany === 'Avalern') {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </DashboardLayout>
-    )
-  }
+  // Redirect if Avalern user lands here by mistake
+  useEffect(() => {
+    if (!companyLoading && selectedCompany === 'Avalern') {
+      const params = new URLSearchParams(searchParams.toString())
+      router.replace(`/campaigns/select-districts?${params.toString()}`)
+    }
+  }, [selectedCompany, companyLoading, router, searchParams])
 
   // Fetch available leads
   useEffect(() => {
     const fetchLeads = async () => {
+      // Skip fetching if we're going to redirect anyway
+      if (!companyLoading && selectedCompany === 'Avalern') {
+        return;
+      }
+      
       try {
         setLoading(true)
         const { data, error } = await supabase
@@ -121,7 +123,7 @@ function SelectLeadsContent() {
     }
 
     fetchLeads()
-  }, [])
+  }, [selectedCompany, companyLoading])
 
   // Apply filters
   useEffect(() => {
@@ -364,6 +366,17 @@ function SelectLeadsContent() {
       'not_interested': 'bg-red-100 text-red-800'
     }
     return colors[status as keyof typeof colors] || colors.not_contacted
+  }
+
+  // Don't render anything if we're redirecting
+  if (companyLoading || selectedCompany === 'Avalern') {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </DashboardLayout>
+    )
   }
 
   if (loading) {
@@ -726,8 +739,6 @@ function SelectLeadsContent() {
             </div>
           </div>
         )}
-
-
       </div>
     </DashboardLayout>
   )

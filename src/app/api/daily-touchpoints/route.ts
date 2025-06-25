@@ -56,6 +56,8 @@ export async function GET(request: NextRequest) {
     
     if (company === 'Avalern') {
       // For Avalern, fetch touchpoints for district contacts
+      console.log('Fetching Avalern district touchpoints for date:', date || 'today');
+      
       let query = supabase
         .from('touchpoints')
         .select(`
@@ -82,11 +84,13 @@ export async function GET(request: NextRequest) {
 
       // Filter by campaign if specified
       if (campaignId) {
+        console.log('Filtering by campaign ID:', campaignId);
         query = query.eq('district_contact.district_lead.campaign_id', campaignId)
       }
 
       // If specific date is provided, get touchpoints for that date
       if (date) {
+        console.log('Filtering by date range:', targetDate.toISOString(), 'to', nextDay.toISOString());
         query = query
           .gte('scheduled_at', targetDate.toISOString())
           .lt('scheduled_at', nextDay.toISOString())
@@ -113,6 +117,24 @@ export async function GET(request: NextRequest) {
           { error: 'Failed to fetch touchpoints' },
           { status: 500 }
         )
+      }
+
+      console.log(`Found ${districtTouchpoints?.length || 0} Avalern district touchpoints`);
+      if (districtTouchpoints && districtTouchpoints.length > 0) {
+        console.log('Sample district touchpoint:', {
+          id: districtTouchpoints[0].id,
+          type: districtTouchpoints[0].type,
+          scheduled_at: districtTouchpoints[0].scheduled_at,
+          district_contact: {
+            id: districtTouchpoints[0].district_contact?.id,
+            name: `${districtTouchpoints[0].district_contact?.first_name || ''} ${districtTouchpoints[0].district_contact?.last_name || ''}`.trim(),
+            district_lead: {
+              id: districtTouchpoints[0].district_contact?.district_lead?.id,
+              name: districtTouchpoints[0].district_contact?.district_lead?.district_name,
+              campaign: districtTouchpoints[0].district_contact?.district_lead?.campaign?.name
+            }
+          }
+        });
       }
 
       // Transform district touchpoints to match the expected format

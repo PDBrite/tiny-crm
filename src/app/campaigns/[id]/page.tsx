@@ -32,6 +32,10 @@ import CampaignStats from '@/components/campaigns/CampaignStats'
 import CampaignTabs from '@/components/campaigns/CampaignTabs'
 import CampaignOverviewTab from '@/components/campaigns/CampaignOverviewTab'
 import DeleteCampaignModal from '@/components/campaigns/DeleteCampaignModal'
+import CampaignTouchpointsTab from '@/components/campaigns/CampaignTouchpointsTab'
+import CampaignDistrictContactsTable from '@/components/campaigns/CampaignDistrictContactsTable'
+import CampaignDistrictsTable from '@/components/campaigns/CampaignDistrictsTable'
+import DistrictContactEditPanel from '@/components/campaigns/DistrictContactEditPanel'
 
 interface Campaign {
   id: string
@@ -93,6 +97,9 @@ export default function CampaignDetailPage() {
   const [selectedLeadForEdit, setSelectedLeadForEdit] = useState<any | null>(null)
   const [editingLeadData, setEditingLeadData] = useState<any | null>(null)
   const [updatingLead, setUpdatingLead] = useState(false)
+  const [selectedContactForEdit, setSelectedContactForEdit] = useState<any | null>(null)
+  const [editingContactData, setEditingContactData] = useState<any | null>(null)
+  const [updatingContact, setUpdatingContact] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleting, setDeleting] = useState(false)
   
@@ -106,7 +113,8 @@ export default function CampaignDetailPage() {
   const [touchpointDateToFilter, setTouchpointDateToFilter] = useState('')
   const [touchpointOutcomeFilter, setTouchpointOutcomeFilter] = useState('')
   const [touchpointCurrentPage, setTouchpointCurrentPage] = useState(1)
-  const [touchpointItemsPerPage] = useState(10)
+  const [touchpointItemsPerPage, setTouchpointItemsPerPage] = useState(10)
+  const [touchpointTotalPages, setTouchpointTotalPages] = useState(1)
   const [filteredCampaignTouchpoints, setFilteredCampaignTouchpoints] = useState<any[]>([])
   
   // Sequence steps
@@ -141,26 +149,13 @@ export default function CampaignDetailPage() {
   const fetchCampaignDistricts = async () => {
     setLoadingDistricts(true)
     try {
-      console.log(`Fetching districts for campaign: ${campaignId}`)
+      console.log(`Fetching districts for campaign: ${campaignId}, company: ${campaign?.company}`)
       
-      // Try direct database query first for more reliable results
-      const { data: directDistricts, error: directError } = await supabase
-        .from('district_leads')
-        .select(`
-          id, 
-          district_name, 
-          county, 
-          status, 
-          campaign_id,
-          created_at,
-          district_contacts(id, first_name, last_name, email, phone, status)
-        `)
-        .eq('campaign_id', campaignId)
+      // Debug JWT claims
+      const { data: jwtData } = await supabase.auth.getSession()
+      console.log('Current user JWT session:', jwtData?.session?.access_token ? 'Valid token' : 'No token')
       
-      if (directError) {
-        console.error('Direct database query failed:', directError)
-        
-        // Fall back to API if direct query fails
+      // Use the API endpoint instead of direct database access
         const response = await fetch(`/api/campaign-districts?campaign_id=${campaignId}`)
         
         if (!response.ok) {
@@ -171,26 +166,20 @@ export default function CampaignDetailPage() {
         const { districts } = await response.json()
         console.log(`Fetched ${districts?.length || 0} campaign districts from API`)
         
-        // Enrich with contact counts
-        const enrichedDistricts = (districts || []).map((district: any) => ({
-          ...district,
-          total_contacts: district.district_contacts?.length || 0,
-          valid_contacts: district.district_contacts?.filter((c: any) => c.status === 'Valid').length || 0
-        }))
-        
-        setCampaignDistricts(enrichedDistricts)
+      if (districts?.length === 0) {
+        console.log('No districts found for this campaign via API')
       } else {
-        console.log(`Direct database query found ${directDistricts?.length || 0} districts with campaign_id ${campaignId}`)
+        console.log('Sample district from API:', districts[0])
+      }
         
         // Enrich with contact counts
-        const enrichedDistricts = (directDistricts || []).map((district: any) => ({
+      const enrichedDistricts = (districts || []).map((district: any) => ({
           ...district,
           total_contacts: district.district_contacts?.length || 0,
           valid_contacts: district.district_contacts?.filter((c: any) => c.status === 'Valid').length || 0
         }))
         
         setCampaignDistricts(enrichedDistricts)
-      }
     } catch (error) {
       console.error('Error fetching campaign districts:', error)
     } finally {
@@ -201,9 +190,13 @@ export default function CampaignDetailPage() {
   // Fetch leads and touchpoints after campaign is loaded
   useEffect(() => {
     if (campaign?.id && selectedCompany) {
-      // Data is now fetched in fetchCampaign
+      // For Avalern campaigns, explicitly fetch districts
+      if (campaign.company === 'Avalern') {
+        console.log('Campaign is Avalern, fetching districts explicitly');
+        fetchCampaignDistricts();
     }
-  }, [campaign?.id, selectedCompany]);
+    }
+  }, [campaign?.id, selectedCompany, campaign?.company]);
   
   // Debug loaded data
   useEffect(() => {
@@ -213,9 +206,51 @@ export default function CampaignDetailPage() {
   useEffect(() => {
     console.log(`Campaign touchpoints loaded: ${campaignTouchpoints.length}`);
     
-    // Initialize filtered touchpoints whenever touchpoints change
-    setFilteredCampaignTouchpoints(campaignTouchpoints);
-  }, [campaignTouchpoints]);
+    // Filter touchpoints based on selected filters
+    let filtered = [...campaignTouchpoints];
+    
+    // Apply type filter
+    if (touchpointTypeFilter) {
+      filtered = filtered.filter(tp => tp.type === touchpointTypeFilter);
+    }
+    
+    // Apply outcome filter
+    if (touchpointOutcomeFilter) {
+      if (touchpointOutcomeFilter === 'scheduled') {
+        filtered = filtered.filter(tp => !tp.completed_at);
+      } else if (touchpointOutcomeFilter === 'completed') {
+        filtered = filtered.filter(tp => tp.completed_at);
+      }
+    }
+    
+    // Apply date filters
+    if (touchpointDateFromFilter) {
+      const fromDate = new Date(touchpointDateFromFilter);
+      filtered = filtered.filter(tp => {
+        const tpDate = new Date(tp.scheduled_at || tp.completed_at);
+        return tpDate >= fromDate;
+      });
+    }
+    
+    if (touchpointDateToFilter) {
+      const toDate = new Date(touchpointDateToFilter);
+      toDate.setHours(23, 59, 59, 999); // End of day
+      filtered = filtered.filter(tp => {
+        const tpDate = new Date(tp.scheduled_at || tp.completed_at);
+        return tpDate <= toDate;
+      });
+    }
+    
+    // Calculate total pages for pagination
+    const totalPages = Math.max(1, Math.ceil(filtered.length / touchpointItemsPerPage));
+    setTouchpointTotalPages(totalPages);
+    
+    // Reset to page 1 when filters change
+    setTouchpointCurrentPage(1);
+    
+    // Update filtered touchpoints
+    setFilteredCampaignTouchpoints(filtered);
+  }, [campaignTouchpoints, touchpointTypeFilter, touchpointOutcomeFilter, touchpointDateFromFilter, touchpointDateToFilter, touchpointItemsPerPage]);
 
   // Helper function to get touchpoint counts for a lead/contact
   const getTouchpointCounts = (leadId: string, isDistrictContact: boolean = false) => {
@@ -303,45 +338,39 @@ export default function CampaignDetailPage() {
         }
       }
 
-      // Fetch all related data in one go
+      // Use API endpoints to fetch related data
       let allLeads: any[] = [];
       let allTouchpoints: any[] = [];
       let allDistricts: any[] = [];
       
+      // Fetch districts via API
       if (campaignData.company === 'Avalern') {
-        const { data: districts, error: districtError } = await supabase
-          .from('district_leads')
-          .select('id, district_name, county, status, campaign_id, created_at, district_contacts(id, first_name, last_name, email, phone, status, title)')
-          .eq('campaign_id', campaignId);
-          
-        if (!districtError && districts) {
-          allDistricts = districts.map(d => ({
+        try {
+          const districtsResponse = await fetch(`/api/campaign-districts?campaign_id=${campaignId}`);
+          if (districtsResponse.ok) {
+            const districtsData = await districtsResponse.json();
+            console.log(`Fetched ${districtsData.districts?.length || 0} districts via API`);
+            
+            allDistricts = districtsData.districts.map((d: any) => ({
             ...d,
-            total_contacts: d.district_contacts.length,
-            valid_contacts: d.district_contacts.filter((c: any) => c.status === 'Valid').length
+              total_contacts: d.district_contacts?.length || 0,
+              valid_contacts: d.district_contacts?.filter((c: any) => c.status === 'Valid').length || 0
           }));
           
-          const allContacts = districts.flatMap(d => d.district_contacts.map((c: any) => ({
+            // Extract contacts from districts
+            allLeads = allDistricts.flatMap((d: any) => d.district_contacts?.map((c: any) => ({
             ...c,
-            company: d.district_name, // Use district name as company
+              company: d.district_name,
             is_district_contact: true
-          })));
-          
-          allLeads = allContacts;
-          
-          const contactIds = allContacts.map(c => c.id);
-          if (contactIds.length > 0) {
-            const { data: touchpoints, error: tpError } = await supabase
-              .from('touchpoints')
-              .select('*, district_contact:district_contacts!inner(first_name, last_name, email)')
-              .in('district_contact_id', contactIds);
-            
-            if (!tpError) {
-              allTouchpoints = touchpoints;
-            }
+            })) || []);
+          } else {
+            console.error('Error fetching districts:', await districtsResponse.text());
           }
+        } catch (error) {
+          console.error('Error fetching districts via API:', error);
         }
       } else {
+        // For non-Avalern campaigns, fetch leads directly
         const { data: leads, error: leadsError } = await supabase
           .from('leads')
           .select('*, campaign:campaigns(name)')
@@ -349,18 +378,21 @@ export default function CampaignDetailPage() {
 
         if (!leadsError && leads) {
           allLeads = leads;
-          const leadIds = leads.map(l => l.id);
-          if (leadIds.length > 0) {
-            const { data: touchpoints, error: tpError } = await supabase
-              .from('touchpoints')
-              .select('*, lead:leads!inner(first_name, last_name, email)')
-              .in('lead_id', leadIds);
-            
-            if (!tpError) {
-              allTouchpoints = touchpoints;
-            }
-          }
         }
+      }
+      
+      // Fetch touchpoints via API for all campaign types
+      try {
+        const touchpointsResponse = await fetch(`/api/campaign-touchpoints?campaign_id=${campaignId}`);
+        if (touchpointsResponse.ok) {
+          const touchpointsData = await touchpointsResponse.json();
+          console.log(`Fetched ${touchpointsData.touchpoints?.length || 0} touchpoints via API`);
+          allTouchpoints = touchpointsData.touchpoints || [];
+        } else {
+          console.error('Error fetching touchpoints:', await touchpointsResponse.text());
+        }
+      } catch (error) {
+        console.error('Error fetching touchpoints via API:', error);
       }
       
       setCampaignLeads(allLeads);
@@ -649,63 +681,56 @@ export default function CampaignDetailPage() {
     }
   }
 
-  // Filter touchpoints based on criteria
-  useEffect(() => {
-    if (!campaignTouchpoints) {
-      setFilteredCampaignTouchpoints([]);
-      return;
-    }
-    
-    let filtered = [...campaignTouchpoints];
-    
-    // Filter by type
-    if (touchpointTypeFilter) {
-      filtered = filtered.filter(tp => tp.type === touchpointTypeFilter);
-    }
-    
-    // Filter by status/outcome
-    if (touchpointOutcomeFilter) {
-      if (touchpointOutcomeFilter === 'scheduled') {
-        filtered = filtered.filter(tp => !tp.completed_at);
-      } else if (touchpointOutcomeFilter === 'completed') {
-        filtered = filtered.filter(tp => tp.completed_at);
+  const handleOpenContactEditPanel = (contact: any) => {
+    setSelectedContactForEdit(contact)
+    setEditingContactData({ ...contact })
+  }
+
+  const handleCloseContactEditPanel = () => {
+    setSelectedContactForEdit(null)
+    setEditingContactData(null)
+  }
+
+  const handleUpdateContact = async () => {
+    if (!editingContactData || !selectedContactForEdit) return
+
+    setUpdatingContact(true)
+    try {
+      const { error } = await supabase
+        .from('district_contacts')
+        .update({
+          first_name: editingContactData.first_name,
+          last_name: editingContactData.last_name,
+          email: editingContactData.email,
+          phone: editingContactData.phone,
+          title: editingContactData.title,
+          status: editingContactData.status
+        })
+        .eq('id', selectedContactForEdit.id)
+
+      if (error) {
+        console.error('Error updating district contact:', error)
+        alert('Failed to update district contact')
+        return
       }
+
+      alert('District contact updated successfully!')
+      handleCloseContactEditPanel()
+      fetchCampaign() // Refresh all campaign data
+    } catch (error) {
+      console.error('Error updating district contact:', error)
+      alert('Failed to update district contact')
+    } finally {
+      setUpdatingContact(false)
     }
-    
-    // Filter by date range
-    if (touchpointDateFromFilter) {
-      const fromDate = new Date(touchpointDateFromFilter);
-      filtered = filtered.filter(tp => {
-        const date = new Date(tp.scheduled_at || tp.completed_at);
-        return date >= fromDate;
-      });
-    }
-    
-    if (touchpointDateToFilter) {
-      const toDate = new Date(touchpointDateToFilter);
-      // Set time to end of day
-      toDate.setHours(23, 59, 59, 999);
-      filtered = filtered.filter(tp => {
-        const date = new Date(tp.scheduled_at || tp.completed_at);
-        return date <= toDate;
-      });
-    }
-    
-    // Sort by scheduled date
-    filtered.sort((a, b) => {
-      const dateA = new Date(a.scheduled_at || a.completed_at || 0).getTime();
-      const dateB = new Date(b.scheduled_at || b.completed_at || 0).getTime();
-      return dateA - dateB;
-    });
-    
-    setFilteredCampaignTouchpoints(filtered);
-  }, [campaignTouchpoints, touchpointTypeFilter, touchpointOutcomeFilter, touchpointDateFromFilter, touchpointDateToFilter]);
+  }
 
   if (loading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-gray-600 ml-3">Loading campaign data...</p>
         </div>
       </DashboardLayout>
     )
@@ -715,12 +740,14 @@ export default function CampaignDetailPage() {
     return (
       <DashboardLayout>
         <div className="text-center py-12">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Campaign not found</h3>
-          <button
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Campaign not found</h2>
+          <p className="text-gray-600 mb-6">The campaign you're looking for doesn't exist or you don't have permission to view it.</p>
+          <button 
             onClick={() => router.push('/campaigns')}
-            className="text-blue-600 hover:text-blue-800"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
           >
-            ← Back to Campaigns
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Campaigns
           </button>
         </div>
       </DashboardLayout>
@@ -809,109 +836,25 @@ export default function CampaignDetailPage() {
                   {/* District Contacts or Regular Leads View */}
                   {(campaign.company !== 'Avalern' || contactTab === 'contacts') && (
                     <div className="flex gap-6">
-                      <div className={`transition-all duration-300 ${selectedLeadForEdit ? 'w-1/2' : 'w-full'}`}>
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                          <div className="px-6 py-4 border-b border-gray-200">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {campaign.company === 'Avalern' ? 'District Contacts' : 'Campaign Leads'} ({campaignLeads.length})
-                            </h3>
-                          </div>
-                          <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                              <thead className="bg-gray-50">
-                                <tr>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    {campaign.company === 'Avalern' ? 'Contact' : 'Lead'}
-                                  </th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    {campaign.company === 'Avalern' ? 'District/Title' : 'Details'}
-                                  </th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Touchpoints</th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Contact</th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                </tr>
-                              </thead>
-                              <tbody className="bg-white divide-y divide-gray-200">
-                                {campaignLeads.length === 0 ? (
-                                  <tr>
-                                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                                      No contacts found for this campaign.
-                                    </td>
-                                  </tr>
-                                ) : (
-                                  campaignLeads.map((lead) => (
-                                    <tr key={lead.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => handleOpenLeadEditPanel(lead)}>
-                                      <td className="px-6 py-4">
-                                        <div className="flex items-center">
-                                          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
-                                            <User className="h-5 w-5 text-gray-500" />
-                                          </div>
-                                          <div>
-                                            <div className="text-sm font-medium text-gray-900">
-                                              {lead.first_name} {lead.last_name}
-                                            </div>
-                                            <div className="text-sm text-gray-500">{lead.email}</div>
-                                          </div>
-                                        </div>
-                                      </td>
-                                      <td className="px-6 py-4">
-                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800`}>
-                                          {lead.status?.replace('_', ' ').toUpperCase() || 'UNKNOWN'}
-                                        </span>
-                                      </td>
-                                      <td className="px-6 py-4">
-                                          <div>
-                                            <div className="text-sm text-gray-900 font-medium">
-                                              {lead.company}
-                                            </div>
-                                            <div className="text-sm text-gray-500">{lead.title}</div>
-                                          </div>
-                                      </td>
-                                      <td className="px-6 py-4">
-                                          <div className="flex flex-col space-y-1">
-                                            {(() => {
-                                              const counts = getTouchpointCounts(lead.id, lead.is_district_contact)
-                                              return (
-                                                <>
-                                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                    {counts.scheduled} scheduled
-                                                  </span>
-                                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                    {counts.completed} completed
-                                                  </span>
-                                                </>
-                                              )
-                                            })()}
-                                          </div>
-                                      </td>
-                                      <td className="px-6 py-4">
-                                        <div className="flex items-center text-sm text-gray-900">
-                                          <Calendar className="h-3 w-3 mr-1 text-gray-400" />
-                                          {lead.last_contacted_at ? new Date(lead.last_contacted_at).toLocaleDateString() : 'Never'}
-                                        </div>
-                                      </td>
-                                      <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                                        <button
-                                          onClick={() => handleRemoveLeadFromCampaign(lead.id)}
-                                          className="flex items-center text-red-600 hover:text-red-800 text-sm font-medium"
-                                        >
-                                          <Minus className="h-4 w-4 mr-1" />
-                                          Remove
-                                        </button>
-                                      </td>
-                                    </tr>
-                                  ))
-                                )}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
+                      <div className={`transition-all duration-300 ${selectedContactForEdit ? 'w-1/2' : 'w-full'}`}>
+                        <CampaignDistrictContactsTable
+                          campaignLeads={campaignLeads}
+                          handleOpenContactEditPanel={handleOpenContactEditPanel}
+                          handleRemoveLeadFromCampaign={handleRemoveLeadFromCampaign}
+                          getTouchpointCounts={getTouchpointCounts}
+                        />
                       </div>
 
-                      {selectedLeadForEdit && editingLeadData && (
+                      {selectedContactForEdit && editingContactData && (
                         <div className="w-1/2 bg-white rounded-lg shadow-sm border border-gray-200 h-fit">
-                          {/* Lead Edit Panel */}
+                          <DistrictContactEditPanel
+                            contact={selectedContactForEdit}
+                            editingContactData={editingContactData}
+                            setEditingContactData={setEditingContactData}
+                            handleCloseContactEditPanel={handleCloseContactEditPanel}
+                            handleUpdateContact={handleUpdateContact}
+                            updating={updatingContact}
+                          />
                         </div>
                       )}
                     </div>
@@ -921,9 +864,10 @@ export default function CampaignDetailPage() {
                   {campaign.company === 'Avalern' && contactTab === 'districts' && (
                     <div className="flex gap-6">
                       <div className={`transition-all duration-300 ${selectedDistrictForEdit ? 'w-1/2' : 'w-full'}`}>
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                          {/* Districts Table */}
-                        </div>
+                        <CampaignDistrictsTable
+                          campaignDistricts={campaignDistricts}
+                          handleOpenDistrictEditPanel={handleOpenDistrictEditPanel}
+                        />
                       </div>
 
                       {selectedDistrictForEdit && editingDistrictData && (
@@ -940,9 +884,24 @@ export default function CampaignDetailPage() {
           
           {/* Touchpoints Tab */}
           {activeTab === 'touchpoints' && (
-            <div className="p-6">
-              {/* Touchpoints content */}
-            </div>
+            <CampaignTouchpointsTab
+              campaignTouchpoints={campaignTouchpoints}
+              filteredCampaignTouchpoints={filteredCampaignTouchpoints}
+              loadingTouchpoints={loadingTouchpoints}
+              touchpointTypeFilter={touchpointTypeFilter}
+              setTouchpointTypeFilter={setTouchpointTypeFilter}
+              touchpointOutcomeFilter={touchpointOutcomeFilter}
+              setTouchpointOutcomeFilter={setTouchpointOutcomeFilter}
+              touchpointDateFromFilter={touchpointDateFromFilter}
+              setTouchpointDateFromFilter={setTouchpointDateFromFilter}
+              touchpointDateToFilter={touchpointDateToFilter}
+              setTouchpointDateToFilter={setTouchpointDateToFilter}
+              currentPage={touchpointCurrentPage}
+              setCurrentPage={setTouchpointCurrentPage}
+              itemsPerPage={touchpointItemsPerPage}
+              setItemsPerPage={setTouchpointItemsPerPage}
+              totalPages={touchpointTotalPages}
+            />
           )}
         </div>
 

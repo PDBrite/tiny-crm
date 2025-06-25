@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '../../../lib/supabase'
-import { supabaseAdmin } from '@/lib/supabase'
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth"
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
+
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const userRole = session.user.role
+    const allowedCompanies = session.user.allowedCompanies || []
+
     const { lead_id, district_contact_id, type, subject, content, completed_at, outcome } = await request.json()
     
     if ((!lead_id && !district_contact_id) || !type) {
@@ -11,6 +21,56 @@ export async function POST(request: NextRequest) {
         { error: 'Either lead_id or district_contact_id, and type are required' },
         { status: 400 }
       )
+    }
+
+    // Security check: Verify the user has permission to create touchpoints for this lead/contact
+    if (lead_id) {
+      const { data: leadData, error: leadError } = await supabase
+        .from('leads')
+        .select('company')
+        .eq('id', lead_id)
+        .single()
+
+      if (leadError || !leadData) {
+        return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
+      }
+
+      const leadCompany = leadData.company.toLowerCase()
+      if (!allowedCompanies.includes(leadCompany)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
+      if (userRole === 'member' && leadCompany !== 'avalern') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+    } else if (district_contact_id) {
+      const { data: contactData, error: contactError } = await supabase
+        .from('district_contacts')
+        .select('district_lead:district_leads!inner(company)')
+        .eq('id', district_contact_id)
+        .single()
+
+      if (contactError || !contactData) {
+        return NextResponse.json({ error: 'District contact not found' }, { status: 404 })
+      }
+
+      // Handle district_lead potentially being an array due to Supabase typing
+      const districtLead = Array.isArray(contactData.district_lead) 
+        ? contactData.district_lead[0] 
+        : contactData.district_lead
+
+      if (!districtLead || !districtLead.company) {
+        return NextResponse.json({ error: 'District lead information not found' }, { status: 404 })
+      }
+
+      const districtCompany = districtLead.company.toLowerCase()
+      if (!allowedCompanies.includes(districtCompany)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
+      if (userRole === 'member' && districtCompany !== 'avalern') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
     }
 
     // Create the touchpoint with either lead_id or district_contact_id
@@ -74,18 +134,14 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('Touchpoints API called with URL:', request.url)
-    
-    // Get authentication cookie
-    const sessionCookie = request.cookies.get('next-auth.session-token')?.value
-    
-    if (!sessionCookie) {
-      console.log('Touchpoints API: No session cookie found')
-      // Continue anyway for now, but in production we would return 401
-      // return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-    } else {
-      console.log('Touchpoints API: Session cookie found')
+    const session = await getServerSession(authOptions)
+
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const userRole = session.user.role
+    const allowedCompanies = session.user.allowedCompanies || []
     
     // Get query parameters
     const url = new URL(request.url)
@@ -96,15 +152,6 @@ export async function GET(request: NextRequest) {
     
     console.log('Touchpoints API: Query params:', { leadId, districtContactId, campaignId, includeDetails })
 
-    // Check if supabaseAdmin is available
-    if (!supabaseAdmin) {
-      console.error('supabaseAdmin client is not available')
-      return NextResponse.json(
-        { error: 'Database client unavailable' },
-        { status: 500 }
-      )
-    }
-
     // Build query based on parameters
     let touchpointsData: any[] = []
     
@@ -113,7 +160,7 @@ export async function GET(request: NextRequest) {
       console.log(`Fetching touchpoints for campaign: ${campaignId}`)
       
       // First check if this is an Avalern campaign
-      const { data: campaignData, error: campaignError } = await supabaseAdmin
+      const { data: campaignData, error: campaignError } = await supabase
         .from('campaigns')
         .select('id, company')
         .eq('id', campaignId)
@@ -121,61 +168,71 @@ export async function GET(request: NextRequest) {
       
       if (campaignError) {
         console.error('Error fetching campaign:', campaignError)
-      } else {
-        const isAvalern = campaignData.company === 'Avalern'
-        console.log(`Campaign belongs to ${campaignData.company}`)
+        return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
+      }
+      
+      const campaignCompany = campaignData.company.toLowerCase()
+      if (!allowedCompanies.includes(campaignCompany)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
+      if (userRole === 'member' && campaignCompany !== 'avalern') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+      
+      const isAvalern = campaignData.company === 'Avalern'
+      console.log(`Campaign belongs to ${campaignData.company}`)
+      
+      if (isAvalern) {
+        // For Avalern, first get all district leads for this campaign
+        const { data: districtLeads, error: districtLeadsError } = await supabase
+          .from('district_leads')
+          .select('id')
+          .eq('campaign_id', campaignId)
         
-        if (isAvalern) {
-          // For Avalern, first get all district leads for this campaign
-          const { data: districtLeads, error: districtLeadsError } = await supabaseAdmin
-            .from('district_leads')
-            .select('id')
-            .eq('campaign_id', campaignId)
+        if (districtLeadsError) {
+          console.error('Error fetching district leads:', districtLeadsError)
+        } else {
+          console.log(`Found ${districtLeads?.length || 0} district leads for campaign ${campaignId}`)
           
-          if (districtLeadsError) {
-            console.error('Error fetching district leads:', districtLeadsError)
-          } else {
-            console.log(`Found ${districtLeads?.length || 0} district leads for campaign ${campaignId}`)
+          if (districtLeads && districtLeads.length > 0) {
+            // Get all district contacts for these leads
+            const districtLeadIds = districtLeads.map(dl => dl.id)
             
-            if (districtLeads && districtLeads.length > 0) {
-              // Get all district contacts for these leads
-              const districtLeadIds = districtLeads.map(dl => dl.id)
+            const { data: districtContacts, error: contactsError } = await supabase
+              .from('district_contacts')
+              .select('id')
+              .in('district_lead_id', districtLeadIds)
+            
+            if (contactsError) {
+              console.error('Error fetching district contacts:', contactsError)
+            } else {
+              console.log(`Found ${districtContacts?.length || 0} district contacts`)
               
-              const { data: districtContacts, error: contactsError } = await supabaseAdmin
-                .from('district_contacts')
-                .select('id')
-                .in('district_lead_id', districtLeadIds)
-              
-              if (contactsError) {
-                console.error('Error fetching district contacts:', contactsError)
-              } else {
-                console.log(`Found ${districtContacts?.length || 0} district contacts`)
+              if (districtContacts && districtContacts.length > 0) {
+                // Get touchpoints for these contacts
+                const contactIds = districtContacts.map(c => c.id)
                 
-                if (districtContacts && districtContacts.length > 0) {
-                  // Get touchpoints for these contacts
-                  const contactIds = districtContacts.map(c => c.id)
-                  
-                  const { data: districtTouchpoints, error: districtError } = await supabaseAdmin
-                    .from('touchpoints')
-                    .select(`
-                      *,
-                      district_contact:district_contacts(
-                        id,
-                        first_name,
-                        last_name,
-                        email,
-                        district_lead_id
-                      )
-                    `)
-                    .in('district_contact_id', contactIds)
-                    .order('scheduled_at', { ascending: true })
-                  
-                  if (districtError) {
-                    console.error('Error fetching district touchpoints:', districtError)
-                  } else {
-                    console.log(`Found ${districtTouchpoints?.length || 0} district touchpoints`)
-                    touchpointsData = [...touchpointsData, ...(districtTouchpoints || [])]
-                  }
+                const { data: districtTouchpoints, error: districtError } = await supabase
+                  .from('touchpoints')
+                  .select(`
+                    *,
+                    district_contact:district_contacts(
+                      id,
+                      first_name,
+                      last_name,
+                      email,
+                      district_lead_id
+                    )
+                  `)
+                  .in('district_contact_id', contactIds)
+                  .order('scheduled_at', { ascending: true })
+                
+                if (districtError) {
+                  console.error('Error fetching district touchpoints:', districtError)
+                } else {
+                  console.log(`Found ${districtTouchpoints?.length || 0} district touchpoints`)
+                  touchpointsData = [...touchpointsData, ...(districtTouchpoints || [])]
                 }
               }
             }
@@ -184,7 +241,7 @@ export async function GET(request: NextRequest) {
       }
       
       // Then try regular leads
-      const { data: leadTouchpoints, error: leadError } = await supabaseAdmin
+      const { data: leadTouchpoints, error: leadError } = await supabase
         .from('touchpoints')
         .select(`
           *,
@@ -208,7 +265,27 @@ export async function GET(request: NextRequest) {
     }
     // Case 2: Filter by lead_id
     else if (leadId) {
-      const { data, error } = await supabaseAdmin
+      // Security check: Verify the user has permission to view this lead's touchpoints
+      const { data: leadData, error: leadError } = await supabase
+        .from('leads')
+        .select('company')
+        .eq('id', leadId)
+        .single()
+
+      if (leadError || !leadData) {
+        return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
+      }
+
+      const leadCompany = leadData.company.toLowerCase()
+      if (!allowedCompanies.includes(leadCompany)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
+      if (userRole === 'member' && leadCompany !== 'avalern') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
+      const { data, error } = await supabase
         .from('touchpoints')
         .select(includeDetails ? `
           *,
@@ -225,7 +302,36 @@ export async function GET(request: NextRequest) {
     }
     // Case 3: Filter by district_contact_id
     else if (districtContactId) {
-      const { data, error } = await supabaseAdmin
+      // Security check: Verify the user has permission to view this contact's touchpoints
+      const { data: contactData, error: contactError } = await supabase
+        .from('district_contacts')
+        .select('district_lead:district_leads!inner(company)')
+        .eq('id', districtContactId)
+        .single()
+
+      if (contactError || !contactData) {
+        return NextResponse.json({ error: 'District contact not found' }, { status: 404 })
+      }
+
+      // Handle district_lead potentially being an array due to Supabase typing
+      const districtLead = Array.isArray(contactData.district_lead) 
+        ? contactData.district_lead[0] 
+        : contactData.district_lead
+
+      if (!districtLead || !districtLead.company) {
+        return NextResponse.json({ error: 'District lead information not found' }, { status: 404 })
+      }
+
+      const districtCompany = districtLead.company.toLowerCase()
+      if (!allowedCompanies.includes(districtCompany)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
+      if (userRole === 'member' && districtCompany !== 'avalern') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
+      const { data, error } = await supabase
         .from('touchpoints')
         .select(includeDetails ? `
           *,

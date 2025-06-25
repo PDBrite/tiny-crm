@@ -7,43 +7,6 @@ export async function GET(request: NextRequest) {
   try {
     console.log('Campaign districts API called with URL:', request.url)
     
-    // Get authentication cookie
-    const sessionCookie = request.cookies.get('next-auth.session-token')?.value
-    
-    if (!sessionCookie) {
-      console.log('Campaign districts API: No session cookie found')
-      // Continue anyway for now, but in production we would return 401
-      // return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-    } else {
-      console.log('Campaign districts API: Session cookie found')
-    }
-    
-    /* Temporarily disabled full authentication check
-    // Check authentication
-    const session = await getServerSession(authOptions)
-    
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      )
-    }
-
-    // Only allow Avalern members or admins
-    const userRole = session.user?.role
-    const userCompanies = session.user?.allowedCompanies || []
-    const canAccessAvalern = 
-      userRole === 'admin' || 
-      (userRole === 'member' && userCompanies.includes('avalern'))
-    
-    if (!canAccessAvalern) {
-      return NextResponse.json(
-        { error: 'Not authorized to access district data' },
-        { status: 403 }
-      )
-    }
-    */
-
     // Get query parameters
     const url = new URL(request.url)
     const searchTerm = url.searchParams.get('search')
@@ -57,36 +20,23 @@ export async function GET(request: NextRequest) {
     if (!supabaseAdmin) {
       console.error('supabaseAdmin client is not available')
       return NextResponse.json(
-        { error: 'Database client unavailable' },
+        { error: 'Database client unavailable', message: 'Server-side Supabase client not initialized' },
         { status: 500 }
       )
     }
 
-    // Build query
-    let query = supabaseAdmin
-      .from('district_leads')
-      .select(`
-        *,
-        district_contacts(id, first_name, last_name, email, phone, status)
-      `)
-      .eq('company', 'Avalern')
-    
-    // Apply campaign filter if provided
+    // Debug query - first check if the campaign exists
     if (campaignId) {
-      query = query.eq('campaign_id', campaignId)
-      console.log(`Campaign districts API: Filtering by campaign_id: ${campaignId}`)
-      
-      // Debug query - first check if the campaign exists
       const { data: campaign, error: campaignError } = await supabaseAdmin
         .from('campaigns')
-        .select('id, name')
+        .select('id, name, company')
         .eq('id', campaignId)
         .single()
         
       if (campaignError) {
         console.error(`Campaign districts API: Error finding campaign with ID ${campaignId}:`, campaignError)
       } else {
-        console.log(`Campaign districts API: Found campaign: ${campaign?.name || 'Unknown'} (${campaign?.id || 'No ID'})`)
+        console.log(`Campaign districts API: Found campaign: ${campaign?.name || 'Unknown'} (${campaign?.id || 'No ID'}) - Company: ${campaign?.company}`)
       }
       
       // Debug query - check if any districts have this campaign_id
@@ -100,6 +50,23 @@ export async function GET(request: NextRequest) {
       } else {
         console.log(`Campaign districts API: Found ${districtCount || 0} districts with campaign_id ${campaignId}`)
       }
+    }
+
+    // Build query
+    let query = supabaseAdmin
+      .from('district_leads')
+      .select(`
+        *,
+        district_contacts(id, first_name, last_name, email, phone, status, title)
+      `)
+    
+    // Apply campaign filter if provided
+    if (campaignId) {
+      query = query.eq('campaign_id', campaignId)
+      console.log(`Campaign districts API: Filtering by campaign_id: ${campaignId}`)
+    } else {
+      // If no campaign ID, filter by company
+      query = query.eq('company', 'Avalern')
     }
     
     // Apply other filters if provided
@@ -121,7 +88,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('Error fetching districts:', error)
       return NextResponse.json(
-        { error: 'Failed to fetch districts' },
+        { error: 'Failed to fetch districts', details: error.message },
         { status: 500 }
       )
     }

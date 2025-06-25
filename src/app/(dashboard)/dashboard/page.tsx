@@ -41,6 +41,9 @@ interface CampaignStats extends Campaign {
 
 export default function Dashboard() {
   const { selectedCompany } = useCompany()
+  // Default to Avalern if selectedCompany is not set
+  const effectiveCompany = selectedCompany || 'Avalern'
+  
   const [stats, setStats] = useState<DashboardStats>({
     totalLeads: 0,
     emailsSent: 0,
@@ -85,7 +88,7 @@ export default function Dashboard() {
     }
   }
 
-  const currentConfig = companyConfig[selectedCompany as keyof typeof companyConfig] || companyConfig.CraftyCode
+  const currentConfig = companyConfig[effectiveCompany as keyof typeof companyConfig] || companyConfig.Avalern
 
   // Fetch dashboard data from Supabase
   useEffect(() => {
@@ -97,7 +100,7 @@ export default function Dashboard() {
         const { data: campaignsData, error: campaignsError } = await supabase
           .from('campaigns')
           .select('*')
-          .eq('company', selectedCompany)
+          .eq('company', effectiveCompany)
 
         if (campaignsError) {
           console.error('Error fetching campaigns:', campaignsError)
@@ -107,41 +110,63 @@ export default function Dashboard() {
         const campaignIds = campaignsData?.map(c => c.id) || []
         
         let leadsData: any[] = []
-        if (campaignIds.length > 0) {
-          const { data: fetchedLeadsData, error: leadsError } = await supabase
-            .from('leads')
-            .select('*')
-            .in('campaign_id', campaignIds)
-
-          if (!leadsError && fetchedLeadsData) {
-            leadsData = fetchedLeadsData
+        if (campaignIds.length > 0 && effectiveCompany === 'CraftyCode') {
+          try {
+            const { data: fetchedLeadsData, error: leadsError } = await supabase
+              .from('leads')
+              .select(`
+                *,
+                campaign:campaigns(id, name, company)
+              `)
+              .eq('company', effectiveCompany)
+            
+            if (!leadsError && fetchedLeadsData) {
+              // Enrich with touchpoint counts
+              leadsData = await Promise.all(
+                (fetchedLeadsData || []).map(async (lead) => {
+                  // Get completed touchpoints count
+                  const { count: completedCount, error: countError } = await supabase
+                    .from('touchpoints')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('lead_id', lead.id)
+                    .not('completed_at', 'is', null)
+                    .not('outcome', 'is', null)
+                  
+                  if (countError) {
+                    console.error('Error fetching touchpoint counts:', countError)
+                  }
+                  
+                  return {
+                    ...lead,
+                    touchpoints_count: completedCount || 0
+                  }
+                })
+              )
+            }
+          } catch (error) {
+            console.error('Error fetching leads data:', error)
           }
         }
 
         // For Avalern, also fetch district data
         let districtsData: any[] = []
-        if (selectedCompany === 'Avalern') {
-          const { data: fetchedDistrictsData, error: districtsError } = await supabase
-            .from('districts')
-            .select('*')
-
-          if (!districtsError && fetchedDistrictsData) {
-            districtsData = fetchedDistrictsData
-          }
-        }
-
-        // Fetch touchpoints for email and call counts
-        const leadIds = leadsData?.map(l => l.id) || []
-        
-        let touchpointsData: any[] = []
-        if (leadIds.length > 0) {
-          const { data: fetchedTouchpointsData, error: touchpointsError } = await supabase
-            .from('touchpoints')
-            .select('*')
-            .in('lead_id', leadIds)
-
-          if (!touchpointsError && fetchedTouchpointsData) {
-            touchpointsData = fetchedTouchpointsData
+        let districtContactsData: any[] = []
+        if (effectiveCompany === 'Avalern') {
+          try {
+            // Fetch districts from API endpoint
+            const districtsResponse = await fetch('/api/districts')
+            if (districtsResponse.ok) {
+              const fetchedDistrictsData = await districtsResponse.json()
+              districtsData = fetchedDistrictsData || []
+              
+              // Calculate total contacts from district data
+              const totalContacts = districtsData.reduce((sum, district) => sum + (district.contacts_count || 0), 0)
+              districtContactsData = new Array(totalContacts)
+            } else {
+              console.error('Error fetching districts from API:', districtsResponse.status)
+            }
+          } catch (error) {
+            console.error('Error fetching district data:', error)
           }
         }
 
@@ -150,44 +175,85 @@ export default function Dashboard() {
         const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
         const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)
         
-        const totalLeads = leadsData?.length || 0
-        const emailsMadeToday = touchpointsData?.filter(t => 
-          t.type === 'email' && 
-          t.completed_at && 
-          new Date(t.completed_at) >= todayStart && 
-          new Date(t.completed_at) < todayEnd
-        ).length || 0
-        const callsMadeToday = touchpointsData?.filter(t => 
-          t.type === 'call' && 
-          t.completed_at && 
-          new Date(t.completed_at) >= todayStart && 
-          new Date(t.completed_at) < todayEnd
-        ).length || 0
-        const activeLeads = leadsData?.filter(l => !['won', 'lost'].includes(l.status)).length || 0
+        // Calculate email and call counts from touchpoints
+        let emailsSentToday = 0;
+        let callsMadeToday = 0;
+        let activeLeads = 0;
+        let conversions = 0;
+        let totalLeads = 0;
+
+        if (effectiveCompany === 'CraftyCode') {
+          // For CraftyCode, use the enriched leads data
+          totalLeads = leadsData?.length || 0;
+          activeLeads = leadsData?.filter(l => !['won', 'lost'].includes(l.status)).length || 0;
+          conversions = leadsData?.filter(l => l.status === 'won').length || 0;
+          
+          // Fetch today's touchpoints for email and call counts
+          try {
+            const { data: todayTouchpoints, error: touchpointsError } = await supabase
+              .from('touchpoints')
+              .select('*')
+              .eq('company', effectiveCompany)
+              .gte('completed_at', todayStart.toISOString())
+              .lt('completed_at', todayEnd.toISOString());
+              
+            if (!touchpointsError && todayTouchpoints) {
+              emailsSentToday = todayTouchpoints.filter(t => t.type === 'email').length || 0;
+              callsMadeToday = todayTouchpoints.filter(t => t.type === 'call').length || 0;
+            }
+          } catch (error) {
+            console.error('Error fetching today\'s touchpoints:', error);
+          }
+        } else {
+          // For Avalern, use the district data
+          // Calculate email and call counts from touchpoints
+          const { data: todayTouchpoints, error: touchpointsError } = await supabase
+            .from('touchpoints')
+            .select('*')
+            .eq('company', effectiveCompany)
+            .gte('completed_at', todayStart.toISOString())
+            .lt('completed_at', todayEnd.toISOString());
+            
+          if (!touchpointsError && todayTouchpoints) {
+            emailsSentToday = todayTouchpoints.filter(t => t.type === 'email').length || 0;
+            callsMadeToday = todayTouchpoints.filter(t => t.type === 'call').length || 0;
+          }
+        }
 
         setStats({
           totalLeads: totalLeads,
-          emailsSent: emailsMadeToday,
+          emailsSent: emailsSentToday,
           callsMade: callsMadeToday,
-          conversions: leadsData?.filter(l => l.status === 'won').length || 0,
+          conversions: conversions,
           activeLeads: activeLeads,
           totalCampaigns: campaignsData?.length || 0,
           totalDistricts: districtsData?.length || 0,
-          districtContacts: selectedCompany === 'Avalern' ? totalLeads : 0
+          districtContacts: effectiveCompany === 'Avalern' ? districtContactsData?.length || 0 : 0
         })
 
         // Calculate campaign stats
         const campaignStats: CampaignStats[] = campaignsData?.map(campaign => {
-          const campaignLeads = leadsData?.filter(l => l.campaign_id === campaign.id) || []
-          const campaignLeadIds = campaignLeads.map(l => l.id)
-          const campaignTouchpoints = touchpointsData?.filter(t => campaignLeadIds.includes(t.lead_id)) || []
-
-          return {
-            ...campaign,
-            lead_count: campaignLeads.length,
-            email_count: campaignTouchpoints.filter(t => t.type === 'email').length,
-            call_count: campaignTouchpoints.filter(t => t.type === 'call').length,
-            conversion_count: campaignLeads.filter(l => l.status === 'won').length
+          if (effectiveCompany === 'CraftyCode') {
+            // For CraftyCode, use the enriched leads data
+            const campaignLeads = leadsData?.filter(l => l.campaign_id === campaign.id) || []
+            return {
+              ...campaign,
+              lead_count: campaignLeads.length,
+              email_count: campaignLeads.reduce((sum, lead) => sum + (lead.touchpoints_count || 0), 0),
+              call_count: 0, // We don't have this data readily available
+              conversion_count: campaignLeads.filter(l => l.status === 'won').length
+            }
+          } else {
+            // For Avalern, calculate from district data
+            const campaignDistricts = districtsData?.filter(d => d.campaign_id === campaign.id) || []
+            const contactCount = campaignDistricts.reduce((sum, district) => sum + (district.contacts_count || 0), 0)
+            return {
+              ...campaign,
+              lead_count: contactCount,
+              email_count: 0, // We don't have this data readily available
+              call_count: 0, // We don't have this data readily available
+              conversion_count: campaignDistricts.filter(d => d.status === 'won').length
+            }
           }
         }) || []
 
@@ -210,10 +276,10 @@ export default function Dashboard() {
       }
     }
 
-    if (selectedCompany) {
+    if (effectiveCompany) {
       fetchDashboardData()
     }
-  }, [selectedCompany])
+  }, [effectiveCompany])
 
   // Load filtered touchpoints after initial data is loaded
   useEffect(() => {
@@ -244,7 +310,7 @@ export default function Dashboard() {
 
   // Company-specific stat cards
   const getStatCards = () => {
-    if (selectedCompany === 'Avalern') {
+    if (effectiveCompany === 'Avalern') {
       return [
         {
           title: 'Total Districts',
@@ -255,7 +321,7 @@ export default function Dashboard() {
         },
         {
           title: 'District Contacts',
-          value: stats.totalLeads.toLocaleString(),
+          value: stats.districtContacts?.toLocaleString() || '0',
           change: 'Key personnel identified',
           icon: Users,
           color: 'blue'
@@ -301,7 +367,7 @@ export default function Dashboard() {
         {
           title: 'Active Campaigns',
           value: stats.totalCampaigns.toLocaleString(),
-          change: `${selectedCompany} campaigns`,
+          change: `${effectiveCompany} campaigns`,
           icon: Target,
           color: 'purple'
         }
@@ -363,7 +429,7 @@ export default function Dashboard() {
   }
 
   const handleViewData = () => {
-    if (selectedCompany === 'Avalern') {
+    if (effectiveCompany === 'Avalern') {
       window.location.href = '/districts'
     } else {
       window.location.href = '/leads'
@@ -375,7 +441,7 @@ export default function Dashboard() {
       // Build query parameters for specific date
       const params = new URLSearchParams()
       params.append('date', selectedDate)
-      params.append('company', selectedCompany)
+      params.append('company', effectiveCompany)
       if (selectedCampaign) {
         params.append('campaignId', selectedCampaign)
       }
@@ -414,7 +480,7 @@ export default function Dashboard() {
       const params = new URLSearchParams()
       params.append('startDate', startOfMonth.toISOString().split('T')[0])
       params.append('endDate', endOfMonth.toISOString().split('T')[0])
-      params.append('company', selectedCompany)
+      params.append('company', effectiveCompany)
       if (selectedCampaign) {
         params.append('campaignId', selectedCampaign)
       }
@@ -435,7 +501,7 @@ export default function Dashboard() {
     const params = new URLSearchParams()
     params.append('startDate', startDate)
     params.append('endDate', endDate)
-    params.append('company', selectedCompany)
+    params.append('company', effectiveCompany)
     if (selectedCampaign) {
       params.append('campaignId', selectedCampaign)
     }
@@ -489,7 +555,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{selectedCompany} Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{effectiveCompany} Dashboard</h1>
           <p className="text-gray-600 mt-1">
             {currentConfig.description} - Welcome back! Here's your overview.
           </p>
@@ -505,14 +571,14 @@ export default function Dashboard() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className={`w-12 h-12 ${currentConfig.primaryColor} rounded-lg flex items-center justify-center`}>
-              {selectedCompany === 'Avalern' ? (
+              {effectiveCompany === 'Avalern' ? (
                 <School className="h-6 w-6 text-white" />
               ) : (
                 <Building className="h-6 w-6 text-white" />
               )}
             </div>
             <div>
-              <h2 className={`text-lg font-semibold ${currentConfig.textColor}`}>{selectedCompany}</h2>
+              <h2 className={`text-lg font-semibold ${currentConfig.textColor}`}>{effectiveCompany}</h2>
               <p className="text-sm text-gray-600">{currentConfig.description}</p>
             </div>
           </div>
@@ -538,10 +604,10 @@ export default function Dashboard() {
             </div>
             <div className="text-left">
               <h3 className={`text-lg font-semibold ${currentConfig.textColor}`}>
-                {selectedCompany === 'Avalern' ? 'Import Districts' : 'Import Leads'}
+                {effectiveCompany === 'Avalern' ? 'Import Districts' : 'Import Leads'}
               </h3>
               <p className="text-sm text-gray-700">
-                {selectedCompany === 'Avalern' ? 'Upload district and contact data' : 'Upload CSV files to add prospects'}
+                {effectiveCompany === 'Avalern' ? 'Upload district and contact data' : 'Upload CSV files to add prospects'}
               </p>
             </div>
           </div>
@@ -558,10 +624,10 @@ export default function Dashboard() {
             </div>
             <div className="text-left">
               <h3 className="text-lg font-semibold text-gray-900">
-                {selectedCompany === 'Avalern' ? 'View Districts' : 'View Leads'}
+                {effectiveCompany === 'Avalern' ? 'View Districts' : 'View Leads'}
               </h3>
               <p className="text-sm text-gray-700">
-                {selectedCompany === 'Avalern' ? 'Browse district database' : 'Manage your prospects'}
+                {effectiveCompany === 'Avalern' ? 'Browse district database' : 'Manage your prospects'}
               </p>
             </div>
           </div>
@@ -593,7 +659,7 @@ export default function Dashboard() {
       {/* Touchpoint Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          {selectedCompany === 'Avalern' ? 'Filter District Outreach' : 'Filter Touchpoints'}
+          {effectiveCompany === 'Avalern' ? 'Filter District Outreach' : 'Filter Touchpoints'}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
