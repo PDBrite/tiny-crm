@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useCompany } from '@/contexts/CompanyContext'
-import { supabase } from '@/lib/supabase'
 import type { Campaign, Lead, Touchpoint } from '@/types/database'
 import { 
   Users, 
@@ -90,58 +89,33 @@ export default function Dashboard() {
 
   const currentConfig = companyConfig[effectiveCompany as keyof typeof companyConfig] || companyConfig.Avalern
 
-  // Fetch dashboard data from Supabase
+  // Fetch dashboard data using API endpoints
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true)
 
         // Fetch campaigns for selected company
-        const { data: campaignsData, error: campaignsError } = await supabase
-          .from('campaigns')
-          .select('*')
-          .eq('company', effectiveCompany)
-
-        if (campaignsError) {
-          console.error('Error fetching campaigns:', campaignsError)
+        const campaignsResponse = await fetch(`/api/campaigns?company=${effectiveCompany}`)
+        if (!campaignsResponse.ok) {
+          console.error('Error fetching campaigns:', campaignsResponse.status)
+          return
         }
+        const campaignsData = await campaignsResponse.json()
+        const campaigns = campaignsData.campaigns || []
 
         // Fetch leads for selected company campaigns
-        const campaignIds = campaignsData?.map(c => c.id) || []
+        const campaignIds = campaigns?.map((c: any) => c.id) || []
         
         let leadsData: any[] = []
         if (campaignIds.length > 0 && effectiveCompany === 'CraftyCode') {
           try {
-            const { data: fetchedLeadsData, error: leadsError } = await supabase
-              .from('leads')
-              .select(`
-                *,
-                campaign:campaigns(id, name, company)
-              `)
-              .eq('company', effectiveCompany)
-            
-            if (!leadsError && fetchedLeadsData) {
-              // Enrich with touchpoint counts
-              leadsData = await Promise.all(
-                (fetchedLeadsData || []).map(async (lead) => {
-                  // Get completed touchpoints count
-                  const { count: completedCount, error: countError } = await supabase
-                    .from('touchpoints')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('lead_id', lead.id)
-                    .not('completed_at', 'is', null)
-                    .not('outcome', 'is', null)
-                  
-                  if (countError) {
-                    console.error('Error fetching touchpoint counts:', countError)
-                  }
-                  
-                  return {
-                    ...lead,
-                    touchpoints_count: completedCount || 0
-                  }
-                })
-              )
+            const leadsResponse = await fetch(`/api/campaign-leads?company=${effectiveCompany}`)
+            if (leadsResponse.ok) {
+              const leadsResult = await leadsResponse.json()
+              leadsData = leadsResult.leads || []
+            } else {
+              console.error('Error fetching leads:', leadsResponse.status)
             }
           } catch (error) {
             console.error('Error fetching leads data:', error)
@@ -156,8 +130,8 @@ export default function Dashboard() {
             // Fetch districts from API endpoint
             const districtsResponse = await fetch('/api/districts')
             if (districtsResponse.ok) {
-              const fetchedDistrictsData = await districtsResponse.json()
-              districtsData = fetchedDistrictsData || []
+              const districtsResult = await districtsResponse.json()
+              districtsData = districtsResult.districts || []
               
               // Calculate total contacts from district data
               const totalContacts = districtsData.reduce((sum, district) => sum + (district.contacts_count || 0), 0)
@@ -190,16 +164,14 @@ export default function Dashboard() {
           
           // Fetch today's touchpoints for email and call counts
           try {
-            const { data: todayTouchpoints, error: touchpointsError } = await supabase
-              .from('touchpoints')
-              .select('*')
-              .eq('company', effectiveCompany)
-              .gte('completed_at', todayStart.toISOString())
-              .lt('completed_at', todayEnd.toISOString());
-              
-            if (!touchpointsError && todayTouchpoints) {
-              emailsSentToday = todayTouchpoints.filter(t => t.type === 'email').length || 0;
-              callsMadeToday = todayTouchpoints.filter(t => t.type === 'call').length || 0;
+            const todayDateString = todayStart.toISOString().split('T')[0];
+            const touchpointsResponse = await fetch(`/api/touchpoint-counts?date=${todayDateString}&company=${effectiveCompany}`);
+            if (touchpointsResponse.ok) {
+              const touchpointsResult = await touchpointsResponse.json();
+              emailsSentToday = touchpointsResult.counts?.email || 0;
+              callsMadeToday = touchpointsResult.counts?.call || 0;
+            } else {
+              console.error('Error fetching today\'s touchpoints:', touchpointsResponse.status);
             }
           } catch (error) {
             console.error('Error fetching today\'s touchpoints:', error);
@@ -207,16 +179,18 @@ export default function Dashboard() {
         } else {
           // For Avalern, use the district data
           // Calculate email and call counts from touchpoints
-          const { data: todayTouchpoints, error: touchpointsError } = await supabase
-            .from('touchpoints')
-            .select('*')
-            .eq('company', effectiveCompany)
-            .gte('completed_at', todayStart.toISOString())
-            .lt('completed_at', todayEnd.toISOString());
-            
-          if (!touchpointsError && todayTouchpoints) {
-            emailsSentToday = todayTouchpoints.filter(t => t.type === 'email').length || 0;
-            callsMadeToday = todayTouchpoints.filter(t => t.type === 'call').length || 0;
+          try {
+            const todayDateString = todayStart.toISOString().split('T')[0];
+            const touchpointsResponse = await fetch(`/api/touchpoint-counts?date=${todayDateString}&company=${effectiveCompany}`);
+            if (touchpointsResponse.ok) {
+              const touchpointsResult = await touchpointsResponse.json();
+              emailsSentToday = touchpointsResult.counts?.email || 0;
+              callsMadeToday = touchpointsResult.counts?.call || 0;
+            } else {
+              console.error('Error fetching today\'s touchpoints:', touchpointsResponse.status);
+            }
+          } catch (error) {
+            console.error('Error fetching today\'s touchpoints:', error);
           }
         }
 
@@ -226,13 +200,13 @@ export default function Dashboard() {
           callsMade: callsMadeToday,
           conversions: conversions,
           activeLeads: activeLeads,
-          totalCampaigns: campaignsData?.length || 0,
+          totalCampaigns: campaigns?.length || 0,
           totalDistricts: districtsData?.length || 0,
           districtContacts: effectiveCompany === 'Avalern' ? districtContactsData?.length || 0 : 0
         })
 
         // Calculate campaign stats
-        const campaignStats: CampaignStats[] = campaignsData?.map(campaign => {
+        const campaignStats: CampaignStats[] = campaigns?.map((campaign: any) => {
           if (effectiveCompany === 'CraftyCode') {
             // For CraftyCode, use the enriched leads data
             const campaignLeads = leadsData?.filter(l => l.campaign_id === campaign.id) || []

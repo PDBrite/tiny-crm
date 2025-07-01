@@ -1,41 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
-
-// Helper function to enrich leads with touchpoint data
-async function enrichLeadsWithTouchpoints(leads: any[], isDistrictContacts: boolean) {
-  if (!supabaseAdmin) return leads;
-  
-  for (const lead of leads) {
-    try {
-      // Get touchpoint count
-      const idField = isDistrictContacts ? 'district_contact_id' : 'lead_id';
-      const { count: touchpointCount } = await supabaseAdmin
-        .from('touchpoints')
-        .select('*', { count: 'exact', head: true })
-        .eq(idField, lead.id);
-      
-      lead.contact_attempts_count = touchpointCount || 0;
-      
-      // Get last contact date
-      const { data: lastTouchpoint, error: lastTpError } = await supabaseAdmin
-        .from('touchpoints')
-        .select('completed_at')
-        .eq(idField, lead.id)
-        .not('completed_at', 'is', null)
-        .order('completed_at', { ascending: false })
-        .limit(1)
-        .single();
-      
-      if (!lastTpError && lastTouchpoint) {
-        lead.last_contacted_at = lastTouchpoint.completed_at;
-      }
-    } catch (error) {
-      console.error(`Error enriching lead ${lead.id} with touchpoint data:`, error);
-    }
-  }
-  
-  return leads;
-}
+import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
@@ -59,154 +23,308 @@ export async function GET(request: NextRequest) {
     
     console.log('Campaign leads API: Query params:', { campaignId, company })
 
-    if (!campaignId) {
-      return NextResponse.json(
-        { error: 'campaign_id is required' },
-        { status: 400 }
-      )
+    // If no company is specified, return all leads
+    if (!company && !campaignId) {
+      const leads = await prisma.lead.findMany({
+        include: {
+          campaign: true,
+          touchpoints: true
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+
+      // Transform to match expected format
+      const transformedLeads = leads.map(lead => ({
+        id: lead.id,
+        first_name: lead.firstName,
+        last_name: lead.lastName,
+        email: lead.email,
+        phone: lead.phone,
+        city: lead.city || '',
+        state: lead.state || '',
+        company: lead.company || '',
+        linkedin_url: lead.linkedinUrl || '',
+        website_url: lead.websiteUrl || '',
+        online_profile: lead.onlineProfile || '',
+        source: lead.source || '',
+        status: lead.status,
+        notes: lead.notes || '',
+        campaign_id: lead.campaignId || null,
+        campaign: lead.campaign ? {
+          id: lead.campaign.id,
+          name: lead.campaign.name
+        } : null,
+        created_at: lead.createdAt,
+        last_contacted_at: lead.lastContactedAt,
+        touchpoints_count: lead.touchpoints.length,
+        is_district_contact: false
+      }));
+
+      return NextResponse.json({
+        leads: transformedLeads,
+        count: transformedLeads.length
+      });
     }
 
-    // Check if supabaseAdmin is available
-    if (!supabaseAdmin) {
-      console.error('supabaseAdmin client is not available')
-      return NextResponse.json(
-        { error: 'Database client unavailable' },
-        { status: 500 }
-      )
-    }
+    // If a campaign ID is provided, get leads for that campaign
+    if (campaignId) {
+      // First, get the campaign to determine its company
+      const campaign = await prisma.campaign.findUnique({
+        where: { id: campaignId }
+      });
 
-    // First check if this is an Avalern campaign
-    const { data: campaignData, error: campaignError } = await supabaseAdmin
-      .from('campaigns')
-      .select('id, company')
-      .eq('id', campaignId)
-      .single()
-    
-    if (campaignError) {
-      console.error('Error fetching campaign:', campaignError)
-      return NextResponse.json(
-        { error: 'Failed to fetch campaign' },
-        { status: 500 }
-      )
-    }
-    
-    const isAvalern = campaignData.company === 'Avalern'
-    console.log(`Campaign belongs to ${campaignData.company}`)
-    
-    let leads: any[] = []
-    
-    if (isAvalern) {
-      // For Avalern campaigns, fetch district contacts
-      console.log('Fetching Avalern district contacts for campaign:', campaignId)
-      
-      // First verify that district_leads exist for this campaign
-      const { data: districtLeads, error: districtLeadsError } = await supabaseAdmin
-        .from('district_leads')
-        .select('id, district_name')
-        .eq('campaign_id', campaignId)
-      
-      if (districtLeadsError) {
-        console.error('Error fetching district leads:', districtLeadsError)
+      if (!campaign) {
+        return NextResponse.json(
+          { error: 'Campaign not found' },
+          { status: 404 }
+        );
+      }
+
+      const isAvalern = campaign.company === 'Avalern';
+      console.log(`Campaign belongs to ${campaign.company}`);
+
+      if (isAvalern) {
+        // For Avalern campaigns, fetch district contacts
+        console.log('Fetching Avalern district contacts for campaign:', campaignId);
+
+        const districtContacts = await prisma.districtContact.findMany({
+          where: {
+            campaignId: campaignId
+          },
+          include: {
+            district: true,
+            touchpoints: true
+          }
+        });
+
+        console.log(`Found ${districtContacts.length} district contacts`);
+
+        // Transform district contacts to match lead structure
+        const transformedContacts = districtContacts.map(contact => ({
+          id: contact.id,
+          first_name: contact.firstName,
+          last_name: contact.lastName,
+          email: contact.email,
+          phone: contact.phone,
+          company: contact.district?.name || '',
+          district_lead_id: contact.districtId,
+          status: contact.status,
+          notes: contact.notes || '',
+          title: contact.title,
+          city: '', // District contacts don't have city/state
+          state: contact.state || 'California',
+          linkedin_url: contact.linkedinUrl || '',
+          website_url: '',
+          source: 'District Import',
+          contact_attempts_count: contact.touchpoints.length,
+          last_contacted_at: contact.lastContactedAt,
+          is_district_contact: true
+        }));
+
+        return NextResponse.json({
+          leads: transformedContacts,
+          count: transformedContacts.length
+        });
       } else {
-        console.log(`Found ${districtLeads?.length || 0} district leads for campaign ${campaignId}`)
-        if (districtLeads && districtLeads.length > 0) {
-          console.log('Sample district lead:', districtLeads[0])
-        }
-      }
-      
-      // Query district contacts with a more explicit join
-      const { data: districtContacts, error: contactError } = await supabaseAdmin
-        .from('district_contacts')
-        .select(`
-          id, first_name, last_name, title, email, phone, status, notes, district_lead_id,
-          district_lead:district_leads(id, district_name, campaign_id)
-        `)
-        .in('district_lead_id', districtLeads?.map(d => d.id) || [])
-      
-      if (contactError) {
-        console.error('Error fetching district contacts:', contactError)
-        return NextResponse.json(
-          { error: 'Failed to fetch district contacts', details: contactError.message },
-          { status: 500 }
-        )
-      }
-      
-      console.log(`Found ${districtContacts?.length || 0} district contacts`)
-      if (districtContacts && districtContacts.length > 0) {
-        console.log('Sample district contact:', JSON.stringify(districtContacts[0], null, 2))
-      }
-      
-      // Transform district contacts to match lead structure
-      leads = (districtContacts || []).map((contact: any) => ({
-        id: contact.id,
-        first_name: contact.first_name,
-        last_name: contact.last_name,
-        email: contact.email,
-        phone: contact.phone,
-        company: contact.district_lead?.district_name || '',
-        district_lead_id: contact.district_lead_id,
-        status: contact.status || 'not_contacted',
-        notes: contact.notes,
-        title: contact.title,
-        city: '', // District contacts don't have city/state
-        state: '',
-        linkedin_url: '',
-        website_url: '',
-        source: 'District Import',
-        contact_attempts_count: 0,
-        last_contacted_at: null,
-        is_district_contact: true
-      }))
-      
-      // Enrich with touchpoint counts if supabaseAdmin is available
-      if (supabaseAdmin) {
-        leads = await enrichLeadsWithTouchpoints(leads, true)
-      }
-    } else {
-      // For other companies, fetch regular leads
-      const { data: regularLeads, error: leadsError } = await supabaseAdmin
-        .from('leads')
-        .select(`
-          id, first_name, last_name, email, status, city, state, company, 
-          phone, linkedin_url, website_url, online_profile, source, created_at
-        `)
-        .eq('campaign_id', campaignId)
-      
-      if (leadsError) {
-        console.error('Error fetching leads:', leadsError)
-        return NextResponse.json(
-          { error: 'Failed to fetch leads' },
-          { status: 500 }
-        )
-      }
-      
-      // Process leads to add contact attempt counts and last contact date
-      leads = await Promise.all((regularLeads || []).map(async (lead) => {
-        return {
-          ...lead,
-          contact_attempts_count: 0,
-          last_contacted_at: null,
+        // For other companies, fetch regular leads
+        const leads = await prisma.lead.findMany({
+          where: {
+            campaignId: campaignId
+          },
+          include: {
+            touchpoints: true
+          }
+        });
+
+        // Transform leads to match expected format
+        const transformedLeads = leads.map(lead => ({
+          id: lead.id,
+          first_name: lead.firstName,
+          last_name: lead.lastName,
+          email: lead.email,
+          phone: lead.phone,
+          city: lead.city || '',
+          state: lead.state || '',
+          company: lead.company || '',
+          linkedin_url: lead.linkedinUrl || '',
+          website_url: lead.websiteUrl || '',
+          online_profile: lead.onlineProfile || '',
+          source: lead.source || '',
+          status: lead.status,
+          notes: lead.notes || '',
+          campaign_id: lead.campaignId,
+          created_at: lead.createdAt,
+          last_contacted_at: lead.lastContactedAt,
+          touchpoints_count: lead.touchpoints.length,
           is_district_contact: false
-        }
-      }))
-      
-      // Enrich with touchpoint counts if supabaseAdmin is available
-      if (supabaseAdmin) {
-        leads = await enrichLeadsWithTouchpoints(leads, false)
+        }));
+
+        console.log(`Found ${transformedLeads.length} leads for campaign ${campaignId}`);
+        return NextResponse.json({
+          leads: transformedLeads,
+          count: transformedLeads.length
+        });
       }
     }
-    
-    console.log(`Found ${leads.length} leads/contacts for campaign ${campaignId}`)
-    return NextResponse.json({
-      leads,
-      count: leads.length
-    })
-    
-  } catch (error) {
-    console.error('Error in campaign leads API:', error)
+
+    // If only company is specified, get all leads for that company
+    if (company) {
+      if (company === 'Avalern') {
+        // For Avalern, get all district contacts
+        const districtContacts = await prisma.districtContact.findMany({
+          include: {
+            district: true,
+            touchpoints: true
+          }
+        });
+
+        // Transform district contacts to match lead structure
+        const transformedContacts = districtContacts.map(contact => ({
+          id: contact.id,
+          first_name: contact.firstName,
+          last_name: contact.lastName,
+          email: contact.email,
+          phone: contact.phone,
+          company: contact.district?.name || '',
+          district_lead_id: contact.districtId,
+          status: contact.status,
+          notes: contact.notes || '',
+          title: contact.title,
+          city: '', // District contacts don't have city/state
+          state: contact.state || 'California',
+          linkedin_url: contact.linkedinUrl || '',
+          website_url: '',
+          source: 'District Import',
+          campaign_id: contact.campaignId,
+          created_at: contact.createdAt,
+          last_contacted_at: contact.lastContactedAt,
+          touchpoints_count: contact.touchpoints.length,
+          is_district_contact: true
+        }));
+
+        return NextResponse.json({
+          leads: transformedContacts,
+          count: transformedContacts.length
+        });
+      } else {
+        // For other companies, get regular leads
+        const leads = await prisma.lead.findMany({
+          where: {
+            company: company
+          },
+          include: {
+            touchpoints: true,
+            campaign: true
+          }
+        });
+
+        // Transform leads to match expected format
+        const transformedLeads = leads.map(lead => ({
+          id: lead.id,
+          first_name: lead.firstName,
+          last_name: lead.lastName,
+          email: lead.email,
+          phone: lead.phone,
+          city: lead.city || '',
+          state: lead.state || '',
+          company: lead.company || '',
+          linkedin_url: lead.linkedinUrl || '',
+          website_url: lead.websiteUrl || '',
+          online_profile: lead.onlineProfile || '',
+          source: lead.source || '',
+          status: lead.status,
+          notes: lead.notes || '',
+          campaign_id: lead.campaignId,
+          campaign: lead.campaign ? {
+            id: lead.campaign.id,
+            name: lead.campaign.name
+          } : null,
+          created_at: lead.createdAt,
+          last_contacted_at: lead.lastContactedAt,
+          touchpoints_count: lead.touchpoints.length,
+          is_district_contact: false
+        }));
+
+        return NextResponse.json({
+          leads: transformedLeads,
+          count: transformedLeads.length
+        });
+      }
+    }
+
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Invalid request parameters' },
+      { status: 400 }
+    );
+  } catch (error) {
+    console.error('Error in campaign leads API:', error);
+    return NextResponse.json(
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
-    )
+    );
   }
-} 
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { 
+      id, firstName, lastName, email, phone, city, state, company,
+      linkedinUrl, websiteUrl, onlineProfile, source, status, notes, campaignId
+    } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'Lead ID is required' }, { status: 400 });
+    }
+
+    // Update lead with Prisma
+    const updatedLead = await prisma.lead.update({
+      where: { id },
+      data: {
+        firstName,
+        lastName,
+        email,
+        phone,
+        city,
+        state,
+        company,
+        linkedinUrl,
+        websiteUrl,
+        onlineProfile,
+        source,
+        status,
+        notes,
+        campaignId
+      }
+    });
+
+    // Transform to match expected format
+    const transformedLead = {
+      id: updatedLead.id,
+      first_name: updatedLead.firstName,
+      last_name: updatedLead.lastName,
+      email: updatedLead.email,
+      phone: updatedLead.phone,
+      city: updatedLead.city,
+      state: updatedLead.state,
+      company: updatedLead.company,
+      linkedin_url: updatedLead.linkedinUrl,
+      website_url: updatedLead.websiteUrl,
+      online_profile: updatedLead.onlineProfile,
+      source: updatedLead.source,
+      status: updatedLead.status,
+      notes: updatedLead.notes,
+      campaign_id: updatedLead.campaignId
+    };
+
+    return NextResponse.json({ lead: transformedLead });
+  } catch (error) {
+    console.error('Error updating lead:', error);
+    return NextResponse.json(
+      { error: 'Failed to update lead', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}

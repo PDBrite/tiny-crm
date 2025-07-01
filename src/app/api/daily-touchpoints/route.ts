@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '../../../lib/supabase'
-import { getTouchpointsDueToday, getOverdueTouchpoints } from '../../../utils/outreach-scheduler'
+import { prisma } from '@/lib/prisma'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
+import { TouchpointOutcome, TouchpointType } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -58,165 +58,222 @@ export async function GET(request: NextRequest) {
       // For Avalern, fetch touchpoints for district contacts
       console.log('Fetching Avalern district touchpoints for date:', date || 'today');
       
-      let query = supabase
-        .from('touchpoints')
-        .select(`
-          *,
-          district_contact:district_contacts!inner(
-            id,
-            first_name,
-            last_name,
-            email,
-            phone,
-            title,
-            district_lead:district_leads!inner(
-              id,
-              district_name,
-              county,
-              company,
-              campaign_id,
-              campaign:campaigns(id, name, company)
-            )
-          )
-        `)
-        .is('completed_at', null) // Only get uncompleted touchpoints
-        .eq('district_contact.district_lead.company', 'Avalern')
-
-      // Filter by campaign if specified
-      if (campaignId) {
-        console.log('Filtering by campaign ID:', campaignId);
-        query = query.eq('district_contact.district_lead.campaign_id', campaignId)
-      }
-
-      // If specific date is provided, get touchpoints for that date
-      if (date) {
-        console.log('Filtering by date range:', targetDate.toISOString(), 'to', nextDay.toISOString());
-        query = query
-          .gte('scheduled_at', targetDate.toISOString())
-          .lt('scheduled_at', nextDay.toISOString())
-      } else {
-        // Filter by type for legacy support
-        if (type === 'today') {
-          query = query
-            .gte('scheduled_at', targetDate.toISOString())
-            .lt('scheduled_at', nextDay.toISOString())
-        } else if (type === 'overdue') {
-          query = query.lt('scheduled_at', targetDate.toISOString())
-        } else {
-          // Get both today and overdue
-          query = query.lt('scheduled_at', nextDay.toISOString())
-        }
-      }
-
-      const { data: districtTouchpoints, error } = await query
-        .order('scheduled_at', { ascending: true })
-
-      if (error) {
-        console.error('Error fetching district touchpoints:', error)
-        return NextResponse.json(
-          { error: 'Failed to fetch touchpoints' },
-          { status: 500 }
-        )
-      }
-
-      console.log(`Found ${districtTouchpoints?.length || 0} Avalern district touchpoints`);
-      if (districtTouchpoints && districtTouchpoints.length > 0) {
-        console.log('Sample district touchpoint:', {
-          id: districtTouchpoints[0].id,
-          type: districtTouchpoints[0].type,
-          scheduled_at: districtTouchpoints[0].scheduled_at,
-          district_contact: {
-            id: districtTouchpoints[0].district_contact?.id,
-            name: `${districtTouchpoints[0].district_contact?.first_name || ''} ${districtTouchpoints[0].district_contact?.last_name || ''}`.trim(),
-            district_lead: {
-              id: districtTouchpoints[0].district_contact?.district_lead?.id,
-              name: districtTouchpoints[0].district_contact?.district_lead?.district_name,
-              campaign: districtTouchpoints[0].district_contact?.district_lead?.campaign?.name
+      // First, get the district contacts with their touchpoints
+      const districtContacts = await prisma.districtContact.findMany({
+        where: {
+          district: {
+            campaign: {
+              company: 'Avalern'
+            }
+          },
+          ...(campaignId ? { campaignId } : {})
+        },
+        include: {
+          district: {
+            include: {
+              campaign: true
             }
           }
-        });
-      }
-
-      // Transform district touchpoints to match the expected format
-      touchpoints = (districtTouchpoints || []).map(tp => ({
-        ...tp,
-        lead: {
-          id: tp.district_contact.id,
-          first_name: tp.district_contact.first_name,
-          last_name: tp.district_contact.last_name,
-          email: tp.district_contact.email,
-          phone: tp.district_contact.phone,
-          city: tp.district_contact.district_lead.county,
-          company: tp.district_contact.district_lead.district_name,
-          campaign_id: tp.district_contact.district_lead.campaign_id,
-          campaign: tp.district_contact.district_lead.campaign
         }
-      }))
+      });
+      
+      console.log(`Found ${districtContacts.length} district contacts for Avalern`);
+      
+      // Then get touchpoints for these contacts
+      const districtContactIds = districtContacts.map(dc => dc.id);
+      
+      let touchpointWhereClause: any = {
+        completedAt: null,
+        districtContactId: {
+          in: districtContactIds
+        }
+      };
+      
+      // Apply date filters
+      if (date) {
+        touchpointWhereClause.scheduledAt = {
+          gte: targetDate,
+          lt: nextDay
+        };
+      } else if (type === 'today') {
+        touchpointWhereClause.scheduledAt = {
+          gte: targetDate,
+          lt: nextDay
+        };
+      } else if (type === 'overdue') {
+        touchpointWhereClause.scheduledAt = {
+          lt: targetDate
+        };
+      } else {
+        // Get both today and overdue
+        touchpointWhereClause.scheduledAt = {
+          lt: nextDay
+        };
+      }
+      
+      const districtTouchpoints = await prisma.touchpoint.findMany({
+        where: touchpointWhereClause,
+        orderBy: {
+          scheduledAt: 'asc'
+        }
+      });
+      
+      console.log(`Found ${districtTouchpoints.length} touchpoints for Avalern district contacts`);
+      
+      // Create a map of district contacts for easy lookup
+      const districtContactMap = new Map();
+      districtContacts.forEach(dc => {
+        districtContactMap.set(dc.id, dc);
+      });
+      
+      // Transform touchpoints to match the expected format
+      touchpoints = districtTouchpoints.map(tp => {
+        const dc = districtContactMap.get(tp.districtContactId);
+        if (!dc) return null;
+        
+        return {
+          id: tp.id,
+          type: tp.type,
+          subject: tp.subject,
+          content: tp.content,
+          scheduled_at: tp.scheduledAt,
+          completed_at: tp.completedAt,
+          outcome: tp.outcome,
+          created_at: tp.createdAt,
+          district_contact_id: tp.districtContactId,
+          district_contact: {
+            id: dc.id,
+            first_name: dc.firstName,
+            last_name: dc.lastName,
+            email: dc.email,
+            phone: dc.phone,
+            title: dc.title,
+            district_lead: {
+              id: dc.district.id,
+              district_name: dc.district.name,
+              county: dc.district.county,
+              campaign_id: dc.district.campaignId,
+              campaign: {
+                id: dc.district.campaign.id,
+                name: dc.district.campaign.name,
+                company: dc.district.campaign.company
+              }
+            }
+          },
+          // Add lead field for backward compatibility
+          lead: {
+            id: dc.id,
+            first_name: dc.firstName,
+            last_name: dc.lastName,
+            email: dc.email,
+            phone: dc.phone,
+            city: dc.district.county,
+            company: dc.district.name,
+            campaign_id: dc.district.campaignId,
+            campaign: {
+              id: dc.district.campaign.id,
+              name: dc.district.campaign.name,
+              company: dc.district.campaign.company
+            }
+          }
+        };
+      }).filter(Boolean);
     } else {
       // For other companies (like CraftyCode), fetch regular lead touchpoints
-      let query = supabase
-        .from('touchpoints')
-        .select(`
-          *,
-          lead:leads!inner(
-            id,
-            first_name,
-            last_name,
-            email,
-            phone,
-            city,
-            company,
-            campaign_id,
-            campaign:campaigns(name, company)
-          )
-        `)
-        .is('completed_at', null) // Only get uncompleted touchpoints
-
-      // Filter by company if specified
-      if (company) {
-        query = query.eq('lead.company', company)
-      } else {
-        // If no company is determined (which shouldn't happen with the new logic),
-        // we should prevent fetching all data.
-        return NextResponse.json({ touchpoints: [] });
-      }
-
-      // Filter by campaign if specified
-      if (campaignId) {
-        query = query.eq('lead.campaign_id', campaignId)
-      }
-
-      // If specific date is provided, get touchpoints for that date
-      if (date) {
-        query = query
-          .gte('scheduled_at', targetDate.toISOString())
-          .lt('scheduled_at', nextDay.toISOString())
-      } else {
-        // Filter by type for legacy support
-        if (type === 'today') {
-          query = query
-            .gte('scheduled_at', targetDate.toISOString())
-            .lt('scheduled_at', nextDay.toISOString())
-        } else if (type === 'overdue') {
-          query = query.lt('scheduled_at', targetDate.toISOString())
-        } else {
-          // Get both today and overdue
-          query = query.lt('scheduled_at', nextDay.toISOString())
+      // First, get the leads
+      const leads = await prisma.lead.findMany({
+        where: {
+          campaign: {
+            company
+          },
+          ...(campaignId ? { campaignId } : {})
+        },
+        include: {
+          campaign: true
         }
+      });
+      
+      console.log(`Found ${leads.length} leads for ${company}`);
+      
+      // Then get touchpoints for these leads
+      const leadIds = leads.map(lead => lead.id);
+      
+      let touchpointWhereClause: any = {
+        completedAt: null,
+        leadId: {
+          in: leadIds
+        }
+      };
+      
+      // Apply date filters
+      if (date) {
+        touchpointWhereClause.scheduledAt = {
+          gte: targetDate,
+          lt: nextDay
+        };
+      } else if (type === 'today') {
+        touchpointWhereClause.scheduledAt = {
+          gte: targetDate,
+          lt: nextDay
+        };
+      } else if (type === 'overdue') {
+        touchpointWhereClause.scheduledAt = {
+          lt: targetDate
+        };
+      } else {
+        // Get both today and overdue
+        touchpointWhereClause.scheduledAt = {
+          lt: nextDay
+        };
       }
-
-      const { data: leadTouchpoints, error } = await query
-        .order('scheduled_at', { ascending: true })
-
-      if (error) {
-        console.error('Error fetching lead touchpoints:', error)
-        return NextResponse.json(
-          { error: 'Failed to fetch touchpoints' },
-          { status: 500 }
-        )
-      }
-
-      touchpoints = leadTouchpoints || []
+      
+      const leadTouchpoints = await prisma.touchpoint.findMany({
+        where: touchpointWhereClause,
+        orderBy: {
+          scheduledAt: 'asc'
+        }
+      });
+      
+      console.log(`Found ${leadTouchpoints.length} touchpoints for ${company} leads`);
+      
+      // Create a map of leads for easy lookup
+      const leadMap = new Map();
+      leads.forEach(lead => {
+        leadMap.set(lead.id, lead);
+      });
+      
+      // Transform touchpoints to match the expected format
+      touchpoints = leadTouchpoints.map(tp => {
+        const lead = leadMap.get(tp.leadId);
+        if (!lead) return null;
+        
+        return {
+          id: tp.id,
+          type: tp.type,
+          subject: tp.subject,
+          content: tp.content,
+          scheduled_at: tp.scheduledAt,
+          completed_at: tp.completedAt,
+          outcome: tp.outcome,
+          created_at: tp.createdAt,
+          lead_id: tp.leadId,
+          lead: {
+            id: lead.id,
+            first_name: lead.firstName,
+            last_name: lead.lastName,
+            email: lead.email,
+            phone: lead.phone,
+            city: lead.city,
+            company: lead.company,
+            campaign_id: lead.campaignId,
+            campaign: {
+              id: lead.campaign.id,
+              name: lead.campaign.name,
+              company: lead.campaign.company
+            }
+          }
+        };
+      }).filter(Boolean);
     }
 
     // If specific date is provided, return touchpoints for that date
@@ -297,42 +354,41 @@ export async function POST(request: NextRequest) {
     }
 
     // Security check: Verify the user has permission to update this touchpoint
-    const { data: touchpointToUpdate, error: fetchError } = await supabase
-      .from('touchpoints')
-      .select(`
-        id,
-        lead:leads(id, company),
-        district_contact:district_contacts(id, district_lead:district_leads(id, company))
-      `)
-      .eq('id', touchpointId)
-      .single();
+    const touchpointToUpdate = await prisma.touchpoint.findUnique({
+      where: { id: touchpointId },
+      include: {
+        lead: {
+          select: {
+            campaign: {
+              select: { company: true }
+            }
+          }
+        },
+        districtContact: {
+          select: {
+            district: {
+              select: {
+                campaign: {
+                  select: { company: true }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
 
-    if (fetchError || !touchpointToUpdate) {
+    if (!touchpointToUpdate) {
       return NextResponse.json({ error: 'Touchpoint not found' }, { status: 404 });
     }
     
-    // Type-safe access to company information - handle Supabase array relationships
+    // Type-safe access to company information
     let touchpointCompany: string | undefined;
     
-    // Handle lead company (lead is returned as an array from Supabase)
-    const lead = Array.isArray((touchpointToUpdate as any).lead) 
-      ? (touchpointToUpdate as any).lead[0] 
-      : (touchpointToUpdate as any).lead;
-    
-    if (lead?.company) {
-      touchpointCompany = lead.company;
-    } else {
-      // Handle district_contact (also returned as an array from Supabase)
-      const districtContact = Array.isArray((touchpointToUpdate as any).district_contact) 
-        ? (touchpointToUpdate as any).district_contact[0] 
-        : (touchpointToUpdate as any).district_contact;
-      
-      if (districtContact?.district_lead) {
-        const districtLead = Array.isArray(districtContact.district_lead) 
-          ? districtContact.district_lead[0]
-          : districtContact.district_lead;
-        touchpointCompany = districtLead?.company;
-      }
+    if (touchpointToUpdate.lead?.campaign?.company) {
+      touchpointCompany = touchpointToUpdate.lead.campaign.company;
+    } else if (touchpointToUpdate.districtContact?.district?.campaign?.company) {
+      touchpointCompany = touchpointToUpdate.districtContact.district.campaign.company;
     }
 
     if (!touchpointCompany) {
@@ -349,53 +405,81 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { data: touchpoint, error } = await supabase
-      .from('touchpoints')
-      .update({
-        completed_at: new Date().toISOString(),
+    // Update the touchpoint
+    const updatedTouchpoint = await prisma.touchpoint.update({
+      where: { id: touchpointId },
+      data: {
+        completedAt: new Date(),
         outcome: outcome || null,
-        outcome_enum: outcomeEnum || null,
+        outcomeEnum: outcomeEnum as TouchpointOutcome || null,
         content: notes ? `${notes}` : undefined
-      })
-      .eq('id', touchpointId)
-      .select(`
-        *,
-        lead:leads(id, email, first_name, last_name),
-        district_contact:district_contacts(
-          id, 
-          email, 
-          first_name, 
-          last_name,
-          district_lead:district_leads(id)
-        )
-      `)
-      .single()
+      }
+    });
 
-    if (error) {
-      return NextResponse.json(
-        { error: 'Failed to update touchpoint' },
-        { status: 500 }
-      )
+    // Get additional data needed for the response
+    let leadData = null;
+    let districtContactData = null;
+    
+    if (updatedTouchpoint.leadId) {
+      const lead = await prisma.lead.update({
+        where: { id: updatedTouchpoint.leadId },
+        data: { lastContactedAt: new Date() },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true
+        }
+      });
+      
+      leadData = {
+        id: lead.id,
+        email: lead.email,
+        first_name: lead.firstName,
+        last_name: lead.lastName
+      };
+    } else if (updatedTouchpoint.districtContactId) {
+      const districtContact = await prisma.districtContact.findUnique({
+        where: { id: updatedTouchpoint.districtContactId },
+        include: {
+          district: true
+        }
+      });
+      
+      if (districtContact) {
+        // Update the district's lastContactedAt
+        await prisma.district.update({
+          where: { id: districtContact.district.id },
+          data: { lastContactedAt: new Date() }
+        });
+        
+        districtContactData = {
+          id: districtContact.id,
+          email: districtContact.email,
+          first_name: districtContact.firstName,
+          last_name: districtContact.lastName,
+          district_lead: {
+            id: districtContact.district.id
+          }
+        };
+      }
     }
 
-    // Update appropriate record's last_contacted_at
-    if (touchpoint.lead) {
-      await supabase
-        .from('leads')
-        .update({ last_contacted_at: new Date().toISOString() })
-        .eq('id', touchpoint.lead.id)
-    } else if (touchpoint.district_contact) {
-      await supabase
-        .from('district_leads')
-        .update({ last_contacted_at: new Date().toISOString() })
-        .eq('id', touchpoint.district_contact.district_lead.id)
-    }
+    // Format the response
+    const formattedTouchpoint = {
+      ...updatedTouchpoint,
+      completed_at: updatedTouchpoint.completedAt,
+      scheduled_at: updatedTouchpoint.scheduledAt,
+      created_at: updatedTouchpoint.createdAt,
+      lead: leadData,
+      district_contact: districtContactData
+    };
 
     return NextResponse.json({
       success: true,
-      touchpoint,
+      touchpoint: formattedTouchpoint,
       message: 'Touchpoint marked as completed'
-    })
+    });
 
   } catch (error) {
     console.error('Error completing touchpoint:', error)
@@ -412,4 +496,4 @@ function groupTouchpointsByType(touchpoints: any[]) {
     acc[type] = (acc[type] || 0) + 1
     return acc
   }, {})
-} 
+}

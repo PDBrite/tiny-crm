@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '../../../lib/supabase'
+import { prisma } from '@/lib/prisma'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 
@@ -43,28 +43,86 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Start date and end date are required' }, { status: 400 })
     }
 
-    // Get all touchpoints within the date range
-    const { data: touchpoints, error } = await supabase
-      .from('touchpoints')
-      .select('id, scheduled_at')
-      .is('completed_at', null)
-      .gte('scheduled_at', startDate)
-      .lte('scheduled_at', endDate + 'T23:59:59.999Z');
-
-    if (error) {
-      return NextResponse.json({ error: 'Failed to fetch touchpoint counts' }, { status: 500 });
+    // Parse the start and end dates
+    const parsedStartDate = new Date(startDate);
+    const parsedEndDate = new Date(endDate);
+    parsedEndDate.setHours(23, 59, 59, 999); // Set to end of day
+    
+    let touchpoints = [];
+    
+    if (company === 'Avalern') {
+      // For Avalern, get touchpoints for district contacts
+      let whereClause: any = {
+        completedAt: null,
+        scheduledAt: {
+          gte: parsedStartDate,
+          lte: parsedEndDate
+        },
+        districtContact: {
+          district: {
+            campaign: {
+              company: 'Avalern'
+            }
+          }
+        }
+      };
+      
+      // Add campaign filter if provided
+      if (campaignId) {
+        whereClause.districtContact.district.campaignId = campaignId;
+      }
+      
+      const districtTouchpoints = await prisma.touchpoint.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          scheduledAt: true
+        }
+      });
+      
+      touchpoints = districtTouchpoints;
+    } else {
+      // For other companies, get touchpoints for leads
+      let whereClause: any = {
+        completedAt: null,
+        scheduledAt: {
+          gte: parsedStartDate,
+          lte: parsedEndDate
+        },
+        lead: {
+          campaign: {
+            company: company
+          }
+        }
+      };
+      
+      // Add campaign filter if provided
+      if (campaignId) {
+        whereClause.lead.campaignId = campaignId;
+      }
+      
+      const leadTouchpoints = await prisma.touchpoint.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          scheduledAt: true
+        }
+      });
+      
+      touchpoints = leadTouchpoints;
     }
 
     // Count touchpoints by date
-    const counts: Record<string, number> = {}
+    const counts: Record<string, number> = {};
     
-    touchpoints?.forEach((touchpoint: any) => {
-      const date = new Date(touchpoint.scheduled_at).toISOString().split('T')[0]
-      counts[date] = (counts[date] || 0) + 1
+    touchpoints.forEach((touchpoint: any) => {
+      const date = new Date(touchpoint.scheduledAt).toISOString().split('T')[0];
+      counts[date] = (counts[date] || 0) + 1;
     });
 
-    return NextResponse.json({ counts })
+    return NextResponse.json({ counts });
   } catch (error) {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Error fetching touchpoint counts:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}

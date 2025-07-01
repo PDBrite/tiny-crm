@@ -1,105 +1,134 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
-import { getServerSession } from 'next-auth'
+import { prisma } from '@/lib/prisma'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('Districts API called with URL:', request.url)
-    
-    // Get authentication cookie
-    const sessionCookie = request.cookies.get('next-auth.session-token')?.value
-    
-    if (!sessionCookie) {
-      console.log('Districts API: No session cookie found')
-      // Continue anyway for now, but in production we would return 401
-      // return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-    } else {
-      console.log('Districts API: Session cookie found')
-    }
-    
-    /* Temporarily disabled full authentication check
     // Check authentication
     const session = await getServerSession(authOptions)
-    
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      )
-    }
-
-    // Only allow Avalern members or admins
-    const userRole = session.user?.role
-    const userCompanies = session.user?.allowedCompanies || []
-    const canAccessAvalern = 
-      userRole === 'admin' || 
-      (userRole === 'member' && userCompanies.includes('avalern'))
-    
-    if (!canAccessAvalern) {
-      return NextResponse.json(
-        { error: 'Not authorized to access district data' },
-        { status: 403 }
-      )
-    }
-    */
-
-    // Ensure we have the admin client
-    if (!supabaseAdmin) {
-      console.error('supabaseAdmin is not available')
-      return NextResponse.json(
-        { error: 'Server configuration error' },
-        { status: 500 }
-      )
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Get query parameters
     const { searchParams } = new URL(request.url)
-    const county = searchParams.get('county')
-    const status = searchParams.get('status')
-    
-    // Build the query
-    let query = supabaseAdmin
-      .from('district_leads')
-      .select(`
-        *,
-        campaign:campaigns(id, name),
-        district_contacts(id, status)
-      `)
-      .eq('company', 'Avalern')
-      .order('created_at', { ascending: false })
-    
-    // Apply filters if provided
-    if (county && county !== 'all') {
-      query = query.eq('county', county)
+    const searchQuery = searchParams.get('search') || ''
+    const countyFilter = searchParams.get('county')
+    const page = parseInt(searchParams.get('page') || '1')
+    const pageSize = parseInt(searchParams.get('pageSize') || '50')
+    const skip = (page - 1) * pageSize
+
+    // Build the where clause based on filters
+    let where: any = {}
+
+    // Add search filter if provided
+    if (searchQuery) {
+      where.OR = [
+        { name: { contains: searchQuery, mode: 'insensitive' } },
+        { county: { contains: searchQuery, mode: 'insensitive' } },
+      ]
     }
-    
-    if (status && status !== 'all') {
-      query = query.eq('status', status)
+
+    // Add county filter if provided
+    if (countyFilter) {
+      where.county = countyFilter
     }
-    
-    // Execute the query
-    const { data, error } = await query
-    
-    if (error) {
-      console.error('Error fetching districts:', error)
+
+    // Count total districts matching the filters
+    const totalCount = await prisma.district.count({ where })
+
+    // Get districts from database using Prisma with pagination
+    const districts = await prisma.district.findMany({
+      where,
+      include: {
+        _count: {
+          select: {
+            contacts: true
+          }
+        }
+      },
+      orderBy: {
+        name: 'asc'
+      },
+      skip,
+      take: pageSize
+    })
+
+    // Transform the data to match the expected format
+    const transformedDistricts = districts.map(district => ({
+      id: district.id,
+      name: district.name,
+      county: district.county,
+      state: district.state,
+      type: district.type,
+      size: district.size,
+      budget: district.budget,
+      website: district.website,
+      notes: district.notes,
+      created_at: district.createdAt,
+      updated_at: district.updatedAt,
+      contacts_count: district._count.contacts
+    }))
+
+    return NextResponse.json({
+      districts: transformedDistricts,
+      totalCount,
+      page,
+      pageSize,
+      totalPages: Math.ceil(totalCount / pageSize)
+    })
+  } catch (error) {
+    console.error('Error fetching districts:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    // Check authentication
+    const session = await getServerSession(authOptions)
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Only admin users can create districts
+    if (session.user.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    // Parse request body
+    const body = await request.json()
+    const { name, county, state, type, size, budget, website, notes } = body
+
+    // Validate required fields
+    if (!name || !county) {
       return NextResponse.json(
-        { error: 'Failed to fetch districts' },
-        { status: 500 }
+        { error: 'Name and county are required' },
+        { status: 400 }
       )
     }
-    
-    // Enrich with computed fields
-    const enriched = data.map(district => ({
-      ...district,
-      contacts_count: district.district_contacts?.length || 0,
-      valid_contacts_count: district.district_contacts?.filter((c: any) => c.status === 'Valid').length || 0,
-    }))
-    
-    return NextResponse.json(enriched)
-    
+
+    // Create district using Prisma
+    const district = await prisma.district.create({
+      data: {
+        name,
+        county,
+        state: state || 'California',
+        type,
+        size: size ? parseInt(size) : null,
+        budget: budget ? parseFloat(budget) : null,
+        website,
+        notes
+      }
+    })
+
+    return NextResponse.json({ district }, { status: 201 })
   } catch (error) {
-    console.error('Error in districts API:', error)
+    console.error('Error creating district:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

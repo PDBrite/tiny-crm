@@ -1,13 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClientComponentClient } from '../lib/supabase'
 import { Lead, Campaign, Touchpoint, SyncResults, STATUS_DISPLAY_MAP } from '../types/leads'
 import { DistrictContact } from '../types/districts'
 import { useCompany } from '../contexts/CompanyContext'
 
 export function useLeads(selectedCompany: string, districtFilter?: string | null) {
-  const supabase = createClientComponentClient()
   const [leads, setLeads] = useState<Lead[]>([])
   const [districtContacts, setDistrictContacts] = useState<DistrictContact[]>([])
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([])
@@ -55,7 +53,6 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
       
       console.log('Fetching campaigns for company:', selectedCompany)
       
-      // Use the API endpoint instead of direct supabase access
       const response = await fetch(`/api/campaigns?company=${selectedCompany}`)
       
       if (!response.ok) {
@@ -63,10 +60,10 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
         return
       }
       
-      const campaignsData = await response.json()
-      console.log('Fetched campaigns:', campaignsData.length)
+      const data = await response.json()
+      console.log('Fetched campaigns:', data.campaigns?.length || 0)
       
-      setCampaigns(campaignsData || [])
+      setCampaigns(data.campaigns || [])
     } catch (error) {
       console.error('Error fetching campaigns:', error)
     }
@@ -77,49 +74,18 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
     try {
       setLoading(true)
       
-      // First fetch leads with campaigns
-      const { data: leadsData, error: leadsError } = await supabase
-        .from('leads')
-        .select(`
-          *,
-          campaign:campaigns(id, name, company)
-        `)
-        .eq('company', selectedCompany)
-        .order('created_at', { ascending: false })
-
-      if (leadsError) {
-        console.error('Error fetching leads:', leadsError)
+      // Fetch leads from API endpoint
+      const response = await fetch(`/api/campaign-leads?company=${selectedCompany}`)
+      
+      if (!response.ok) {
+        console.error('Error fetching leads from API:', response.status)
         return
       }
-
-      // Then fetch contact attempts count for each lead (only completed touchpoints with outcomes)
-      const leadsWithCounts = await Promise.all(
-        (leadsData || []).map(async (lead) => {
-          // Get completed touchpoints count
-          const { count: completedCount } = await supabase
-            .from('touchpoints')
-            .select('*', { count: 'exact', head: true })
-            .eq('lead_id', lead.id)
-            .not('completed_at', 'is', null)
-            .not('outcome', 'is', null)
-          
-          // Get scheduled touchpoints count (not completed yet)
-          const { count: scheduledCount } = await supabase
-            .from('touchpoints')
-            .select('*', { count: 'exact', head: true })
-            .eq('lead_id', lead.id)
-            .is('completed_at', null)
-            .not('scheduled_at', 'is', null)
-          
-          return {
-            ...lead,
-            touchpoints_count: completedCount || 0,
-            scheduled_touchpoints_count: scheduledCount || 0
-          }
-        })
-      )
-
-      setLeads(leadsWithCounts)
+      
+      const data = await response.json()
+      console.log('Fetched leads:', data.leads?.length || 0)
+      
+      setLeads(data.leads || [])
     } catch (error) {
       console.error('Error fetching leads:', error)
     } finally {
@@ -127,23 +93,18 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
     }
   }
 
-  // Fetch touchpoints for a specific lead (only completed touchpoints with outcomes)
+  // Fetch touchpoints for a specific lead
   const fetchTouchpoints = async (leadId: string) => {
     try {
-      const { data: touchpointsData, error } = await supabase
-        .from('touchpoints')
-        .select('*')
-        .eq('lead_id', leadId)
-        .not('completed_at', 'is', null)
-        .not('outcome', 'is', null)
-        .order('completed_at', { ascending: false })
-
-      if (error) {
-        console.error('Error fetching touchpoints:', error)
+      const response = await fetch(`/api/touchpoints?leadId=${leadId}`)
+      
+      if (!response.ok) {
+        console.error('Error fetching touchpoints from API:', response.status)
         return
       }
-
-      setTouchpoints(touchpointsData || [])
+      
+      const data = await response.json()
+      setTouchpoints(data.touchpoints || [])
     } catch (error) {
       console.error('Error fetching touchpoints:', error)
     }
@@ -161,7 +122,6 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
         params.append('district_id', districtFilter)
       }
       
-      // Use the API endpoint instead of direct supabase access
       const response = await fetch(`/api/district-contacts?${params.toString()}`)
       
       if (!response.ok) {
@@ -172,7 +132,6 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
       const data = await response.json()
       console.log('Fetched district contacts:', data.contacts?.length || 0)
       
-      // The contacts are already enriched with touchpoint counts from the API
       setDistrictContacts(data.contacts || [])
     } catch (error) {
       console.error('Error fetching district contacts:', error)
@@ -184,20 +143,15 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
   // Fetch touchpoints for a specific district contact
   const fetchDistrictContactTouchpoints = async (contactId: string) => {
     try {
-      const { data: touchpointsData, error } = await supabase
-        .from('touchpoints')
-        .select('*')
-        .eq('district_contact_id', contactId)
-        .not('completed_at', 'is', null)
-        .not('outcome', 'is', null)
-        .order('completed_at', { ascending: false })
-
-      if (error) {
-        console.error('Error fetching district contact touchpoints:', error)
+      const response = await fetch(`/api/touchpoints?districtContactId=${contactId}`)
+      
+      if (!response.ok) {
+        console.error('Error fetching district contact touchpoints from API:', response.status)
         return
       }
-
-      setTouchpoints(touchpointsData || [])
+      
+      const data = await response.json()
+      setTouchpoints(data.touchpoints || [])
     } catch (error) {
       console.error('Error fetching district contact touchpoints:', error)
     }
@@ -208,7 +162,7 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
     if (selectedCompany === 'Avalern') {
       fetchDistrictContacts()
     } else {
-    fetchLeads()
+      fetchLeads()
     }
     fetchCampaigns()
   }, [selectedCompany, districtFilter])
@@ -257,36 +211,36 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
       // Filter individual leads
       let filtered = leads || []
 
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(lead =>
+      // Search filter
+      if (searchTerm) {
+        filtered = filtered.filter(lead =>
           `${lead.first_name || ''} ${lead.last_name || ''}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
           (lead.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (lead.company && lead.company.toLowerCase().includes(searchTerm.toLowerCase()))
-      )
-    }
+          (lead.company && lead.company.toLowerCase().includes(searchTerm.toLowerCase()))
+        )
+      }
 
-    // Stage filter
-    if (selectedStage !== 'all') {
-      filtered = filtered.filter(lead => lead.status === selectedStage)
-    }
+      // Stage filter
+      if (selectedStage !== 'all') {
+        filtered = filtered.filter(lead => lead.status === selectedStage)
+      }
 
-    // Campaign filter
-    if (selectedCampaign !== 'all') {
-      filtered = filtered.filter(lead => lead.campaign_id === selectedCampaign)
-    }
+      // Campaign filter
+      if (selectedCampaign !== 'all') {
+        filtered = filtered.filter(lead => lead.campaign_id === selectedCampaign)
+      }
 
-    // Source filter
-    if (selectedSource !== 'all') {
-      filtered = filtered.filter(lead => lead.source === selectedSource)
-    }
+      // Source filter
+      if (selectedSource !== 'all') {
+        filtered = filtered.filter(lead => lead.source === selectedSource)
+      }
 
-    // City filter
-    if (selectedCity !== 'all') {
-      filtered = filtered.filter(lead => lead.city === selectedCity)
-    }
+      // City filter
+      if (selectedCity !== 'all') {
+        filtered = filtered.filter(lead => lead.city === selectedCity)
+      }
 
-    setFilteredLeads(filtered)
+      setFilteredLeads(filtered)
     }
     
     // Reset to first page when filters change
@@ -381,28 +335,33 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
         finalStatus = 'not_contacted'
       }
       
-      const { error } = await supabase
-        .from('leads')
-        .update({
-          first_name: editingLead.first_name,
-          last_name: editingLead.last_name,
+      // Update lead via API
+      const response = await fetch(`/api/campaign-leads`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: selectedLead.id,
+          firstName: editingLead.first_name,
+          lastName: editingLead.last_name,
           email: editingLead.email,
           phone: editingLead.phone,
           city: editingLead.city,
           state: editingLead.state,
           company: editingLead.company,
-          linkedin_url: editingLead.linkedin_url,
-          website_url: editingLead.website_url,
-          online_profile: editingLead.online_profile,
+          linkedinUrl: editingLead.linkedin_url,
+          websiteUrl: editingLead.website_url,
+          onlineProfile: editingLead.online_profile,
           source: editingLead.source,
           status: finalStatus,
           notes: editingLead.notes,
-          campaign_id: editingLead.campaign_id
+          campaignId: editingLead.campaign_id
         })
-        .eq('id', selectedLead.id)
+      })
 
-      if (error) {
-        console.error('Error updating lead:', error)
+      if (!response.ok) {
+        console.error('Error updating lead:', response.status)
         alert('Failed to update lead')
         return
       }
@@ -435,21 +394,24 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
     try {
       setSaving(true)
       
-      const { error } = await supabase
-        .from('touchpoints')
-        .insert({
-          lead_id: selectedLead.id,
+      // Add touchpoint via API
+      const response = await fetch('/api/touchpoints', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          leadId: selectedLead.id,
           type: newTouchpoint.type,
           subject: newTouchpoint.subject,
           content: newTouchpoint.content,
-          completed_at: newTouchpoint.completed_at,
+          completedAt: newTouchpoint.completed_at,
           outcome: newTouchpoint.outcome
         })
-        .select()
-        .single()
+      })
 
-      if (error) {
-        console.error('Error adding touchpoint:', error)
+      if (!response.ok) {
+        console.error('Error adding touchpoint:', response.status)
         alert('Failed to add touchpoint')
         return
       }
@@ -457,15 +419,7 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
       // Refresh touchpoints
       await fetchTouchpoints(selectedLead.id)
       
-      // Update lead's last_contacted_at if this touchpoint has a completed_at date
-      if (newTouchpoint.completed_at) {
-        await supabase
-          .from('leads')
-          .update({ last_contacted_at: newTouchpoint.completed_at })
-          .eq('id', selectedLead.id)
-      }
-
-      // Update the touchpoints count in local state immediately (only count completed touchpoints with outcomes)
+      // Update the touchpoints count in local state immediately
       const completedTouchpointsWithOutcomes = touchpoints.filter(tp => tp.completed_at && tp.outcome)
       const updatedTouchpointCount = completedTouchpointsWithOutcomes.length + (newTouchpoint.completed_at && newTouchpoint.outcome ? 1 : 0)
       setLeads(prevLeads => 
@@ -490,62 +444,12 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
       })
       setShowNewTouchpointForm(false)
     } catch (error) {
-      console.error('Error adding contact attempt:', error)
-      alert('Failed to add contact attempt')
+      console.error('Error adding touchpoint:', error)
+      alert('Failed to add touchpoint')
     } finally {
       setSaving(false)
     }
   }
-
-  // Sync with Instantly
-  // const handleSyncInstantly = async () => {
-  //   try {
-  //     setSyncing(true)
-  //     setSyncResults(null)
-      
-  //     // Get all lead IDs or selected lead IDs
-  //     const leadIdsToSync = selectedLeads.length > 0 ? selectedLeads : filteredLeads.map(lead => lead.id)
-      
-  //     if (leadIdsToSync.length === 0) {
-  //       alert('No leads to sync')
-  //       return
-  //     }
-
-  //     const response = await fetch('/api/sync-instantly', {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify({
-  //         leadIds: leadIdsToSync
-  //       })
-  //     })
-
-  //     const result = await response.json()
-
-  //     if (!response.ok) {
-  //       throw new Error(result.error || 'Sync failed')
-  //     }
-
-  //     setSyncResults(result)
-      
-  //     // Refresh leads and touchpoints to show updated data
-  //     await fetchLeads()
-  //     if (selectedLead) {
-  //       await fetchTouchpoints(selectedLead.id)
-  //     }
-
-  //     // Show success message
-  //     const message = `Sync completed! ${result.syncedCount} new contact attempts added from ${result.totalEmails} emails.`
-  //     alert(message)
-
-  //   } catch (error) {
-  //     console.error('Sync error:', error)
-  //     alert(`Sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
-  //   } finally {
-  //     setSyncing(false)
-  //   }
-  // }
 
   // Get unique values for filters
   const uniqueSources = selectedCompany === 'Avalern' 
@@ -630,7 +534,6 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
     setShowNewTouchpointForm,
     setNewTouchpoint,
     handleAddTouchpoint,
-    // handleSyncInstantly,
     setSyncResults,
     
     // Refresh functions

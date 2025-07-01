@@ -1,71 +1,96 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { prisma } from '@/lib/prisma'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
+import { CampaignStatusType, CompanyType } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('Campaigns API called with URL:', request.url)
-    
-    // Get authentication cookie
-    const sessionCookie = request.cookies.get('next-auth.session-token')?.value
-    
-    if (!sessionCookie) {
-      console.log('Campaigns API: No session cookie found')
-      // Continue anyway for now, but in production we would return 401
-      // return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-    } else {
-      console.log('Campaigns API: Session cookie found')
+    const session = await getServerSession(authOptions)
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    
-    // Check if supabaseAdmin is available
-    if (!supabaseAdmin) {
-      console.error('supabaseAdmin client is not available')
-      return NextResponse.json(
-        { error: 'Database client unavailable' },
-        { status: 500 }
-      )
-    }
+
+    const userRole = session.user.role
+    const allowedCompanies = session.user.allowedCompanies || []
 
     // Get query parameters
-    const url = new URL(request.url)
-    const company = url.searchParams.get('company')
-    
-    // Only require company parameter for client-side requests
-    // Server-side requests might not have company context yet
-    if (!company && request.headers.get('sec-fetch-dest') !== 'script') {
-      console.log('No company parameter provided, but continuing for server-side requests')
-      // Return empty array instead of error for server-side or initial requests
-      return NextResponse.json([])
-    }
-    
-    console.log('Fetching campaigns for company:', company || 'all')
-    
-    // Build query
-    const { data, error } = await supabaseAdmin
-      .from('campaigns')
-      .select(`
-        *,
-        outreach_sequence:outreach_sequences(
-          id,
-          name,
-          description
-        )
-      `)
-      .eq('company', company)
-      .order('created_at', { ascending: false })
+    const { searchParams } = new URL(request.url)
+    const companyParam = searchParams.get('company')
+    const statusParam = searchParams.get('status')
 
-    if (error) {
-      console.error('Error fetching campaigns:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch campaigns' },
-        { status: 500 }
-      )
+    // Build the where clause based on permissions and filters
+    let where: any = {}
+
+    // Filter by company based on user role and allowed companies
+    if (userRole === 'member') {
+      // Member users can only see campaigns for their allowed companies
+      where.company = {
+        in: allowedCompanies.map(c => c.charAt(0).toUpperCase() + c.slice(1)) as CompanyType[]
+      }
+    } else if (companyParam) {
+      // Admin users can filter by company
+      where.company = companyParam as CompanyType
     }
 
-    console.log(`Found ${data?.length || 0} campaigns for company: ${company}`)
-    return NextResponse.json(data || [])
-    
+    // Filter by status if provided
+    if (statusParam) {
+      where.status = statusParam as CampaignStatusType
+    }
+
+    // Get campaigns from database using Prisma
+    const campaigns = await prisma.campaign.findMany({
+      where,
+      include: {
+        outreachSequence: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            steps: {
+              select: {
+                id: true,
+                stepOrder: true,
+                type: true,
+                dayOffset: true
+              },
+              orderBy: {
+                stepOrder: 'asc'
+              }
+            }
+          }
+        },
+        _count: {
+          select: {
+            leads: true,
+            districtContacts: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+
+    // Transform the data to match the expected format
+    const transformedCampaigns = campaigns.map(campaign => ({
+      id: campaign.id,
+      name: campaign.name,
+      company: campaign.company,
+      description: campaign.description,
+      start_date: campaign.startDate,
+      end_date: campaign.endDate,
+      created_at: campaign.createdAt,
+      status: campaign.status,
+      outreach_sequence: campaign.outreachSequence,
+      leads_count: campaign._count.leads,
+      district_contacts_count: campaign._count.districtContacts,
+      instantly_campaign_id: campaign.instantlyCampaignId
+    }))
+
+    return NextResponse.json({ campaigns: transformedCampaigns })
   } catch (error) {
-    console.error('Error in campaigns API:', error)
+    console.error('Error fetching campaigns:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -75,53 +100,57 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, company, description, outreach_sequence_id } = await request.json()
-    
+    const session = await getServerSession(authOptions)
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const userRole = session.user.role
+    const allowedCompanies = session.user.allowedCompanies || []
+
+    // Parse request body
+    const body = await request.json()
+    const { 
+      name, 
+      company, 
+      description, 
+      start_date, 
+      end_date, 
+      outreach_sequence_id,
+      status
+    } = body
+
+    // Validate required fields
     if (!name || !company) {
       return NextResponse.json(
         { error: 'Name and company are required' },
         { status: 400 }
       )
     }
-    
-    // Check if supabaseAdmin is available
-    if (!supabaseAdmin) {
-      console.error('supabaseAdmin client is not available')
+
+    // Check if user has permission to create campaigns for this company
+    const companyLower = company.toLowerCase()
+    if (userRole === 'member' && !allowedCompanies.includes(companyLower)) {
       return NextResponse.json(
-        { error: 'Database client unavailable' },
-        { status: 500 }
+        { error: 'You do not have permission to create campaigns for this company' },
+        { status: 403 }
       )
     }
 
-    const { data: campaign, error } = await supabaseAdmin
-      .from('campaigns')
-      .insert({
+    // Create campaign using Prisma
+    const campaign = await prisma.campaign.create({
+      data: {
         name,
-        company,
+        company: company as CompanyType,
         description,
-        outreach_sequence_id,
-        start_date: new Date().toISOString().split('T')[0] // Today's date
-      })
-      .select(`
-        *,
-        outreach_sequence:outreach_sequences(
-          id,
-          name,
-          description
-        )
-      `)
-      .single()
+        startDate: start_date ? new Date(start_date) : null,
+        endDate: end_date ? new Date(end_date) : null,
+        outreachSequenceId: outreach_sequence_id,
+        status: status as CampaignStatusType || 'draft'
+      }
+    })
 
-    if (error) {
-      console.error('Error creating campaign:', error)
-      return NextResponse.json(
-        { error: 'Failed to create campaign' },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json(campaign)
-
+    return NextResponse.json({ campaign }, { status: 201 })
   } catch (error) {
     console.error('Error creating campaign:', error)
     return NextResponse.json(

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useCompany } from '@/contexts/CompanyContext'
-import { supabase } from '@/lib/supabase'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import {
   Target,
@@ -151,11 +150,7 @@ export default function CampaignDetailPage() {
     try {
       console.log(`Fetching districts for campaign: ${campaignId}, company: ${campaign?.company}`)
       
-      // Debug JWT claims
-      const { data: jwtData } = await supabase.auth.getSession()
-      console.log('Current user JWT session:', jwtData?.session?.access_token ? 'Valid token' : 'No token')
-      
-      // Use the API endpoint instead of direct database access
+      // Use the API endpoint
         const response = await fetch(`/api/campaign-districts?campaign_id=${campaignId}`)
         
         if (!response.ok) {
@@ -274,19 +269,19 @@ export default function CampaignDetailPage() {
     
     setLoadingSequenceSteps(true)
     try {
-      const { data, error } = await supabase
-        .from('outreach_steps')
-        .select('*')
-        .eq('sequence_id', sequenceId)
-        .order('step_order', { ascending: true })
+      // Use API endpoint to fetch sequence steps
+      const response = await fetch(`/api/outreach-sequences/${sequenceId}/steps`)
 
-      if (error) {
-        console.error('Error fetching sequence steps:', error)
-      } else {
-        console.log('Fetched sequence steps:', data)
+      if (!response.ok) {
+        console.error('Error fetching sequence steps:', response.status)
+        return
+      }
+      
+      const data = await response.json()
+      console.log('Fetched sequence steps:', data.steps)
         
         // Calculate days_after_previous for each step
-        const stepsWithDaysAfterPrevious = data?.map((step, index, steps) => {
+      const stepsWithDaysAfterPrevious = data.steps?.map((step: any, index: number, steps: any[]) => {
           if (index === 0) {
             // First step has no previous step
             return { ...step, days_after_previous: step.day_offset }
@@ -299,7 +294,6 @@ export default function CampaignDetailPage() {
         }) || []
         
         setSequenceSteps(stepsWithDaysAfterPrevious)
-      }
     } catch (error) {
       console.error('Error in fetchSequenceSteps:', error)
     } finally {
@@ -311,33 +305,25 @@ export default function CampaignDetailPage() {
     try {
       setLoading(true)
       
-      // Fetch basic campaign data first
-      const { data: basicCampaign, error: campaignError } = await supabase
-        .from('campaigns')
-        .select('id, name, company, start_date, end_date, created_at, outreach_sequence_id, description, instantly_campaign_id, status')
-        .eq('id', campaignId)
-        .single()
+      // Fetch campaign data from API
+      const response = await fetch(`/api/campaign-data?id=${campaignId}`)
 
-      if (campaignError) {
-        console.error('Error fetching campaign:', campaignError)
+      if (!response.ok) {
+        console.error('Error fetching campaign data:', response.status)
         setLoading(false)
         return
       }
 
-      let campaignData = { ...basicCampaign }
-
-      // Fetch outreach sequence separately
-      if (basicCampaign.outreach_sequence_id) {
-        const { data: sequence, error: seqError } = await supabase
-            .from('outreach_sequences')
-            .select('id, name, description')
-            .eq('id', basicCampaign.outreach_sequence_id)
-            .single()
-        if (!seqError && sequence) {
-          (campaignData as any).outreach_sequence = sequence
-        }
+      const data = await response.json()
+      
+      if (!data.campaign) {
+        console.error('Campaign not found')
+        setLoading(false)
+        return
       }
-
+      
+      const campaignData = data.campaign
+      
       // Use API endpoints to fetch related data
       let allLeads: any[] = [];
       let allTouchpoints: any[] = [];
@@ -370,14 +356,18 @@ export default function CampaignDetailPage() {
           console.error('Error fetching districts via API:', error);
         }
       } else {
-        // For non-Avalern campaigns, fetch leads directly
-        const { data: leads, error: leadsError } = await supabase
-          .from('leads')
-          .select('*, campaign:campaigns(name)')
-          .eq('campaign_id', campaignId);
-
-        if (!leadsError && leads) {
-          allLeads = leads;
+        // For non-Avalern campaigns, fetch leads via API
+        try {
+          const leadsResponse = await fetch(`/api/campaign-leads?campaign_id=${campaignId}`);
+          if (leadsResponse.ok) {
+            const leadsData = await leadsResponse.json();
+            console.log(`Fetched ${leadsData.leads?.length || 0} leads via API`);
+            allLeads = leadsData.leads || [];
+          } else {
+            console.error('Error fetching leads:', await leadsResponse.text());
+          }
+        } catch (error) {
+          console.error('Error fetching leads via API:', error);
         }
       }
       
@@ -390,7 +380,7 @@ export default function CampaignDetailPage() {
           allTouchpoints = touchpointsData.touchpoints || [];
         } else {
           console.error('Error fetching touchpoints:', await touchpointsResponse.text());
-        }
+            }
       } catch (error) {
         console.error('Error fetching touchpoints via API:', error);
       }
@@ -420,7 +410,6 @@ export default function CampaignDetailPage() {
         conversionRate,
         launch_date: campaignData.start_date || campaignData.created_at,
         status: campaignData.status || 'active', // Keep the actual status from the database
-        outreach_sequence: Array.isArray((campaignData as any).outreach_sequence) ? (campaignData as any).outreach_sequence[0] : (campaignData as any).outreach_sequence
       } as Campaign
 
       setCampaign(enrichedCampaign);
@@ -453,17 +442,16 @@ export default function CampaignDetailPage() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('outreach_sequences')
-        .select('id, name, description, company')
-        .eq('company', selectedCompany)
+      // Fetch outreach sequences via API
+      const response = await fetch(`/api/outreach-sequences?company=${selectedCompany}`)
 
-      if (error) {
-        console.warn('Error fetching outreach sequences:', error.message || error)
+      if (!response.ok) {
+        console.warn('Error fetching outreach sequences:', response.status)
         setOutreachSequences([])
         return
       }
 
+      const data = await response.json()
       setOutreachSequences(data || [])
     } catch (error) {
       console.warn('Error fetching outreach sequences:', error)
@@ -479,9 +467,14 @@ export default function CampaignDetailPage() {
 
     setUpdating(true)
     try {
-      const { error } = await supabase
-        .from('campaigns')
-        .update({
+      // Update campaign via API
+      const response = await fetch(`/api/campaigns`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: campaign.id,
           name: editFormData.name,
           company: editFormData.company,
           description: editFormData.description,
@@ -490,10 +483,10 @@ export default function CampaignDetailPage() {
           instantly_campaign_id: editFormData.instantly_campaign_id,
           status: editFormData.status
         })
-        .eq('id', campaign.id)
+      })
 
-      if (error) {
-        console.error('Error updating campaign:', error)
+      if (!response.ok) {
+        console.error('Error updating campaign:', response.status)
         alert('Failed to update campaign')
         return
       }
@@ -511,13 +504,20 @@ export default function CampaignDetailPage() {
 
   const handleRemoveLeadFromCampaign = async (leadId: string) => {
     try {
-      const { error } = await supabase
-        .from('leads')
-        .update({ campaign_id: null })
-        .eq('id', leadId)
+      // Remove lead from campaign via API
+      const response = await fetch(`/api/campaign-leads`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: leadId,
+          campaignId: null
+        })
+      })
 
-      if (error) {
-        console.error('Error removing lead from campaign:', error)
+      if (!response.ok) {
+        console.error('Error removing lead from campaign:', response.status)
         alert('Failed to remove lead from campaign')
         return
       }
@@ -556,17 +556,22 @@ export default function CampaignDetailPage() {
 
     setUpdatingDistrict(true)
     try {
-      const { error } = await supabase
-        .from('district_leads')
-        .update({
-          district_name: editingDistrictData.district_name,
+      // Update district via API
+      const response = await fetch(`/api/district-contacts`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: selectedDistrictForEdit.id,
+          districtName: editingDistrictData.district_name,
           county: editingDistrictData.county,
           status: editingDistrictData.status
         })
-        .eq('id', selectedDistrictForEdit.id)
+      })
 
-      if (error) {
-        console.error('Error updating district:', error)
+      if (!response.ok) {
+        console.error('Error updating district:', response.status)
         alert('Failed to update district')
         return
       }
@@ -587,11 +592,16 @@ export default function CampaignDetailPage() {
 
     setUpdatingLead(true)
     try {
-      const { error } = await supabase
-        .from('leads')
-        .update({
-          first_name: editingLeadData.first_name,
-          last_name: editingLeadData.last_name,
+      // Update lead via API
+      const response = await fetch(`/api/campaign-leads`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: selectedLeadForEdit.id,
+          firstName: editingLeadData.first_name,
+          lastName: editingLeadData.last_name,
           email: editingLeadData.email,
           phone: editingLeadData.phone,
           city: editingLeadData.city,
@@ -599,13 +609,13 @@ export default function CampaignDetailPage() {
           company: editingLeadData.company,
           status: editingLeadData.status,
           source: editingLeadData.source,
-          linkedin_url: editingLeadData.linkedin_url,
-          website_url: editingLeadData.website_url
+          linkedinUrl: editingLeadData.linkedin_url,
+          websiteUrl: editingLeadData.website_url
         })
-        .eq('id', selectedLeadForEdit.id)
+      })
 
-      if (error) {
-        console.error('Error updating lead:', error)
+      if (!response.ok) {
+        console.error('Error updating lead:', response.status)
         alert('Failed to update lead')
         return
       }
@@ -626,26 +636,13 @@ export default function CampaignDetailPage() {
 
     setDeleting(true)
     try {
-      // First, remove campaign assignment from all leads
-      const { error: leadsError } = await supabase
-        .from('leads')
-        .update({ campaign_id: null })
-        .eq('campaign_id', campaign.id)
+      // Delete campaign via API
+      const response = await fetch(`/api/campaigns?id=${campaign.id}`, {
+        method: 'DELETE'
+      })
 
-      if (leadsError) {
-        console.error('Error updating leads:', leadsError)
-        alert('Failed to update leads before deleting campaign')
-        return
-      }
-
-      // Then delete the campaign
-      const { error: campaignError } = await supabase
-        .from('campaigns')
-        .delete()
-        .eq('id', campaign.id)
-
-      if (campaignError) {
-        console.error('Error deleting campaign:', campaignError)
+      if (!response.ok) {
+        console.error('Error deleting campaign:', response.status)
         alert('Failed to delete campaign')
         return
       }
@@ -696,20 +693,25 @@ export default function CampaignDetailPage() {
 
     setUpdatingContact(true)
     try {
-      const { error } = await supabase
-        .from('district_contacts')
-        .update({
-          first_name: editingContactData.first_name,
-          last_name: editingContactData.last_name,
+      // Update district contact via API
+      const response = await fetch(`/api/district-contacts`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: selectedContactForEdit.id,
+          firstName: editingContactData.first_name,
+          lastName: editingContactData.last_name,
           email: editingContactData.email,
           phone: editingContactData.phone,
           title: editingContactData.title,
           status: editingContactData.status
         })
-        .eq('id', selectedContactForEdit.id)
+      })
 
-      if (error) {
-        console.error('Error updating district contact:', error)
+      if (!response.ok) {
+        console.error('Error updating district contact:', response.status)
         alert('Failed to update district contact')
         return
       }
@@ -742,7 +744,7 @@ export default function CampaignDetailPage() {
         <div className="text-center py-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Campaign not found</h2>
           <p className="text-gray-600 mb-6">The campaign you're looking for doesn't exist or you don't have permission to view it.</p>
-          <button 
+          <button
             onClick={() => router.push('/campaigns')}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
           >

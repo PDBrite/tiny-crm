@@ -1,0 +1,201 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum CompanyType {
+  CraftyCode
+  Avalern
+}
+
+enum TouchpointType {
+  email
+  call
+  linkedin_message
+}
+
+enum TouchpointOutcome {
+  replied
+  no_answer
+  voicemail
+  opted_out
+  bounced
+  booked
+  ignored
+}
+
+enum LeadStatusType {
+  not_contacted
+  actively_contacting
+  engaged
+  won
+  not_interested
+}
+
+enum CampaignStatusType {
+  active
+  completed
+  draft
+  paused
+}
+
+// Models
+model User {
+  id           String             @id @default(uuid())
+  email        String             @unique
+  passwordHash String             @map("password_hash")
+  firstName    String?            @map("first_name")
+  lastName     String?            @map("last_name")
+  role         String             @default("user")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  companyAccess UserCompanyAccess[]
+
+  @@map("app_users")
+}
+
+model UserCompanyAccess {
+  id        String      @id @default(uuid())
+  userId    String      @map("user_id")
+  company   CompanyType
+  createdAt DateTime    @default(now()) @map("created_at")
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, company])
+  @@map("user_company_access")
+}
+
+model Campaign {
+  id                 String              @id @default(uuid())
+  name               String
+  company            CompanyType
+  description        String?
+  startDate          DateTime?           @map("start_date")
+  endDate            DateTime?           @map("end_date")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  outreachSequenceId String?             @map("outreach_sequence_id")
+  instantlyCampaignId String?            @map("instantly_campaign_id")
+  status             CampaignStatusType  @default(draft)
+  outreachSequence   OutreachSequence?   @relation(fields: [outreachSequenceId], references: [id])
+  leads              Lead[]
+  districtContacts   DistrictContact[]
+
+  @@map("campaigns")
+}
+
+model Lead {
+  id              String         @id @default(uuid())
+  firstName       String         @map("first_name")
+  lastName        String         @map("last_name")
+  email           String         @unique
+  phone           String?
+  city            String?
+  state           String?
+  company         String?
+  linkedinUrl     String?        @map("linkedin_url")
+  websiteUrl      String?        @map("website_url")
+  onlineProfile   String?        @map("online_profile")
+  source          String?
+  status          LeadStatusType @default(not_contacted)
+  notes           String?
+  campaignId      String?        @map("campaign_id")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  lastContactedAt DateTime?      @map("last_contacted_at")
+  campaign        Campaign?      @relation(fields: [campaignId], references: [id])
+  touchpoints     Touchpoint[]
+
+  @@map("leads")
+}
+
+model District {
+  id           String            @id @default(uuid())
+  name         String
+  county       String
+  state        String            @default("California")
+  type         String?           // Elementary, High School, Unified, etc.
+  size         Int?              // Number of students or schools
+  budget       Decimal?          @db.Decimal(12, 2)
+  website      String?
+  notes        String?
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @default(now()) @map("updated_at")
+  contacts     DistrictContact[]
+
+  @@unique([name, county, state])
+  @@map("districts")
+}
+
+model DistrictContact {
+  id             String       @id @default(uuid())
+  districtId     String       @map("district_id")
+  firstName      String       @map("first_name")
+  lastName       String       @map("last_name")
+  title          String?
+  email          String?
+  phone          String?
+  linkedinUrl    String?      @map("linkedin_url")
+  status         LeadStatusType @default(not_contacted)
+  notes          String?
+  campaignId     String?      @map("campaign_id")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  lastContactedAt DateTime?   @map("last_contacted_at")
+  state          String       @default("California")
+  district       District     @relation(fields: [districtId], references: [id])
+  campaign       Campaign?    @relation(fields: [campaignId], references: [id])
+  touchpoints    Touchpoint[]
+
+  @@unique([districtId, email])
+  @@map("district_contacts")
+}
+
+model OutreachSequence {
+  id          String         @id @default(uuid())
+  name        String
+  company     CompanyType
+  description String?
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @default(now()) @map("updated_at")
+  steps       OutreachStep[]
+  campaigns   Campaign[]
+
+  @@map("outreach_sequences")
+}
+
+model OutreachStep {
+  id               String          @id @default(uuid())
+  sequenceId       String          @map("sequence_id")
+  stepOrder        Int             @map("step_order")
+  type             TouchpointType
+  name             String?
+  contentLink      String?         @map("content_link")
+  dayOffset        Int             @map("day_offset")
+  daysAfterPrevious Int?           @map("days_after_previous")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @default(now()) @map("updated_at")
+  sequence         OutreachSequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+
+  @@unique([sequenceId, stepOrder])
+  @@map("outreach_steps")
+}
+
+model Touchpoint {
+  id                String             @id @default(uuid())
+  leadId            String?            @map("lead_id")
+  districtContactId String?            @map("district_contact_id")
+  type              TouchpointType
+  subject           String?
+  content           String?
+  scheduledAt       DateTime?          @map("scheduled_at")
+  completedAt       DateTime?          @map("completed_at")
+  outcome           String?
+  outcomeEnum       TouchpointOutcome? @map("outcome_enum")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  lead              Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  districtContact   DistrictContact?   @relation(fields: [districtContactId], references: [id], onDelete: SetNull)
+
+  @@map("touchpoints")
+} 

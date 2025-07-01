@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Building2 } from "lucide-react";
 
 export default function LoginForm() {
@@ -11,6 +11,16 @@ export default function LoginForm() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const errorParam = searchParams.get("error");
+
+  // Show error from URL parameter
+  useState(() => {
+    if (errorParam) {
+      setError(`Authentication error: ${errorParam}`);
+    }
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,20 +28,27 @@ export default function LoginForm() {
     setIsLoading(true);
 
     try {
+      console.log("Attempting to sign in with:", email);
       const result = await signIn("credentials", {
         redirect: false,
         email,
         password,
+        callbackUrl,
       });
 
+      console.log("Sign in result:", result);
+
       if (result?.error) {
-        setError("Invalid email or password");
+        setError(`Authentication failed: ${result.error}`);
         setIsLoading(false);
+      } else if (result?.url) {
+        router.push(result.url);
       } else {
-        router.replace("/");
+        router.push("/dashboard");
       }
     } catch (error) {
-      setError("An error occurred during sign in");
+      console.error("Sign in error:", error);
+      setError("An unexpected error occurred during sign in");
       setIsLoading(false);
     }
   };
@@ -95,6 +112,18 @@ export default function LoginForm() {
           </button>
         </div>
       </form>
+
+      <div className="mt-6 text-center text-sm">
+        <p className="text-gray-600">
+          Demo credentials:
+        </p>
+        <p className="text-gray-600">
+          Admin: admin@example.com / adminpassword
+        </p>
+        <p className="text-gray-600">
+          Member: member@example.com / memberpassword
+        </p>
+      </div>
     </div>
   );
 } 

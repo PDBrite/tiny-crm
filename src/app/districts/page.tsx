@@ -65,9 +65,23 @@ export default function DistrictsPage() {
         }
         
         const data = await response.json()
-        console.log('Fetched districts from API:', data.length, data)
+        console.log('Fetched districts from API:', data)
         
-        setDistricts(data)
+        // Handle the new API response format which returns { districts: [...], totalCount: number }
+        const districtsArray = data.districts || data
+        
+        if (Array.isArray(districtsArray)) {
+          setDistricts(districtsArray.map(d => ({
+            ...d,
+            district_name: d.name || d.district_name, // Handle both name formats
+            contacts_count: d.contacts_count || d._count?.contacts || 0,
+            valid_contacts_count: d.valid_contacts_count || d.contacts_count || d._count?.contacts || 0,
+            status: d.status || 'not_contacted'
+          })))
+        } else {
+          console.error('Invalid districts data format:', data)
+          setDistricts([])
+        }
       } catch (error) {
         console.error('Error fetching districts:', error)
         setDistricts([])

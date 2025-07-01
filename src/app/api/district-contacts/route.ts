@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
@@ -58,122 +58,99 @@ export async function GET(request: NextRequest) {
 
     console.log('District contacts API: Query params:', { districtId, status, searchTerm })
 
-    // Check if supabaseAdmin is available
-    if (!supabaseAdmin) {
-      console.error('supabaseAdmin client is not available')
-      return NextResponse.json(
-        { error: 'Database client unavailable' },
-        { status: 500 }
-      )
-    }
-
-    // Build query
-    let query = supabaseAdmin
-      .from('district_contacts')
-      .select(`
-        *,
-        district_lead:district_leads(
-          id, 
-          district_name, 
-          county,
-          status,
-          campaign_id,
-          company
-        )
-      `)
+    // Build query conditions
+    const whereConditions: any = {}
     
-    // Apply filters if provided
     if (districtId) {
-      query = query.eq('district_lead_id', districtId)
-      console.log('District contacts API: Filtering by district_lead_id:', districtId)
+      whereConditions.districtId = districtId
+      console.log('District contacts API: Filtering by districtId:', districtId)
     }
     
     if (status) {
-      query = query.eq('status', status)
+      whereConditions.status = status
     }
     
     if (searchTerm) {
-      query = query.or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
+      whereConditions.OR = [
+        { firstName: { contains: searchTerm, mode: 'insensitive' } },
+        { lastName: { contains: searchTerm, mode: 'insensitive' } },
+        { email: { contains: searchTerm, mode: 'insensitive' } }
+      ]
     }
     
-    // Execute query
-    const { data, error, count } = await query
-      .order('created_at', { ascending: false })
+    // Execute query with Prisma
+    const contacts = await prisma.districtContact.findMany({
+      where: whereConditions,
+      include: {
+        district: true,
+        touchpoints: {
+          where: {
+            OR: [
+              {
+                completedAt: { not: null },
+                outcome: { not: null }
+              },
+              {
+                completedAt: null,
+                scheduledAt: { not: null }
+              }
+            ]
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
 
     // Log sample data for debugging
-    if (data && data.length > 0) {
+    if (contacts && contacts.length > 0) {
       console.log('District contacts API: Sample contact data structure:', {
-        id: data[0].id,
-        name: `${data[0].first_name} ${data[0].last_name}`,
-        district_lead: data[0].district_lead,
-        has_district_data: !!data[0].district_lead
+        id: contacts[0].id,
+        name: `${contacts[0].firstName} ${contacts[0].lastName}`,
+        district: contacts[0].district,
+        has_district_data: !!contacts[0].district
       })
     }
 
     console.log('District contacts API: Query result:', { 
-      success: !error, 
-      count: data?.length || 0, 
-      error: error?.message || null,
-      firstContact: data && data.length > 0 ? data[0].id : null
+      success: true, 
+      count: contacts?.length || 0,
+      firstContact: contacts && contacts.length > 0 ? contacts[0].id : null
     })
 
-    if (error) {
-      console.error('Error fetching district contacts:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch district contacts' },
-        { status: 500 }
-      )
-    }
-
-    // Enrich with touchpoint counts
-    const enrichedContacts = await Promise.all(
-      (data || []).map(async (contact) => {
-        try {
-          // Check if supabaseAdmin is available
-          if (!supabaseAdmin) {
-            console.error('supabaseAdmin is not available for touchpoint counts')
-            return contact
-          }
-          
-          // Get completed touchpoints count
-          const { count: completedCount, error: completedError } = await supabaseAdmin
-            .from('touchpoints')
-            .select('*', { count: 'exact', head: true })
-            .eq('district_contact_id', contact.id)
-            .not('completed_at', 'is', null)
-            .not('outcome', 'is', null)
-            
-          if (completedError) {
-            console.error('Error fetching completed touchpoints count:', completedError)
-          }
-          
-          // Get scheduled touchpoints count
-          const { count: scheduledCount, error: scheduledError } = await supabaseAdmin
-            .from('touchpoints')
-            .select('*', { count: 'exact', head: true })
-            .eq('district_contact_id', contact.id)
-            .is('completed_at', null)
-            .not('scheduled_at', 'is', null)
-            
-          if (scheduledError) {
-            console.error('Error fetching scheduled touchpoints count:', scheduledError)
-          }
-          
-          return {
-            ...contact,
-            touchpoints_count: completedCount || 0,
-            scheduled_touchpoints_count: scheduledCount || 0
-          }
-        } catch (err) {
-          console.error('Error enriching contact with touchpoint counts:', err)
-          return contact
-        }
-      })
-    )
+    // Transform contacts to match the expected format
+    const enrichedContacts = contacts.map(contact => {
+      // Count completed and scheduled touchpoints
+      const completedTouchpoints = contact.touchpoints.filter(tp => tp.completedAt !== null && tp.outcome !== null)
+      const scheduledTouchpoints = contact.touchpoints.filter(tp => tp.completedAt === null && tp.scheduledAt !== null)
+      
+      return {
+        id: contact.id,
+        first_name: contact.firstName,
+        last_name: contact.lastName,
+        email: contact.email,
+        phone: contact.phone,
+        title: contact.title,
+        status: contact.status,
+        notes: contact.notes,
+        district_lead_id: contact.districtId,
+        campaign_id: contact.campaignId,
+        created_at: contact.createdAt,
+        last_contacted_at: contact.lastContactedAt,
+        district_lead: contact.district ? {
+          id: contact.district.id,
+          district_name: contact.district.name,
+          county: contact.district.county,
+          status: 'not_contacted', // Default status since District model might not have status
+          company: 'Avalern' // Default company for district contacts
+        } : null,
+        touchpoints_count: completedTouchpoints.length,
+        scheduled_touchpoints_count: scheduledTouchpoints.length
+      }
+    })
 
     return NextResponse.json({
       contacts: enrichedContacts || [],
-      count: count || 0
+      count: contacts.length
     })
     
   } catch (error) {
@@ -183,4 +160,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
-} 
+}

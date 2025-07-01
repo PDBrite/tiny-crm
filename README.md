@@ -1,6 +1,6 @@
 # Lead Manager - Prospect Tracking Dashboard
 
-A comprehensive prospect tracking dashboard for outbound sales campaigns across multiple brands (CraftyCode and Avalern). Built with Next.js, TypeScript, TailwindCSS, and Supabase.
+A comprehensive prospect tracking dashboard for outbound sales campaigns across multiple brands (CraftyCode and Avalern). Built with Next.js, TypeScript, TailwindCSS, and Prisma with PostgreSQL.
 
 ![Lead Manager Dashboard](docs/dashboard-preview.png)
 
@@ -21,7 +21,7 @@ A comprehensive prospect tracking dashboard for outbound sales campaigns across 
    - Campaign status management (active, queued, completed)
 
 3. **Lead Status Pipeline**
-   - Complete lead lifecycle tracking: Not Contacted → Emailed → Warm → Called → Booked → Won → Lost
+   - Complete lead lifecycle tracking: Not Contacted → Actively Contacting → Engaged → Won → Not Interested
    - Timeline of touchpoints and interactions
    - Manual note-taking and touchpoint logging
    - Visual status indicators with color coding
@@ -55,7 +55,8 @@ A comprehensive prospect tracking dashboard for outbound sales campaigns across 
 ## 🏗️ Tech Stack
 
 - **Frontend**: Next.js 14 with App Router, TypeScript, TailwindCSS
-- **Backend**: Supabase (PostgreSQL database, Auth, Real-time)
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: NextAuth.js
 - **File Processing**: Papaparse for CSV handling
 - **Icons**: Lucide React
 - **Charts**: Recharts (for analytics)
@@ -66,7 +67,7 @@ A comprehensive prospect tracking dashboard for outbound sales campaigns across 
 ### Prerequisites
 
 - Node.js 18+ and npm
-- Supabase account ([supabase.com](https://supabase.com))
+- PostgreSQL database (local or hosted)
 
 ### 1. Clone and Install
 
@@ -76,87 +77,35 @@ cd lead-manager
 npm install
 ```
 
-### 2. Setup Supabase
+### 2. Setup Environment Variables
 
-1. Create a new project at [supabase.com](https://supabase.com)
-2. Copy your project URL and anon key from Settings > API
-3. Create a `.env.local` file in the root directory:
+Create a `.env` file in the root directory:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+# Database URL for Prisma
+DATABASE_URL="postgresql://username:password@localhost:5432/lead_manager"
+
+# NextAuth configuration
+NEXTAUTH_SECRET=your-nextauth-secret
+NEXTAUTH_URL=http://localhost:3000
+
+# Admin user credentials
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=adminpassword
+
+# Member user credentials
+MEMBER_EMAIL=member@example.com
+MEMBER_PASSWORD=memberpassword
 ```
 
 ### 3. Database Setup
 
-Run the following SQL in your Supabase SQL editor to create the required tables:
+```bash
+# Create the database schema
+npx prisma migrate dev
 
-```sql
--- Create leads table
-CREATE TABLE leads (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  first_name TEXT NOT NULL,
-  last_name TEXT NOT NULL,
-  email TEXT NOT NULL UNIQUE,
-  phone TEXT,
-  city TEXT,
-  source TEXT,
-  industry TEXT,
-  website_quality INTEGER CHECK (website_quality >= 1 AND website_quality <= 10),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Create campaigns table
-CREATE TABLE campaigns (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL,
-  launch_date DATE NOT NULL,
-  brand TEXT NOT NULL CHECK (brand IN ('CraftyCode', 'Avalern')),
-  status TEXT NOT NULL CHECK (status IN ('active', 'queued', 'completed')),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Create lead_status table
-CREATE TABLE lead_status (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
-  campaign_id UUID REFERENCES campaigns(id) ON DELETE CASCADE,
-  status TEXT NOT NULL CHECK (status IN ('Not Contacted', 'Emailed', 'Warm', 'Called', 'Booked', 'Won', 'Lost')),
-  last_touch TIMESTAMP WITH TIME ZONE,
-  notes TEXT,
-  touch_count INTEGER DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Create touchpoints table
-CREATE TABLE touchpoints (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
-  type TEXT NOT NULL CHECK (type IN ('Email 1', 'Email 2', 'Email 3', 'Call 1', 'Call 2', 'Call 3', 'LinkedIn Connect', 'LinkedIn Message', 'Manual Note')),
-  description TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Create indexes for better performance
-CREATE INDEX idx_leads_email ON leads(email);
-CREATE INDEX idx_lead_status_lead_id ON lead_status(lead_id);
-CREATE INDEX idx_lead_status_campaign_id ON lead_status(campaign_id);
-CREATE INDEX idx_touchpoints_lead_id ON touchpoints(lead_id);
-CREATE INDEX idx_campaigns_brand ON campaigns(brand);
-CREATE INDEX idx_campaigns_status ON campaigns(status);
-
--- Enable Row Level Security (optional but recommended)
-ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
-ALTER TABLE campaigns ENABLE ROW LEVEL SECURITY;
-ALTER TABLE lead_status ENABLE ROW LEVEL SECURITY;
-ALTER TABLE touchpoints ENABLE ROW LEVEL SECURITY;
-
--- Create policies (adjust as needed for your auth setup)
-CREATE POLICY "Enable all operations for authenticated users" ON leads FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Enable all operations for authenticated users" ON campaigns FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Enable all operations for authenticated users" ON lead_status FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Enable all operations for authenticated users" ON touchpoints FOR ALL USING (auth.role() = 'authenticated');
+# Generate Prisma client
+npx prisma generate
 ```
 
 ### 4. Run the Development Server
@@ -169,46 +118,127 @@ Open [http://localhost:3000](http://localhost:3000) to view the dashboard.
 
 ## 📊 Database Schema
 
-### Tables Overview
+The database schema is defined in the `prisma/schema.prisma` file. Here's an overview of the main models:
+
+### Models Overview
 
 ```
-leads
+User
 ├── id (UUID, Primary Key)
-├── first_name (TEXT, Required)
-├── last_name (TEXT, Required)
-├── email (TEXT, Required, Unique)
-├── phone (TEXT, Optional)
-├── city (TEXT, Optional)
-├── source (TEXT, Optional)
-├── industry (TEXT, Optional)
-├── website_quality (INTEGER, 1-10)
-└── created_at (TIMESTAMP)
+├── email (String, Unique)
+├── passwordHash (String)
+├── firstName (String, Optional)
+├── lastName (String, Optional)
+├── role (String, Default: "user")
+├── createdAt (DateTime)
+└── companyAccess (UserCompanyAccess[])
 
-campaigns
+Campaign
 ├── id (UUID, Primary Key)
-├── name (TEXT, Required)
-├── launch_date (DATE, Required)
-├── brand (TEXT, Required: 'CraftyCode' | 'Avalern')
-├── status (TEXT, Required: 'active' | 'queued' | 'completed')
-└── created_at (TIMESTAMP)
+├── name (String)
+├── company (CompanyType: CraftyCode | Avalern)
+├── description (String, Optional)
+├── startDate (DateTime, Optional)
+├── endDate (DateTime, Optional)
+├── status (CampaignStatusType: active | completed | draft | paused)
+├── outreachSequenceId (UUID, Optional)
+├── instantlyCampaignId (String, Optional)
+├── createdAt (DateTime)
+├── outreachSequence (OutreachSequence, Optional)
+├── leads (Lead[])
+└── districtContacts (DistrictContact[])
 
-lead_status
+Lead
 ├── id (UUID, Primary Key)
-├── lead_id (UUID, Foreign Key → leads.id)
-├── campaign_id (UUID, Foreign Key → campaigns.id)
-├── status (TEXT, Required: Pipeline stages)
-├── last_touch (TIMESTAMP, Optional)
-├── notes (TEXT, Optional)
-├── touch_count (INTEGER, Default: 0)
-├── created_at (TIMESTAMP)
-└── updated_at (TIMESTAMP)
+├── firstName (String)
+├── lastName (String)
+├── email (String, Unique)
+├── phone (String, Optional)
+├── city (String, Optional)
+├── state (String, Optional)
+├── company (String, Optional)
+├── linkedinUrl (String, Optional)
+├── websiteUrl (String, Optional)
+├── onlineProfile (String, Optional)
+├── source (String, Optional)
+├── status (LeadStatusType)
+├── notes (String, Optional)
+├── campaignId (UUID, Optional)
+├── createdAt (DateTime)
+├── lastContactedAt (DateTime, Optional)
+├── campaign (Campaign, Optional)
+└── touchpoints (Touchpoint[])
 
-touchpoints
+District
 ├── id (UUID, Primary Key)
-├── lead_id (UUID, Foreign Key → leads.id)
-├── type (TEXT, Required: Touchpoint types)
-├── description (TEXT, Required)
-└── created_at (TIMESTAMP)
+├── name (String)
+├── county (String)
+├── state (String, Default: "California")
+├── type (String, Optional)
+├── size (Int, Optional)
+├── budget (Decimal, Optional)
+├── website (String, Optional)
+├── notes (String, Optional)
+├── createdAt (DateTime)
+├── updatedAt (DateTime)
+└── contacts (DistrictContact[])
+
+DistrictContact
+├── id (UUID, Primary Key)
+├── districtId (UUID)
+├── firstName (String)
+├── lastName (String)
+├── title (String, Optional)
+├── email (String, Optional)
+├── phone (String, Optional)
+├── linkedinUrl (String, Optional)
+├── status (LeadStatusType)
+├── notes (String, Optional)
+├── campaignId (UUID, Optional)
+├── createdAt (DateTime)
+├── lastContactedAt (DateTime, Optional)
+├── state (String, Default: "California")
+├── district (District)
+├── campaign (Campaign, Optional)
+└── touchpoints (Touchpoint[])
+
+OutreachSequence
+├── id (UUID, Primary Key)
+├── name (String)
+├── company (CompanyType)
+├── description (String, Optional)
+├── createdAt (DateTime)
+├── updatedAt (DateTime)
+├── steps (OutreachStep[])
+└── campaigns (Campaign[])
+
+OutreachStep
+├── id (UUID, Primary Key)
+├── sequenceId (UUID)
+├── stepOrder (Int)
+├── type (TouchpointType)
+├── name (String, Optional)
+├── contentLink (String, Optional)
+├── dayOffset (Int)
+├── daysAfterPrevious (Int, Optional)
+├── createdAt (DateTime)
+├── updatedAt (DateTime)
+└── sequence (OutreachSequence)
+
+Touchpoint
+├── id (UUID, Primary Key)
+├── leadId (UUID, Optional)
+├── districtContactId (UUID, Optional)
+├── type (TouchpointType)
+├── subject (String, Optional)
+├── content (String, Optional)
+├── scheduledAt (DateTime, Optional)
+├── completedAt (DateTime, Optional)
+├── outcome (String, Optional)
+├── outcomeEnum (TouchpointOutcome, Optional)
+├── createdAt (DateTime)
+├── lead (Lead, Optional)
+└── districtContact (DistrictContact, Optional)
 ```
 
 ## 📝 CSV Import Format
@@ -222,14 +252,17 @@ touchpoints
 - `phone` - Phone number
 - `city` - Lead's city
 - `source` - Lead source (e.g., "LinkedIn", "Cold Outreach")
-- `industry` - Lead's industry
-- `websiteQuality` - Website quality score (1-10)
+- `state` - Lead's state/province
+- `company` - Lead's company name
+- `linkedinUrl` - LinkedIn profile URL
+- `websiteUrl` - Website URL
+- `notes` - Additional notes
 
 ### Sample CSV
 ```csv
-firstName,lastName,email,phone,city,source,industry,websiteQuality
-John,Smith,john.smith@example.com,+1-555-0123,New York,LinkedIn,Technology,8
-Sarah,Johnson,sarah.j@company.com,+1-555-0124,Los Angeles,Cold Outreach,Healthcare,6
+firstName,lastName,email,phone,city,state,company,linkedinUrl,websiteUrl,source
+John,Smith,john.smith@example.com,+1-555-0123,New York,NY,ABC Corp,https://linkedin.com/in/johnsmith,https://abccorp.com,LinkedIn
+Sarah,Johnson,sarah.j@company.com,+1-555-0124,Los Angeles,CA,XYZ Inc,https://linkedin.com/in/sarahjohnson,https://xyzinc.com,Cold Outreach
 ```
 
 ## 🔧 Configuration
@@ -238,27 +271,29 @@ Sarah,Johnson,sarah.j@company.com,+1-555-0124,Los Angeles,Cold Outreach,Healthca
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL | Yes |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anonymous key | Yes |
+| `DATABASE_URL` | PostgreSQL connection URL | Yes |
+| `NEXTAUTH_SECRET` | Secret for NextAuth.js | Yes |
+| `NEXTAUTH_URL` | URL for NextAuth.js | Yes |
+| `ADMIN_EMAIL` | Admin user email | Yes |
+| `ADMIN_PASSWORD` | Admin user password | Yes |
+| `MEMBER_EMAIL` | Member user email | Yes |
+| `MEMBER_PASSWORD` | Member user password | Yes |
 
 ### Lead Pipeline Stages
 
 The system supports the following lead stages:
 - **Not Contacted** - Initial state
-- **Emailed** - First email sent
-- **Warm** - Lead has responded or shown interest
-- **Called** - Phone contact attempted/made
-- **Booked** - Meeting or demo scheduled
+- **Actively Contacting** - Outreach in progress
+- **Engaged** - Lead has responded or shown interest
 - **Won** - Successfully converted to client
-- **Lost** - Lead is no longer viable
+- **Not Interested** - Lead is no longer viable
 
 ### Touchpoint Types
 
 Available touchpoint types for tracking interactions:
-- Email 1, Email 2, Email 3
-- Call 1, Call 2, Call 3
-- LinkedIn Connect, LinkedIn Message
-- Manual Note
+- Email
+- Call
+- LinkedIn Message
 
 ## 🚀 Deployment
 
@@ -306,7 +341,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔗 Instantly Integration
 
-The Lead Manager includes integration with Instantly.ai to automatically sync sent emails as contact attempts.
+The Lead Manager includes integration with Instantly.ai to automatically sync sent emails as touchpoints.
 
 ### Setup
 
@@ -317,67 +352,33 @@ The Lead Manager includes integration with Instantly.ai to automatically sync se
 
 2. **Add Environment Variable**
    ```bash
-   # Add to your .env.local file
+   # Add to your .env file
    INSTANTLY_API_KEY=your_instantly_api_key_here
    ```
 
 3. **Sync Emails**
    - Click the "Sync Instantly" button on the Leads page
    - The system will fetch sent emails from Instantly
-   - Emails are automatically added as contact attempts
+   - Emails are automatically added as touchpoints
    - Duplicate emails are skipped to prevent duplicates
 
 ### How It Works
 
-- **Automatic Deduplication**: The system checks for existing contact attempts to prevent duplicates
+- **Automatic Deduplication**: The system checks for existing touchpoints to prevent duplicates
 - **Email Matching**: Emails are matched to leads by email address
-- **Contact Attempt Creation**: Each sent email becomes a contact attempt with:
+- **Touchpoint Creation**: Each sent email becomes a touchpoint with:
   - Type: Email
   - Subject: Email subject line
-  - Date: When the email was sent
-  - Content: Notes about the Instantly campaign
+  - Scheduled At: When the email was scheduled
+  - Completed At: When the email was sent
   - Outcome: Email delivery status
 
-### Sync Options
+## Authentication
 
-- **Selected Leads**: If you have leads selected, only those leads will be synced
-- **All Leads**: If no leads are selected, all visible leads will be synced
-- **Batch Processing**: The system handles large numbers of leads efficiently
-
-## Authentication and Deployment
-
-### Environment Variables
-
-When deploying to Vercel, make sure to set the following environment variables:
-
-```
-# NextAuth Configuration
-NEXTAUTH_URL=https://your-deployed-url.vercel.app
-NEXTAUTH_SECRET=your-secure-random-string
-
-# User Authentication
-ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=secure-admin-password
-MEMBER_EMAIL=member@example.com
-MEMBER_PASSWORD=secure-member-password
-
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-```
-
-### Fixing Row-Level Security (RLS) Errors
-
-If you encounter errors like `new row violates row-level security policy for table "district_leads"`, it means your authentication isn't properly set up. Make sure:
-
-1. You're logged in with a user that has the correct role ('admin' or 'member')
-2. The JWT claims are properly being sent to Supabase
-3. All environment variables are correctly set in your Vercel deployment
-
-The application uses NextAuth.js for authentication and sets JWT claims for Supabase RLS policies. When properly configured, this ensures that:
+The application uses NextAuth.js for authentication. When properly configured, this ensures that:
 - Admin users can access all data
 - Member users can only access Avalern company data
-- Unauthenticated users have limited access
+- Unauthenticated users have no access
 
 ---
 

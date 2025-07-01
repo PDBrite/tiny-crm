@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { useCompany } from '@/contexts/CompanyContext'
-import { supabase } from '@/lib/supabase'
 import {
   Target,
   Plus,
