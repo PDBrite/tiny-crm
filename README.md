@@ -297,81 +297,8 @@ Available touchpoint types for tracking interactions:
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
+### Vercel 
 
-1. Connect your GitHub repository to Vercel
-2. Add environment variables in Vercel dashboard
-3. Deploy automatically on push to main branch
-
-### Other Platforms
-
-The app can be deployed to any platform that supports Next.js:
-- Netlify
-- Railway
-- DigitalOcean App Platform
-- AWS Amplify
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-- Create an issue for bug reports or feature requests
-- Check existing issues before creating new ones
-- Provide detailed information when reporting bugs
-
-## 🔮 Roadmap
-
-- [ ] Advanced analytics and reporting
-- [ ] Email integration for automated outreach
-- [ ] CRM integrations (HubSpot, Salesforce)
-- [ ] Team collaboration features
-- [ ] Mobile app for lead management
-- [ ] AI-powered lead scoring
-- [ ] Automated follow-up sequences
-
-## 🔗 Instantly Integration
-
-The Lead Manager includes integration with Instantly.ai to automatically sync sent emails as touchpoints.
-
-### Setup
-
-1. **Get your Instantly API Key**
-   - Log into your Instantly.ai account
-   - Navigate to Settings → API
-   - Generate or copy your API key
-
-2. **Add Environment Variable**
-   ```bash
-   # Add to your .env file
-   INSTANTLY_API_KEY=your_instantly_api_key_here
-   ```
-
-3. **Sync Emails**
-   - Click the "Sync Instantly" button on the Leads page
-   - The system will fetch sent emails from Instantly
-   - Emails are automatically added as touchpoints
-   - Duplicate emails are skipped to prevent duplicates
-
-### How It Works
-
-- **Automatic Deduplication**: The system checks for existing touchpoints to prevent duplicates
-- **Email Matching**: Emails are matched to leads by email address
-- **Touchpoint Creation**: Each sent email becomes a touchpoint with:
-  - Type: Email
-  - Subject: Email subject line
-  - Scheduled At: When the email was scheduled
-  - Completed At: When the email was sent
-  - Outcome: Email delivery status
 
 ## Authentication
 
