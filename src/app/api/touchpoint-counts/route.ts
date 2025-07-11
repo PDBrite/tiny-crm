@@ -15,9 +15,17 @@ export async function GET(request: NextRequest) {
     const allowedCompanies = session.user.allowedCompanies || []
 
     const { searchParams } = new URL(request.url)
-    const startDate = searchParams.get('startDate')
-    const endDate = searchParams.get('endDate')
+    let startDate = searchParams.get('startDate')
+    let endDate = searchParams.get('endDate')
+    const date = searchParams.get('date')
     const campaignId = searchParams.get('campaignId')
+    
+    // Handle single date parameter (for backward compatibility)
+    if (date && (!startDate || !endDate)) {
+      // If only date is provided, set start and end to the same day
+      startDate = date
+      endDate = date
+    }
     
     // Determine company from session, not from query param for security
     let company: string | undefined;
@@ -40,11 +48,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (!startDate || !endDate) {
-      return NextResponse.json({ error: 'Start date and end date are required' }, { status: 400 })
+      return NextResponse.json({ error: 'Date information is required (either date or startDate+endDate)' }, { status: 400 })
     }
 
     // Parse the start and end dates
     const parsedStartDate = new Date(startDate);
+    parsedStartDate.setHours(0, 0, 0, 0); // Set to start of day
+    
     const parsedEndDate = new Date(endDate);
     parsedEndDate.setHours(23, 59, 59, 999); // Set to end of day
     
@@ -57,68 +67,128 @@ export async function GET(request: NextRequest) {
         scheduledAt: {
           gte: parsedStartDate,
           lte: parsedEndDate
-        },
-        districtContact: {
-          district: {
-            campaign: {
-              company: 'Avalern'
-            }
-          }
         }
       };
       
-      // Add campaign filter if provided
-      if (campaignId) {
-        whereClause.districtContact.district.campaignId = campaignId;
-      }
+      // First get all campaigns for this company
+      const campaigns = await prisma.campaign.findMany({
+        where: {
+          company: company as any
+        },
+        select: {
+          id: true
+        }
+      });
       
+      const campaignIds = campaigns.map(c => c.id);
+      
+      // Then get district contacts for these campaigns
+      const districtContacts = await prisma.districtContact.findMany({
+        where: {
+          campaignId: {
+            in: campaignIds
+          },
+          ...(campaignId ? { campaignId } : {})
+        },
+        select: {
+          id: true
+        }
+      });
+      
+      const districtContactIds = districtContacts.map(dc => dc.id);
+      
+      // Finally get touchpoints for these district contacts
       const districtTouchpoints = await prisma.touchpoint.findMany({
-        where: whereClause,
+        where: {
+          ...whereClause,
+          districtContactId: {
+            in: districtContactIds
+          }
+        },
         select: {
           id: true,
-          scheduledAt: true
+          scheduledAt: true,
+          type: true
         }
       });
       
       touchpoints = districtTouchpoints;
     } else {
       // For other companies, get touchpoints for leads
-      let whereClause: any = {
-        completedAt: null,
-        scheduledAt: {
-          gte: parsedStartDate,
-          lte: parsedEndDate
+      // First get all campaigns for this company
+      const campaigns = await prisma.campaign.findMany({
+        where: {
+          company: company as any
         },
-        lead: {
-          campaign: {
-            company: company
-          }
+        select: {
+          id: true
         }
-      };
+      });
       
-      // Add campaign filter if provided
-      if (campaignId) {
-        whereClause.lead.campaignId = campaignId;
-      }
+      const campaignIds = campaigns.map(c => c.id);
       
+      // Then get leads for these campaigns
+      const leads = await prisma.lead.findMany({
+        where: {
+          campaignId: {
+            in: campaignIds
+          },
+          ...(campaignId ? { campaignId } : {})
+        },
+        select: {
+          id: true
+        }
+      });
+      
+      const leadIds = leads.map(lead => lead.id);
+      
+      // Finally get touchpoints for these leads
       const leadTouchpoints = await prisma.touchpoint.findMany({
-        where: whereClause,
+        where: {
+          completedAt: null,
+          scheduledAt: {
+            gte: parsedStartDate,
+            lte: parsedEndDate
+          },
+          leadId: {
+            in: leadIds
+          }
+        },
         select: {
           id: true,
-          scheduledAt: true
+          scheduledAt: true,
+          type: true
         }
       });
       
       touchpoints = leadTouchpoints;
     }
 
-    // Count touchpoints by date
+    // Count touchpoints by date and type
     const counts: Record<string, number> = {};
+    const typeCountsByDate: Record<string, Record<string, number>> = {};
     
     touchpoints.forEach((touchpoint: any) => {
       const date = new Date(touchpoint.scheduledAt).toISOString().split('T')[0];
+      const type = touchpoint.type;
+      
+      // Count by date
       counts[date] = (counts[date] || 0) + 1;
+      
+      // Count by type
+      if (!typeCountsByDate[date]) {
+        typeCountsByDate[date] = {};
+      }
+      typeCountsByDate[date][type] = (typeCountsByDate[date][type] || 0) + 1;
     });
+    
+    // If date parameter was used (single day), also return counts by type
+    if (date) {
+      const dateKey = date;
+      return NextResponse.json({ 
+        counts: typeCountsByDate[dateKey] || {} 
+      });
+    }
 
     return NextResponse.json({ counts });
   } catch (error) {

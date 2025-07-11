@@ -58,30 +58,46 @@ export async function GET(request: NextRequest) {
       // For Avalern, fetch touchpoints for district contacts
       console.log('Fetching Avalern district touchpoints for date:', date || 'today');
       
-      // First, get the district contacts with their touchpoints
+      // First get all campaigns for this company
+      const campaigns = await prisma.campaign.findMany({
+        where: {
+          company: company as any
+        },
+        select: {
+          id: true,
+          name: true
+        }
+      });
+      
+      const campaignIds = campaigns.map(c => c.id);
+      const campaignMap = new Map();
+      campaigns.forEach(c => campaignMap.set(c.id, c));
+      
+      // Then get district contacts for these campaigns
       const districtContacts = await prisma.districtContact.findMany({
         where: {
-          district: {
-            campaign: {
-              company: 'Avalern'
-            }
+          campaignId: {
+            in: campaignIds
           },
           ...(campaignId ? { campaignId } : {})
         },
         include: {
-          district: {
-            include: {
-              campaign: true
-            }
-          }
+          district: true,
         }
       });
       
       console.log(`Found ${districtContacts.length} district contacts for Avalern`);
       
-      // Then get touchpoints for these contacts
+      // Create a map of district contacts for easy lookup
+      const districtContactMap = new Map();
+      districtContacts.forEach(dc => {
+        districtContactMap.set(dc.id, dc);
+      });
+      
+      // Build a list of district contact IDs
       const districtContactIds = districtContacts.map(dc => dc.id);
       
+      // Define touchpoint where clause based on date/type
       let touchpointWhereClause: any = {
         completedAt: null,
         districtContactId: {
@@ -120,16 +136,12 @@ export async function GET(request: NextRequest) {
       
       console.log(`Found ${districtTouchpoints.length} touchpoints for Avalern district contacts`);
       
-      // Create a map of district contacts for easy lookup
-      const districtContactMap = new Map();
-      districtContacts.forEach(dc => {
-        districtContactMap.set(dc.id, dc);
-      });
-      
       // Transform touchpoints to match the expected format
       touchpoints = districtTouchpoints.map(tp => {
         const dc = districtContactMap.get(tp.districtContactId);
         if (!dc) return null;
+        
+        const campaign = campaignMap.get(dc.campaignId);
         
         return {
           id: tp.id,
@@ -152,12 +164,7 @@ export async function GET(request: NextRequest) {
               id: dc.district.id,
               district_name: dc.district.name,
               county: dc.district.county,
-              campaign_id: dc.district.campaignId,
-              campaign: {
-                id: dc.district.campaign.id,
-                name: dc.district.campaign.name,
-                company: dc.district.campaign.company
-              }
+              campaign_id: dc.campaignId
             }
           },
           // Add lead field for backward compatibility
@@ -169,35 +176,54 @@ export async function GET(request: NextRequest) {
             phone: dc.phone,
             city: dc.district.county,
             company: dc.district.name,
-            campaign_id: dc.district.campaignId,
-            campaign: {
-              id: dc.district.campaign.id,
-              name: dc.district.campaign.name,
-              company: dc.district.campaign.company
-            }
+            campaign_id: dc.campaignId,
+            campaign: campaign ? {
+              id: campaign.id,
+              name: campaign.name,
+              company: company
+            } : undefined
           }
         };
       }).filter(Boolean);
     } else {
       // For other companies (like CraftyCode), fetch regular lead touchpoints
-      // First, get the leads
+      // First, get the campaigns for this company
+      const campaigns = await prisma.campaign.findMany({
+        where: {
+          company: company as any
+        },
+        select: {
+          id: true,
+          name: true
+        }
+      });
+      
+      const campaignIds = campaigns.map(c => c.id);
+      const campaignMap = new Map();
+      campaigns.forEach(c => campaignMap.set(c.id, c));
+      
+      // Then get leads for these campaigns
       const leads = await prisma.lead.findMany({
         where: {
-          campaign: {
-            company
+          campaignId: {
+            in: campaignIds
           },
           ...(campaignId ? { campaignId } : {})
-        },
-        include: {
-          campaign: true
         }
       });
       
       console.log(`Found ${leads.length} leads for ${company}`);
       
-      // Then get touchpoints for these leads
+      // Create a map of leads for easy lookup
+      const leadMap = new Map();
+      leads.forEach(lead => {
+        leadMap.set(lead.id, lead);
+      });
+      
+      // Build a list of lead IDs
       const leadIds = leads.map(lead => lead.id);
       
+      // Define touchpoint where clause based on date/type
       let touchpointWhereClause: any = {
         completedAt: null,
         leadId: {
@@ -236,16 +262,12 @@ export async function GET(request: NextRequest) {
       
       console.log(`Found ${leadTouchpoints.length} touchpoints for ${company} leads`);
       
-      // Create a map of leads for easy lookup
-      const leadMap = new Map();
-      leads.forEach(lead => {
-        leadMap.set(lead.id, lead);
-      });
-      
       // Transform touchpoints to match the expected format
       touchpoints = leadTouchpoints.map(tp => {
         const lead = leadMap.get(tp.leadId);
         if (!lead) return null;
+        
+        const campaign = campaignMap.get(lead.campaignId);
         
         return {
           id: tp.id,
@@ -266,11 +288,11 @@ export async function GET(request: NextRequest) {
             city: lead.city,
             company: lead.company,
             campaign_id: lead.campaignId,
-            campaign: {
-              id: lead.campaign.id,
-              name: lead.campaign.name,
-              company: lead.campaign.company
-            }
+            campaign: campaign ? {
+              id: campaign.id,
+              name: campaign.name,
+              company: company
+            } : undefined
           }
         };
       }).filter(Boolean);
@@ -290,8 +312,10 @@ export async function GET(request: NextRequest) {
     const overdueTouchpoints = []
 
     for (const touchpoint of touchpoints) {
-      const scheduledDate = new Date(touchpoint.scheduled_at)
-      scheduledDate.setHours(0, 0, 0, 0)
+      if (!touchpoint || !touchpoint.scheduled_at) continue;
+      
+      const scheduledDate = new Date(touchpoint.scheduled_at);
+      scheduledDate.setHours(0, 0, 0, 0);
 
       if (scheduledDate < targetDate) {
         overdueTouchpoints.push(touchpoint)
@@ -447,9 +471,9 @@ export async function POST(request: NextRequest) {
       });
       
       if (districtContact) {
-        // Update the district's lastContactedAt
-        await prisma.district.update({
-          where: { id: districtContact.district.id },
+        // Update the district contact's lastContactedAt
+        await prisma.districtContact.update({
+          where: { id: districtContact.id },
           data: { lastContactedAt: new Date() }
         });
         
