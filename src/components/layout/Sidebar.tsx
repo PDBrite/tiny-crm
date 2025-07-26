@@ -17,16 +17,7 @@ import {
   List,
   LogOut
 } from 'lucide-react'
-import { signOut } from "next-auth/react"
-
-const craftyCodeNavigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Leads', href: '/leads', icon: Users },
-  { name: 'Outreach', href: '/outreach', icon: MessageSquare },
-  { name: 'Campaigns', href: '/campaigns', icon: Target },
-  { name: 'Outreach Sequences', href: '/outreach-sequences', icon: List },
-  { name: 'Import', href: '/import', icon: Upload },
-]
+import { signOut, useSession } from "next-auth/react"
 
 const avalernNav = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -35,35 +26,41 @@ const avalernNav = [
   { name: 'Outreach', href: '/outreach', icon: MessageSquare },
   { name: 'Campaigns', href: '/campaigns', icon: Target },
   { name: 'Outreach Sequences', href: '/outreach-sequences', icon: List },
+  { name: 'Users', href: '/users', icon: User },
   { name: 'Import', href: '/import', icon: Upload },
 ]
 
-const companyColors: Record<string, string> = {
-  'CraftyCode': 'bg-blue-500',
-  'Avalern': 'bg-purple-500'
-}
-
 export default function Sidebar() {
   const pathname = usePathname()
-  const { selectedCompany, setSelectedCompany, availableCompanies } = useCompany()
+  const { selectedCompany } = useCompany()
+  const { data: session } = useSession();
+  const user = session?.user;
 
   // Debug logging
   console.log('Sidebar Debug:', {
     selectedCompany,
-    availableCompanies,
-    pathname
+    pathname,
+    user
   })
 
   const handleSignOut = async () => {
     await signOut({ redirect: true, callbackUrl: "/login" });
   };
 
+  // Only show Users section if user is admin
+  const filteredNav = avalernNav.filter(item => {
+    if (item.name === 'Users') {
+      return user?.role === 'admin';
+    }
+    return true;
+  });
+
   return (
     <div className="flex h-screen w-64 flex-col bg-white shadow-lg">
       {/* Logo */}
       <div className="flex h-16 items-center px-6 border-b border-gray-200">
-        <Building2 className="h-8 w-8 text-blue-600" />
-        <span className="ml-3 text-xl font-bold text-gray-900">Lead Manager</span>
+        <Building2 className="h-8 w-8 text-purple-600" />
+        <span className="ml-3 text-xl font-bold text-gray-900">Avalern</span>
       </div>
 
       {/* User Info */}
@@ -74,78 +71,33 @@ export default function Sidebar() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">
-              Current User
+              {user?.name || user?.email || 'User'}
             </p>
             <p className="text-xs text-gray-500 truncate">
-              User
+              {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : ''}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Company Selector */}
-      {availableCompanies.length > 0 && (
-        <div className="border-b border-gray-200 p-4">
-          <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-            Active Companies
-          </div>
-          <div className="space-y-2">
-            {availableCompanies.map((company) => (
-              <button
-                key={company}
-                onClick={() => setSelectedCompany(company)}
-                className={`
-                  flex items-center w-full px-3 py-2 text-sm font-medium rounded-lg transition-colors
-                  ${selectedCompany === company
-                    ? 'bg-gray-100 text-gray-900 border-l-4 border-blue-500'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                  }
-                `}
-              >
-                <div className={`w-3 h-3 ${companyColors[company] || 'bg-gray-500'} rounded-full mr-3`}></div>
-                <span>{company}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Navigation */}
       <nav className="flex-1 px-4 py-6 space-y-2">
-        {selectedCompany === 'CraftyCode' && craftyCodeNavigation.map((item) => {
+        {filteredNav.map((item) => {
           const isActive = pathname === item.href
           return (
             <Link
               key={item.name}
               href={item.href}
+              onClick={() => console.log(`Clicked on ${item.name}, navigating to ${item.href}`)}
               className={`
                 flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors
                 ${isActive 
-                  ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700' 
+                  ? 'bg-purple-50 text-purple-700 border-r-2 border-purple-700' 
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }
               `}
             >
-              <item.icon className={`mr-3 h-5 w-5 ${isActive ? 'text-blue-700' : 'text-gray-400'}`} />
-              {item.name}
-            </Link>
-          )
-        })}
-        {selectedCompany === 'Avalern' && avalernNav.map((item) => {
-          const isActive = pathname === item.href
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={`
-                flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors
-                ${isActive 
-                  ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }
-              `}
-            >
-              <item.icon className={`mr-3 h-5 w-5 ${isActive ? 'text-blue-700' : 'text-gray-400'}`} />
+              <item.icon className={`mr-3 h-5 w-5 ${isActive ? 'text-purple-700' : 'text-gray-400'}`} />
               {item.name}
             </Link>
           )

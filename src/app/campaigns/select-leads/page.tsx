@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import DashboardLayout from '../../../components/layout/DashboardLayout'
 import { useCompany } from '../../../contexts/CompanyContext'
-import { supabase } from '../../../lib/supabase'
 import { STATUS_DISPLAY_MAP } from '../../../types/leads'
 import {
   Search,
@@ -16,14 +15,14 @@ import {
 
 interface Lead {
   id: string
-  first_name: string
-  last_name: string
+  firstName: string
+  lastName: string
   email: string
   phone?: string
   city?: string
   status: string
-  campaign_id?: string
-  created_at: string
+  campaignId?: string
+  createdAt: string
   source?: string
 }
 
@@ -103,18 +102,14 @@ function SelectLeadsContent() {
       
       try {
         setLoading(true)
-        const { data, error } = await supabase
-          .from('leads')
-          .select('id, first_name, last_name, email, phone, city, status, campaign_id, created_at, source')
-          .is('campaign_id', null) // Only leads not assigned to campaigns
-          .order('created_at', { ascending: false })
-
-        if (error) {
-          console.error('Error fetching leads:', error)
-          return
+        
+        const response = await fetch('/api/leads?unassigned=true');
+        if (!response.ok) {
+          throw new Error('Failed to fetch leads');
         }
-
-        setLeads(data || [])
+        
+        const data = await response.json();
+        setLeads(data || []);
       } catch (error) {
         console.error('Error fetching leads:', error)
       } finally {
@@ -132,8 +127,8 @@ function SelectLeadsContent() {
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase()
       filtered = filtered.filter(lead => 
-        (lead.first_name || '').toLowerCase().includes(searchLower) ||
-        (lead.last_name || '').toLowerCase().includes(searchLower) ||
+        (lead.firstName || '').toLowerCase().includes(searchLower) ||
+        (lead.lastName || '').toLowerCase().includes(searchLower) ||
         (lead.email || '').toLowerCase().includes(searchLower)
       )
     }
@@ -213,67 +208,34 @@ function SelectLeadsContent() {
 
     setCreating(true)
     try {
-      // Create campaign
-      const { data: campaign, error: campaignError } = await supabase
-        .from('campaigns')
-        .insert({
+      // Create campaign via API
+      const response = await fetch('/api/campaigns/create-with-leads', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           name: campaignName,
           company: selectedCompany,
           description: description,
-          start_date: launchDate,
-          end_date: endDate,
-          outreach_sequence_id: outreachSequenceId,
-          instantly_campaign_id: instantlyCampaignId || null,
-          created_at: new Date().toISOString()
-        })
-        .select(`
-          *,
-          outreach_sequence:outreach_sequences(
-            id, name, description,
-            steps:outreach_steps(*)
-          )
-        `)
-        .single()
-
-      if (campaignError) {
-        console.error('Error creating campaign:', campaignError)
-        alert('Failed to create campaign')
-        return
-      }
-
-      // Assign selected leads to the campaign and update status to actively_contacting
-      const { error: leadsError } = await supabase
-        .from('leads')
-        .update({ 
-          campaign_id: campaign.id,
-          status: 'actively_contacting'
-        })
-        .in('id', selectedLeads)
-
-      if (leadsError) {
-        console.error('Error assigning leads to campaign:', leadsError)
-        alert('Campaign created but failed to assign leads')
-        return
-      }
-
-      // Verify leads were updated correctly
-      const { data: verifyLeads, error: verifyError } = await supabase
-        .from('leads')
-        .select('id, campaign_id')
-        .in('id', selectedLeads)
+          startDate: launchDate,
+          endDate: endDate,
+          outreachSequenceId: outreachSequenceId,
+          instantlyCampaignId: instantlyCampaignId || null,
+          leadIds: selectedLeads
+        }),
+      });
       
-      if (verifyError) {
-        console.error('Error verifying lead updates:', verifyError)
-      } else {
-        console.log(`Verification found ${verifyLeads?.length || 0} leads:`, 
-          verifyLeads?.map(l => ({ id: l.id, campaign_id: l.campaign_id })) || []
-        )
-        const correctlyUpdated = verifyLeads?.filter(l => l.campaign_id === campaign.id).length || 0
-        console.log(`${correctlyUpdated} of ${verifyLeads?.length || 0} leads correctly updated with campaign_id`)
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create campaign');
       }
+      
+      const result = await response.json();
+      const campaign = result.campaign;
 
       // Schedule touchpoints for all selected leads
-      if (campaign.outreach_sequence?.steps) {
+      if (campaign.outreachSequence?.steps) {
         const touchpointsToCreate = []
         const launchDateObj = new Date(launchDate)
 
@@ -291,14 +253,14 @@ function SelectLeadsContent() {
         }
 
         for (const leadId of selectedLeads) {
-          for (const step of campaign.outreach_sequence.steps) {
-            const scheduledDate = addBusinessDays(launchDateObj, step.day_offset)
+          for (const step of campaign.outreachSequence.steps) {
+            const scheduledDate = addBusinessDays(launchDateObj, step.dayOffset)
             
             touchpointsToCreate.push({
               lead_id: leadId,
               type: step.type,
               subject: step.name || '',
-              content: step.content_link || '',
+              content: step.contentLink || '',
               scheduled_at: scheduledDate.toISOString(),
               created_at: new Date().toISOString()
             })
@@ -343,7 +305,7 @@ function SelectLeadsContent() {
         }
       }
 
-      const touchpointCount = selectedLeads.length * (campaign.outreach_sequence?.steps?.length || 0)
+      const touchpointCount = selectedLeads.length * (campaign.outreachSequence?.steps?.length || 0)
       alert(`Campaign "${campaign.name}" created successfully!\n${selectedLeads.length} leads assigned and ${touchpointCount} touchpoints scheduled.`)
       
       // Navigate to the campaign detail page
@@ -643,7 +605,7 @@ function SelectLeadsContent() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {lead.first_name} {lead.last_name}
+                          {lead.firstName} {lead.lastName}
                         </div>
                         <div className="text-sm text-gray-500">{lead.email}</div>
                       </div>
@@ -660,7 +622,7 @@ function SelectLeadsContent() {
                       {lead.phone || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(lead.created_at).toLocaleDateString()}
+                      {new Date(lead.createdAt).toLocaleDateString()}
                     </td>
                   </tr>
                 ))}

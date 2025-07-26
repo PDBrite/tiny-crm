@@ -19,6 +19,13 @@ export interface Touchpoint {
   outcome?: string
   outcome_enum?: 'replied' | 'no_answer' | 'voicemail' | 'opted_out' | 'bounced' | 'booked' | 'ignored'
   created_at: string
+  created_by_id?: string
+  created_by?: {
+    id: string
+    email: string
+    first_name?: string
+    last_name?: string
+  }
 }
 
 // Keep ContactAttempt as an alias for backward compatibility during transition

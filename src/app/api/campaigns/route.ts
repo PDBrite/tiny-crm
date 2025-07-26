@@ -22,15 +22,25 @@ export async function GET(request: NextRequest) {
     // Build the where clause based on permissions and filters
     let where: any = {}
 
+    // Helper function to convert string to CompanyType
+    const getCompanyType = (company: string): CompanyType => {
+      // Handle case insensitive matching
+      const normalized = company.toLowerCase()
+      if (normalized === 'avalern') return CompanyType.Avalern
+      if (normalized === 'craftycode') return CompanyType.CraftyCode
+      // Default case - should not happen with proper validation
+      return CompanyType.Avalern
+    }
+
     // Filter by company based on user role and allowed companies
     if (userRole === 'member') {
       // Member users can only see campaigns for their allowed companies
       where.company = {
-        in: allowedCompanies.map(c => c.charAt(0).toUpperCase() + c.slice(1)) as CompanyType[]
+        in: allowedCompanies.map(c => getCompanyType(c))
       }
     } else if (companyParam) {
       // Admin users can filter by company
-      where.company = companyParam as CompanyType
+      where.company = getCompanyType(companyParam)
     }
 
     // Filter by status if provided
@@ -65,7 +75,8 @@ export async function GET(request: NextRequest) {
             leads: true,
             districtContacts: true
           }
-        }
+        },
+        createdBy: true
       },
       orderBy: {
         createdAt: 'desc'
@@ -85,7 +96,13 @@ export async function GET(request: NextRequest) {
       outreach_sequence: campaign.outreachSequence,
       leads_count: campaign._count.leads,
       district_contacts_count: campaign._count.districtContacts,
-      instantly_campaign_id: campaign.instantlyCampaignId
+      instantly_campaign_id: campaign.instantlyCampaignId,
+      created_by: campaign.createdBy ? {
+        id: campaign.createdBy.id,
+        email: campaign.createdBy.email,
+        name: `${campaign.createdBy.firstName || ''} ${campaign.createdBy.lastName || ''}`.trim() || campaign.createdBy.email,
+        role: campaign.createdBy.role
+      } : null
     }))
 
     return NextResponse.json({ campaigns: transformedCampaigns })
@@ -105,6 +122,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const userId = session.user.id
     const userRole = session.user.role
     const allowedCompanies = session.user.allowedCompanies || []
 
@@ -114,9 +132,10 @@ export async function POST(request: NextRequest) {
       name, 
       company, 
       description, 
-      start_date, 
-      end_date, 
-      outreach_sequence_id,
+      startDate, 
+      endDate, 
+      outreachSequenceId,
+      instantlyCampaignId,
       status
     } = body
 
@@ -137,16 +156,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Helper function to convert string to CompanyType
+    const getCompanyType = (company: string): CompanyType => {
+      // Handle case insensitive matching
+      const normalized = company.toLowerCase()
+      if (normalized === 'avalern') return CompanyType.Avalern
+      if (normalized === 'craftycode') return CompanyType.CraftyCode
+      // Default case - should not happen with proper validation
+      return CompanyType.Avalern
+    }
+
     // Create campaign using Prisma
     const campaign = await prisma.campaign.create({
       data: {
         name,
-        company: company as CompanyType,
+        company: getCompanyType(company),
         description,
-        startDate: start_date ? new Date(start_date) : null,
-        endDate: end_date ? new Date(end_date) : null,
-        outreachSequenceId: outreach_sequence_id,
-        status: status as CampaignStatusType || 'draft'
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
+        outreachSequenceId,
+        instantlyCampaignId,
+        status: status as CampaignStatusType || 'draft',
+        createdById: userId
+      },
+      include: {
+        outreachSequence: {
+          include: {
+            steps: {
+              orderBy: {
+                stepOrder: 'asc'
+              }
+            }
+          }
+        },
+        createdBy: true
       }
     })
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, RefreshCw, Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, RefreshCw, Calendar, ChevronLeft, ChevronRight, User } from 'lucide-react'
 import { Touchpoint } from '../../types/leads'
 
 interface TouchpointsProps {
@@ -14,6 +14,7 @@ interface TouchpointsProps {
   saving: boolean
   onSyncInstantly: () => void
   syncing: boolean
+  users?: Array<{ id: string, email: string, first_name?: string, last_name?: string }>
 }
 
 export default function Touchpoints({
@@ -25,13 +26,15 @@ export default function Touchpoints({
   onAddTouchpoint,
   saving,
   onSyncInstantly,
-  syncing
+  syncing,
+  users = []
 }: TouchpointsProps) {
   // Filter states
   const [typeFilter, setTypeFilter] = useState('')
   const [dateFromFilter, setDateFromFilter] = useState('')
   const [dateToFilter, setDateToFilter] = useState('')
   const [outcomeFilter, setOutcomeFilter] = useState('')
+  const [creatorFilter, setCreatorFilter] = useState('') // Add creator filter
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
@@ -74,9 +77,14 @@ export default function Touchpoints({
       }
     }
     
+    // Creator filter
+    if (creatorFilter) {
+      filtered = filtered.filter(tp => tp.created_by_id === creatorFilter)
+    }
+    
     setFilteredTouchpoints(filtered)
     setCurrentPage(1) // Reset to first page when filters change
-  }, [touchpoints, typeFilter, dateFromFilter, dateToFilter, outcomeFilter])
+  }, [touchpoints, typeFilter, dateFromFilter, dateToFilter, outcomeFilter, creatorFilter])
   
   // Apply pagination whenever filtered data or page changes
   useEffect(() => {
@@ -92,6 +100,7 @@ export default function Touchpoints({
     setDateFromFilter('')
     setDateToFilter('')
     setOutcomeFilter('')
+    setCreatorFilter('')
   }
 
   return (
@@ -120,118 +129,151 @@ export default function Touchpoints({
       </div>
 
       {/* Filters Section */}
-      <div className="bg-gray-50 rounded-lg p-4 mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-medium text-gray-900">Filters</h4>
-          <button
-            onClick={clearFilters}
-            className="text-sm text-blue-600 hover:text-blue-800"
+      <div className="bg-gray-50 p-3 rounded-lg mb-4">
+        <div className="flex flex-wrap gap-2">
+          {/* Type Filter */}
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="px-3 py-1 text-sm border border-gray-300 rounded-md"
           >
-            Clear All
-          </button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">All Types</option>
-              <option value="email">Email</option>
-              <option value="call">Phone Call</option>
-              <option value="linkedin_message">LinkedIn Message</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">From Date</label>
+            <option value="">All Types</option>
+            <option value="email">Email</option>
+            <option value="call">Call</option>
+            <option value="linkedin_message">LinkedIn</option>
+          </select>
+
+          {/* Date From Filter */}
+          <div className="flex items-center">
+            <span className="text-xs text-gray-500 mr-1">From:</span>
             <input
               type="date"
               value={dateFromFilter}
               onChange={(e) => setDateFromFilter(e.target.value)}
-              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+              className="px-2 py-1 text-sm border border-gray-300 rounded-md"
             />
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">To Date</label>
+
+          {/* Date To Filter */}
+          <div className="flex items-center">
+            <span className="text-xs text-gray-500 mr-1">To:</span>
             <input
               type="date"
               value={dateToFilter}
               onChange={(e) => setDateToFilter(e.target.value)}
-              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+              className="px-2 py-1 text-sm border border-gray-300 rounded-md"
             />
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+
+          {/* Outcome Filter */}
+          <select
+            value={outcomeFilter}
+            onChange={(e) => setOutcomeFilter(e.target.value)}
+            className="px-3 py-1 text-sm border border-gray-300 rounded-md"
+          >
+            <option value="">All Status</option>
+            <option value="completed">Completed</option>
+            <option value="pending">Pending</option>
+          </select>
+          
+          {/* Creator Filter */}
+          {users.length > 0 && (
             <select
-              value={outcomeFilter}
-              onChange={(e) => setOutcomeFilter(e.target.value)}
-              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+              value={creatorFilter}
+              onChange={(e) => setCreatorFilter(e.target.value)}
+              className="px-3 py-1 text-sm border border-gray-300 rounded-md flex items-center"
             >
-              <option value="">All Status</option>
-              <option value="completed">Completed</option>
-              <option value="pending">Pending</option>
+              <option value="">All Users</option>
+              {users.map(user => (
+                <option key={user.id} value={user.id}>
+                  {user.first_name && user.last_name 
+                    ? `${user.first_name} ${user.last_name}` 
+                    : user.email}
+                </option>
+              ))}
             </select>
-          </div>
+          )}
+
+          {/* Clear Filters */}
+          <button
+            onClick={clearFilters}
+            className="px-3 py-1 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
+          >
+            Clear Filters
+          </button>
         </div>
       </div>
 
       {/* New Touchpoint Form */}
       {showNewTouchpointForm && (
-        <div className="bg-gray-50 rounded-lg p-4 mb-4">
-          <h4 className="text-sm font-medium text-gray-900 mb-3">New Touchpoint</h4>
+        <div className="bg-gray-50 p-4 rounded-lg mb-4">
+          <h4 className="text-sm font-medium text-gray-900 mb-3">Add New Touchpoint</h4>
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+              <label className="block text-sm text-gray-700 mb-1">Type</label>
               <select
-                value={newTouchpoint.type || 'email'}
-                onChange={(e) => onNewTouchpointChange({...newTouchpoint, type: e.target.value as Touchpoint['type']})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={newTouchpoint.type || ''}
+                onChange={(e) => onNewTouchpointChange({ ...newTouchpoint, type: e.target.value as any })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
               >
+                <option value="">Select Type</option>
                 <option value="email">Email</option>
-                <option value="call">Phone Call</option>
+                <option value="call">Call</option>
                 <option value="linkedin_message">LinkedIn Message</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-              <input
-                type="date"
-                value={newTouchpoint.completed_at ? newTouchpoint.completed_at.split('T')[0] : ''}
-                onChange={(e) => onNewTouchpointChange({...newTouchpoint, completed_at: e.target.value ? e.target.value + 'T09:00:00' : ''})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+              <label className="block text-sm text-gray-700 mb-1">Subject</label>
               <input
                 type="text"
                 value={newTouchpoint.subject || ''}
-                onChange={(e) => onNewTouchpointChange({...newTouchpoint, subject: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Brief subject or title"
+                onChange={(e) => onNewTouchpointChange({ ...newTouchpoint, subject: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="Subject"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <label className="block text-sm text-gray-700 mb-1">Content</label>
               <textarea
                 value={newTouchpoint.content || ''}
-                onChange={(e) => onNewTouchpointChange({...newTouchpoint, content: e.target.value})}
+                onChange={(e) => onNewTouchpointChange({ ...newTouchpoint, content: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="Content"
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Details about this touchpoint..."
-              />
+              ></textarea>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Outcome</label>
+              <label className="block text-sm text-gray-700 mb-1">Outcome</label>
               <input
                 type="text"
                 value={newTouchpoint.outcome || ''}
-                onChange={(e) => onNewTouchpointChange({...newTouchpoint, outcome: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Result or outcome"
+                onChange={(e) => onNewTouchpointChange({ ...newTouchpoint, outcome: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="Outcome (if completed)"
               />
+            </div>
+            <div>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={!!newTouchpoint.completed_at}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      onNewTouchpointChange({
+                        ...newTouchpoint,
+                        completed_at: new Date().toISOString()
+                      })
+                    } else {
+                      onNewTouchpointChange({
+                        ...newTouchpoint,
+                        completed_at: undefined
+                      })
+                    }
+                  }}
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-700">Mark as Completed</span>
+              </label>
             </div>
             <div className="flex justify-end space-x-2">
               <button
@@ -252,7 +294,6 @@ export default function Touchpoints({
         </div>
       )}
 
-      {/* Touchpoints List */}
       <div className="space-y-3">
         {filteredTouchpoints.length === 0 ? (
           <p className="text-sm text-gray-500 text-center py-4">
@@ -278,6 +319,14 @@ export default function Touchpoints({
                     {touchpoint.outcome && (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         COMPLETED
+                      </span>
+                    )}
+                    {touchpoint.created_by && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                        <User className="h-3 w-3 mr-1" />
+                        {touchpoint.created_by.first_name && touchpoint.created_by.last_name
+                          ? `${touchpoint.created_by.first_name} ${touchpoint.created_by.last_name}`
+                          : touchpoint.created_by.email}
                       </span>
                     )}
                   </div>

@@ -17,6 +17,10 @@ export interface DistrictLead {
   valid_contacts_count?: number
   touchpoints_count?: number
   
+  // Assignment fields
+  assigned_to_current_user?: boolean
+  assigned_users_count?: number
+  
   // Relationships
   district_contacts?: DistrictContact[]
   campaign?: {

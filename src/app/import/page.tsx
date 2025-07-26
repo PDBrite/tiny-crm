@@ -537,12 +537,27 @@ export default function ImportPage() {
         }),
       })
 
-      const result = await response.json()
-
+      // Check if response is OK before trying to parse JSON
       if (!response.ok) {
-        throw new Error(result.error || 'Import failed')
+        // Check if it's a redirect (likely authentication issue)
+        if (response.status === 307 || response.status === 302) {
+          throw new Error('Authentication required. Please log in and try again.')
+        }
+        
+        // Try to get error message from response
+        let errorMessage = 'Import failed'
+        try {
+          const errorResult = await response.json()
+          errorMessage = errorResult.error || errorMessage
+        } catch (parseError) {
+          // If we can't parse JSON, use status text
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`
+        }
+        throw new Error(errorMessage)
       }
 
+      const result = await response.json()
+      console.log('Import result:', result)
       alert(result.message)
       
       // Reset form

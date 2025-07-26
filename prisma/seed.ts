@@ -11,7 +11,8 @@ async function main() {
   const adminPasswordHash = await hash('adminpassword', 10);
   const memberPasswordHash = await hash('memberpassword', 10);
 
-  const admin = await prisma.user.upsert({
+  // Create 3 admin users
+  const admin1 = await prisma.user.upsert({
     where: { email: 'admin@example.com' },
     update: {},
     create: {
@@ -29,7 +30,44 @@ async function main() {
     }
   });
 
-  const member = await prisma.user.upsert({
+  const admin2 = await prisma.user.upsert({
+    where: { email: 'sarah.admin@example.com' },
+    update: {},
+    create: {
+      email: 'sarah.admin@example.com',
+      passwordHash: adminPasswordHash,
+      firstName: 'Sarah',
+      lastName: 'Johnson',
+      role: 'admin',
+      companyAccess: {
+        create: [
+          { company: 'Avalern' },
+          { company: 'CraftyCode' }
+        ]
+      }
+    }
+  });
+
+  const admin3 = await prisma.user.upsert({
+    where: { email: 'mike.admin@example.com' },
+    update: {},
+    create: {
+      email: 'mike.admin@example.com',
+      passwordHash: adminPasswordHash,
+      firstName: 'Mike',
+      lastName: 'Chen',
+      role: 'admin',
+      companyAccess: {
+        create: [
+          { company: 'Avalern' },
+          { company: 'CraftyCode' }
+        ]
+      }
+    }
+  });
+
+  // Create 2 member users
+  const member1 = await prisma.user.upsert({
     where: { email: 'member@example.com' },
     update: {},
     create: {
@@ -46,7 +84,30 @@ async function main() {
     }
   });
 
-  console.log('Created users:', { admin: admin.email, member: member.email });
+  const member2 = await prisma.user.upsert({
+    where: { email: 'lisa.member@example.com' },
+    update: {},
+    create: {
+      email: 'lisa.member@example.com',
+      passwordHash: memberPasswordHash,
+      firstName: 'Lisa',
+      lastName: 'Rodriguez',
+      role: 'member',
+      companyAccess: {
+        create: [
+          { company: 'Avalern' }
+        ]
+      }
+    }
+  });
+
+  console.log('Created users:', { 
+    admin1: admin1.email, 
+    admin2: admin2.email, 
+    admin3: admin3.email,
+    member1: member1.email, 
+    member2: member2.email 
+  });
 
   // Create outreach sequences
   console.log('Creating outreach sequences...');

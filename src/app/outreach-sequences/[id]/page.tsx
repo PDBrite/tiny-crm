@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { ArrowLeft, Calendar, Mail, Phone, MessageSquare, Clock, ExternalLink, ChevronRight, ChevronDown } from 'lucide-react'
 
@@ -47,36 +46,52 @@ export default function OutreachSequenceDetailPage() {
     setError(null)
     
     try {
-      // Fetch sequence details
-      const { data: sequenceData, error: sequenceError } = await supabase
-        .from('outreach_sequences')
-        .select('*')
-        .eq('id', sequenceId)
-        .single()
+      // Fetch sequence details using API
+      const response = await fetch(`/api/outreach-sequences/${sequenceId}`)
       
-      if (sequenceError) {
-        console.error('Error fetching sequence:', sequenceError)
+      if (!response.ok) {
+        console.error('Error fetching sequence:', response.status)
         setError('Failed to load sequence details')
         setLoading(false)
         return
       }
       
-      setSequence(sequenceData)
+      const data = await response.json()
       
-      // Fetch sequence steps
-      const { data: stepsData, error: stepsError } = await supabase
-        .from('outreach_steps')
-        .select('*')
-        .eq('sequence_id', sequenceId)
-        .order('step_order', { ascending: true })
-      
-      if (stepsError) {
-        console.error('Error fetching steps:', stepsError)
-        setError('Failed to load sequence steps')
-        setSteps([])
-      } else {
-        setSteps(stepsData || [])
+      if (!data.sequence) {
+        setError('Sequence not found')
+        setLoading(false)
+        return
       }
+      
+      // Format the sequence data to match our interface
+      const formattedSequence: OutreachSequence = {
+        id: data.sequence.id,
+        name: data.sequence.name,
+        description: data.sequence.description,
+        company: data.sequence.company,
+        created_at: data.sequence.createdAt
+      }
+      
+      setSequence(formattedSequence)
+      
+      // Format the steps data
+      const formattedSteps: OutreachStep[] = (data.sequence.steps || []).map((step: any) => ({
+        id: step.id,
+        sequence_id: step.sequenceId,
+        step_order: step.stepOrder,
+        type: step.type,
+        name: step.name,
+        content_link: step.contentLink,
+        day_offset: step.dayOffset,
+        days_after_previous: step.daysAfterPrevious,
+        created_at: step.createdAt
+      }))
+      
+      // Sort steps by step_order
+      formattedSteps.sort((a, b) => a.step_order - b.step_order)
+      
+      setSteps(formattedSteps)
     } catch (error) {
       console.error('Error in fetchSequenceDetails:', error)
       setError('An unexpected error occurred')

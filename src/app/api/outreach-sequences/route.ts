@@ -12,23 +12,44 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get query parameters
     const { searchParams } = new URL(request.url)
     const companyParam = searchParams.get('company')
 
-    // Build where clause
-    let where: any = {}
+    // Validate user has access to the requested company
+    const userRole = session.user.role
+    const allowedCompanies = session.user.allowedCompanies || []
     
-    if (companyParam) {
-      where.company = companyParam as CompanyType
+    if (!companyParam) {
+      return NextResponse.json({ error: 'Company parameter is required' }, { status: 400 })
+    }
+    
+    // Helper function to convert string to CompanyType
+    const getCompanyType = (company: string): CompanyType => {
+      // Handle case insensitive matching
+      const normalized = company.toLowerCase()
+      if (normalized === 'avalern') return CompanyType.Avalern
+      if (normalized === 'craftycode') return CompanyType.CraftyCode
+      // Default case - should not happen with proper validation
+      return CompanyType.Avalern
+    }
+    
+    const companyType = getCompanyType(companyParam)
+    
+    // Check if user has access to this company
+    if (userRole === 'member' && !allowedCompanies.includes(companyParam.toLowerCase())) {
+      return NextResponse.json({ error: 'You do not have access to this company' }, { status: 403 })
     }
 
-    // Get sequences with their steps using Prisma
+    // Fetch outreach sequences with step counts
     const sequences = await prisma.outreachSequence.findMany({
-      where,
+      where: {
+        company: companyType
+      },
       include: {
-        steps: {
-          orderBy: {
-            stepOrder: 'asc'
+        _count: {
+          select: {
+            steps: true
           }
         }
       },
@@ -37,29 +58,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Transform to match the expected format
-    const transformedSequences = sequences.map(sequence => ({
-      id: sequence.id,
-      name: sequence.name,
-      company: sequence.company,
-      description: sequence.description,
-      created_at: sequence.createdAt,
-      updated_at: sequence.updatedAt,
-      steps: sequence.steps.map(step => ({
-        id: step.id,
-        sequence_id: step.sequenceId,
-        step_order: step.stepOrder,
-        type: step.type,
-        name: step.name,
-        content_link: step.contentLink,
-        day_offset: step.dayOffset,
-        days_after_previous: step.daysAfterPrevious,
-        created_at: step.createdAt,
-        updated_at: step.updatedAt
-      }))
-    }))
-
-    return NextResponse.json(transformedSequences)
+    return NextResponse.json({ sequences })
   } catch (error) {
     console.error('Error fetching outreach sequences:', error)
     return NextResponse.json(
@@ -77,8 +76,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { name, company, description, steps } = await request.json()
-    
+    // Parse request body
+    const body = await request.json()
+    const { name, company, description, steps } = body
+
+    // Validate required fields
     if (!name || !company) {
       return NextResponse.json(
         { error: 'Name and company are required' },
@@ -86,42 +88,60 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!steps || !Array.isArray(steps) || steps.length === 0) {
+    // Helper function to convert string to CompanyType
+    const getCompanyType = (company: string): CompanyType => {
+      // Handle case insensitive matching
+      const normalized = company.toLowerCase()
+      if (normalized === 'avalern') return CompanyType.Avalern
+      if (normalized === 'craftycode') return CompanyType.CraftyCode
+      // Default case - should not happen with proper validation
+      return CompanyType.Avalern
+    }
+    
+    const companyType = getCompanyType(company)
+
+    // Check if user has access to this company
+    const userRole = session.user.role
+    const allowedCompanies = session.user.allowedCompanies || []
+    
+    if (userRole === 'member' && !allowedCompanies.includes(company.toLowerCase())) {
       return NextResponse.json(
-        { error: 'At least one step is required' },
-        { status: 400 }
+        { error: 'You do not have access to create sequences for this company' },
+        { status: 403 }
       )
     }
 
-    // Create the sequence and steps in a transaction
-    const completeSequence = await prisma.$transaction(async (tx) => {
-      // Create the sequence
-      const sequence = await tx.outreachSequence.create({
+    // Create sequence using Prisma transaction to ensure steps are created together with the sequence
+    const sequence = await prisma.$transaction(async (tx) => {
+      // Create the sequence first
+      const newSequence = await tx.outreachSequence.create({
         data: {
           name,
-          company: company as CompanyType,
+          company: companyType,
           description
         }
       })
 
-      // Create the steps
-      const stepsData = steps.map((step: any, index: number) => ({
-        sequenceId: sequence.id,
-        stepOrder: index + 1,
-        type: step.type,
-        name: step.name,
-        contentLink: step.content_link,
-        dayOffset: step.day_offset,
-        daysAfterPrevious: step.days_after_previous
-      }))
+      // If steps are provided, create them
+      if (steps && Array.isArray(steps) && steps.length > 0) {
+        await Promise.all(steps.map(async (step: any, index: number) => {
+          await tx.outreachStep.create({
+            data: {
+              sequenceId: newSequence.id,
+              stepOrder: index + 1,
+              type: step.type,
+              name: step.name,
+              contentLink: step.contentLink,
+              dayOffset: step.dayOffset || index * 2, // Default to 2 days apart if not specified
+              daysAfterPrevious: index === 0 ? null : 2 // Default to 2 days after previous
+            }
+          })
+        }))
+      }
 
-      await tx.outreachStep.createMany({
-        data: stepsData
-      })
-
-      // Fetch the complete sequence with steps
+      // Return the created sequence with its steps
       return await tx.outreachSequence.findUnique({
-        where: { id: sequence.id },
+        where: { id: newSequence.id },
         include: {
           steps: {
             orderBy: {
@@ -132,36 +152,7 @@ export async function POST(request: NextRequest) {
       })
     })
 
-    if (!completeSequence) {
-      return NextResponse.json(
-        { error: 'Failed to create outreach sequence' },
-        { status: 500 }
-      )
-    }
-
-    // Transform to match the expected format
-    const transformedSequence = {
-      id: completeSequence.id,
-      name: completeSequence.name,
-      company: completeSequence.company,
-      description: completeSequence.description,
-      created_at: completeSequence.createdAt,
-      updated_at: completeSequence.updatedAt,
-      steps: completeSequence.steps.map(step => ({
-        id: step.id,
-        sequence_id: step.sequenceId,
-        step_order: step.stepOrder,
-        type: step.type,
-        name: step.name,
-        content_link: step.contentLink,
-        day_offset: step.dayOffset,
-        days_after_previous: step.daysAfterPrevious,
-        created_at: step.createdAt,
-        updated_at: step.updatedAt
-      }))
-    }
-
-    return NextResponse.json(transformedSequence)
+    return NextResponse.json({ sequence }, { status: 201 })
   } catch (error) {
     console.error('Error creating outreach sequence:', error)
     return NextResponse.json(

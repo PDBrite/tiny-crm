@@ -13,8 +13,9 @@ interface CompanyContextType {
 const CompanyContext = createContext<CompanyContextType | undefined>(undefined)
 
 export function CompanyProvider({ children }: { children: ReactNode }) {
-  const [selectedCompany, setSelectedCompanyState] = useState<string>('')
-  const [availableCompanies, setAvailableCompanies] = useState<string[]>([])
+  // Always default to Avalern
+  const [selectedCompany, setSelectedCompanyState] = useState<string>('Avalern')
+  const [availableCompanies, setAvailableCompanies] = useState<string[]>(['Avalern'])
   const [isLoading, setIsLoading] = useState(true)
   const { data: session, status } = useSession()
 
@@ -36,70 +37,28 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       isAuthenticated: status === 'authenticated'
     });
 
-    const userRole = session?.user?.role
-    const userAllowedCompanies = session?.user?.allowedCompanies || []
-
-    // Normalize company names from auth to match component names (lowercase to proper casing)
-    const companyNameMap: Record<string, string> = {
-      'avalern': 'Avalern',
-      'craftycode': 'CraftyCode'
-    }
-    
-    // Make sure to apply mapping to all company names
-    const allowed = userAllowedCompanies.map(c => {
-      // Ensure lowercase comparison for mapping
-      const companyLower = typeof c === 'string' ? c.toLowerCase() : '';
-      return companyNameMap[companyLower] || c;
-    });
-    
-    setAvailableCompanies(allowed);
-
-    // Debug logging
-    console.log('CompanyContext Debug:', {
-      userRole,
-      userAllowedCompanies,
-      allowedAfterMapping: allowed,
-      sessionStatus: status
-    });
-
-    if (userRole === 'member') {
-      // For 'member', force 'Avalern' and lock it.
-      const fixedCompany = 'Avalern';
-      console.log('Setting fixed company for member:', fixedCompany);
-      setSelectedCompanyState(fixedCompany);
-      localStorage.setItem('selectedCompany', fixedCompany);
-    } else {
-      // For 'admin' or other roles, use localStorage or default.
-      const savedCompany = localStorage.getItem('selectedCompany')
-      console.log('Admin user - saved company from localStorage:', savedCompany);
-      
-      if (savedCompany && allowed.includes(savedCompany)) {
-        setSelectedCompanyState(savedCompany)
-      } else {
-        // Default to Avalern if available, otherwise first available company
-        const defaultCompany = allowed.includes('Avalern') ? 'Avalern' : (allowed[0] || '');
-        console.log('Setting default company:', defaultCompany);
-        setSelectedCompanyState(defaultCompany)
-        if(defaultCompany) localStorage.setItem('selectedCompany', defaultCompany)
-      }
-    }
+    // Force Avalern as the only company
+    setAvailableCompanies(['Avalern']);
+    setSelectedCompanyState('Avalern');
+    localStorage.setItem('selectedCompany', 'Avalern');
     
     setIsLoading(false)
   }, [status, session])
 
+  // This function now does nothing since we're forcing Avalern
   const setSelectedCompany = (company: string) => {
-    // Only allow changing company if the user is not a 'member'
-    if (session?.user?.role !== 'member' && availableCompanies.includes(company)) {
-      setSelectedCompanyState(company)
-      localStorage.setItem('selectedCompany', company)
+    // Only allow Avalern
+    if (company === 'Avalern') {
+      setSelectedCompanyState('Avalern')
+      localStorage.setItem('selectedCompany', 'Avalern')
     }
   }
 
   const value = {
-    selectedCompany,
+    selectedCompany: 'Avalern',
     setSelectedCompany,
     isLoading: isLoading || status === 'loading',
-    availableCompanies: session?.user?.role === 'member' ? [] : availableCompanies,
+    availableCompanies: ['Avalern'],
   }
 
   return (

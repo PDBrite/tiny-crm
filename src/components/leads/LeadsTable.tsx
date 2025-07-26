@@ -158,15 +158,6 @@ export default function LeadsTable({
                         <div className="text-sm text-gray-900">
                           {contact.phone || 'No phone'}
                         </div>
-                        <div className="text-xs">
-                          <span className={`inline-flex px-1.5 py-0.5 rounded text-xs font-medium ${
-                            contact.status === 'Valid' ? 'bg-green-100 text-green-800' :
-                            contact.status === 'Not Found' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {contact.status}
-                          </span>
-                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col space-y-1 text-sm">

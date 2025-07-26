@@ -10,6 +10,12 @@ interface CampaignHeaderProps {
     company: string
     status?: string
     description?: string
+    created_by?: {
+      id: string
+      email: string
+      name: string
+      role: string
+    }
   }
   isEditing: boolean
   updating: boolean
@@ -95,6 +101,23 @@ export default function CampaignHeader({
         </div>
         {campaign.description && (
           <p className="text-gray-600 mt-2">{campaign.description}</p>
+        )}
+        {campaign.created_by && (
+          <div className="flex items-center mt-3 text-sm text-gray-500">
+            <span className="mr-2">Created by:</span>
+            <div className="flex items-center">
+              <span className="font-medium text-gray-700">{campaign.created_by.name}</span>
+              {campaign.created_by.role && (
+                <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                  campaign.created_by.role === 'admin' 
+                    ? 'bg-purple-100 text-purple-800' 
+                    : 'bg-blue-100 text-blue-800'
+                }`}>
+                  {campaign.created_by.role}
+                </span>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </div>

@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { prisma } from '@/lib/prisma'
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth"
+import { TouchpointType } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
+    // Get the authenticated user
+    const session = await getServerSession(authOptions)
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
+    const userId = session.user.id
+    
     const data = await request.json()
     const { touchpoints } = data
     
@@ -33,89 +44,40 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Check if supabaseAdmin is available
-    if (!supabaseAdmin) {
-      console.error('supabaseAdmin client is not available')
-      return NextResponse.json(
-        { error: 'Database client unavailable' },
-        { status: 500 }
-      )
-    }
+    // Process touchpoints in batches
+    const BATCH_SIZE = 50;
+    let successCount = 0;
     
-    // Process district contact touchpoints first to get campaign info
-    const districtContactTouchpoints = touchpoints.filter(tp => tp.district_contact_id);
-    const leadTouchpoints = touchpoints.filter(tp => tp.lead_id);
-    
-    console.log(`Found ${districtContactTouchpoints.length} district contact touchpoints and ${leadTouchpoints.length} lead touchpoints`);
-    
-    // Get campaign information for district contact touchpoints if any exist
-    if (districtContactTouchpoints.length > 0) {
-      console.log('Processing district contact touchpoints');
+    for (let i = 0; i < touchpoints.length; i += BATCH_SIZE) {
+      const batch = touchpoints.slice(i, i + BATCH_SIZE);
       
-      // Get all district contact IDs
-      const districtContactIds = districtContactTouchpoints.map(tp => tp.district_contact_id);
-      
-      // Get district lead IDs for these contacts
-      const { data: contacts, error: contactsError } = await supabaseAdmin
-        .from('district_contacts')
-        .select('id, district_lead_id')
-        .in('id', districtContactIds);
-      
-      if (contactsError) {
-        console.error('Error fetching district contacts:', contactsError);
-        return NextResponse.json(
-          { error: 'Failed to fetch district contacts' },
-          { status: 500 }
-        );
+      try {
+        // Create touchpoints using Prisma
+        const result = await prisma.touchpoint.createMany({
+          data: batch.map(tp => ({
+            type: tp.type as TouchpointType,
+            subject: tp.subject || null,
+            content: tp.content || null,
+            scheduledAt: tp.scheduled_at ? new Date(tp.scheduled_at) : new Date(),
+            completedAt: tp.completed_at ? new Date(tp.completed_at) : null,
+            outcome: tp.outcome || null,
+            leadId: tp.lead_id || null,
+            districtContactId: tp.district_contact_id || null,
+            createdById: userId // Add the creator ID to each touchpoint
+          }))
+        });
+        
+        successCount += result.count;
+        console.log(`Successfully created batch ${Math.floor(i/BATCH_SIZE) + 1} with ${result.count} touchpoints`);
+      } catch (batchError) {
+        console.error(`Error processing batch ${Math.floor(i/BATCH_SIZE) + 1}:`, batchError);
       }
-      
-      console.log(`Found ${contacts?.length || 0} district contacts`);
-      
-      // Create a mapping of contact ID to district lead ID
-      const contactToDistrictLeadMap = new Map();
-      contacts?.forEach(contact => {
-        contactToDistrictLeadMap.set(contact.id, contact.district_lead_id);
-      });
-      
-      // Insert touchpoints for district contacts
-      const { data: insertedDistrictTouchpoints, error: insertError } = await supabaseAdmin
-        .from('touchpoints')
-        .insert(districtContactTouchpoints)
-        .select();
-      
-      if (insertError) {
-        console.error('Error inserting district contact touchpoints:', insertError);
-        return NextResponse.json(
-          { error: 'Failed to insert district contact touchpoints' },
-          { status: 500 }
-        );
-      }
-      
-      console.log(`Successfully inserted ${insertedDistrictTouchpoints?.length || 0} district contact touchpoints`);
-    }
-    
-    // Insert lead touchpoints
-    if (leadTouchpoints.length > 0) {
-      console.log('Processing lead touchpoints');
-      const { data: insertedLeadTouchpoints, error: insertError } = await supabaseAdmin
-        .from('touchpoints')
-        .insert(leadTouchpoints)
-        .select();
-      
-      if (insertError) {
-        console.error('Error inserting lead touchpoints:', insertError);
-        return NextResponse.json(
-          { error: 'Failed to insert lead touchpoints' },
-          { status: 500 }
-        );
-      }
-      
-      console.log(`Successfully inserted ${insertedLeadTouchpoints?.length || 0} lead touchpoints`);
     }
     
     return NextResponse.json({
       success: true,
-      message: `Successfully created ${touchpoints.length} touchpoints`
+      count: successCount,
+      message: `Successfully created ${successCount} touchpoints`
     })
   } catch (error) {
     console.error('Error creating touchpoints batch:', error)

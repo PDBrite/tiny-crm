@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import { useCompany } from '../../contexts/CompanyContext'
@@ -88,7 +88,7 @@ export default function OutreachPage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]) // YYYY-MM-DD format
   const [touchpointCounts, setTouchpointCounts] = useState<Record<string, number>>({})
   const [selectedType, setSelectedType] = useState('')
-  const [campaigns, setCampaigns] = useState<any[]>([])
+  const [campaigns, setCampaigns] = useState<any[]>([]) // Initialize as empty array
   const [filteredTouchpoints, setFilteredTouchpoints] = useState<any[]>([])
   const [showCalendarPopup, setShowCalendarPopup] = useState(false)
   const [selectedLead, setSelectedLead] = useState<ExtendedLead | null>(null)
@@ -103,49 +103,56 @@ export default function OutreachPage() {
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
   
-  // A single effect to load initial data
+  // User state for filtering
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [creatorFilter, setCreatorFilter] = useState('')
+  const [users, setUsers] = useState<any[]>([])
+  
+  // Fetch current user info
   useEffect(() => {
-    const loadInitialData = async () => {
-      setLoading(true);
+    const fetchCurrentUser = async () => {
       try {
-        // Load data in parallel
-        const campaignsResponse = await fetch(`/api/campaigns?company=${effectiveCompany}`);
-        
-        if (!campaignsResponse.ok) {
-          console.error('Error loading campaigns:', campaignsResponse.status);
-          if (campaignsResponse.status === 401) {
-            alert('You are not authorized to access this data. Please log in again.');
-            return;
+        const response = await fetch('/api/auth/verify');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.authenticated && data.user) {
+            setCurrentUser(data.user);
+            setIsAdmin(data.user.role === 'admin');
+            
+            // For member users, default to filtering by their own touchpoints
+            if (data.user.role === 'member') {
+              setCreatorFilter(data.user.id);
+            }
           }
-          if (campaignsResponse.status === 403) {
-            alert('You do not have permission to access this company data.');
-            return;
-          }
-          throw new Error(`Failed to load campaigns: ${campaignsResponse.status}`);
         }
-        
-        const campaigns = await campaignsResponse.json();
-        setCampaigns(campaigns || []);
-
-        // Now that we have campaigns, we can load the filtered touchpoints
-        await fetchFilteredTouchpoints();
       } catch (error) {
-        console.error('Error loading initial data:', error);
-        alert('Failed to load data. Please try again later.');
+        console.error('Error fetching current user:', error);
       }
     };
     
-    loadInitialData();
-  }, [effectiveCompany]);
-
-  // Effect for filters only
+    fetchCurrentUser();
+  }, []);
+  
+  // Fetch users for filtering
   useEffect(() => {
-    if (!loading) {
-      fetchFilteredTouchpoints();
-    }
-  }, [selectedDate, selectedType, selectedCampaign]);
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('/api/users?for_touchpoints=true');
+        if (response.ok) {
+          const data = await response.json();
+          setUsers(data.users || []);
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+    
+    fetchUsers();
+  }, []);
 
-  const fetchFilteredTouchpoints = async () => {
+  // Define fetchFilteredTouchpoints before using it in useEffect
+  const fetchFilteredTouchpoints = useCallback(async () => {
     setLoading(true);
     try {
       // Build query parameters for specific date and load touchpoints
@@ -154,6 +161,9 @@ export default function OutreachPage() {
       params.append('company', effectiveCompany);
       if (selectedCampaign) {
         params.append('campaignId', selectedCampaign);
+      }
+      if (creatorFilter) {
+        params.append('created_by_id', creatorFilter);
       }
 
       // For Avalern, we need to fetch all touchpoints across all campaigns
@@ -168,7 +178,7 @@ export default function OutreachPage() {
         }
         
         const campaignsData = await campaignsResponse.json();
-        const allCampaigns = campaignsData || [];
+        const allCampaigns = campaignsData.campaigns || [];
         
         console.log(`Found ${allCampaigns.length} Avalern campaigns to fetch touchpoints for`);
         
@@ -180,10 +190,13 @@ export default function OutreachPage() {
           ? allCampaigns.filter((c: { id: string }) => c.id === selectedCampaign)
           : allCampaigns;
           
+        // Ensure campaignsToFetch is always an array
+        const campaignsArray = Array.isArray(campaignsToFetch) ? campaignsToFetch : [];
+        
         // Fetch touchpoints for each campaign
-        for (const campaign of campaignsToFetch) {
+        for (const campaign of campaignsArray) {
           try {
-            const campaignTouchpointsResponse = await fetch(`/api/campaign-touchpoints?campaign_id=${campaign.id}`);
+            const campaignTouchpointsResponse = await fetch(`/api/campaign-touchpoints?campaign_id=${campaign.id}${creatorFilter ? `&created_by_id=${creatorFilter}` : ''}`);
             
             if (campaignTouchpointsResponse.ok) {
               const campaignTouchpointsData = await campaignTouchpointsResponse.json();
@@ -276,9 +289,52 @@ export default function OutreachPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedDate, selectedType, selectedCampaign, creatorFilter, effectiveCompany]);
 
-  const fetchTouchpointCounts = async () => {
+  // A single effect to load initial data
+  useEffect(() => {
+    const loadInitialData = async () => {
+      setLoading(true);
+      try {
+        // Load data in parallel
+        const campaignsResponse = await fetch(`/api/campaigns?company=${effectiveCompany}`);
+        
+        if (!campaignsResponse.ok) {
+          console.error('Error loading campaigns:', campaignsResponse.status);
+          if (campaignsResponse.status === 401) {
+            alert('You are not authorized to access this data. Please log in again.');
+            return;
+          }
+          if (campaignsResponse.status === 403) {
+            alert('You do not have permission to access this company data.');
+            return;
+          }
+          throw new Error(`Failed to load campaigns: ${campaignsResponse.status}`);
+        }
+        
+        const campaignsData = await campaignsResponse.json();
+        // Ensure campaigns is always an array
+        setCampaigns(Array.isArray(campaignsData.campaigns) ? campaignsData.campaigns : []);
+
+        // Now that we have campaigns, we can load the filtered touchpoints
+        await fetchFilteredTouchpoints();
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+        alert('Failed to load data. Please try again later.');
+      }
+    };
+    
+    loadInitialData();
+  }, [effectiveCompany]);
+
+  // Effect for filters only - only run when not loading and filters change
+  useEffect(() => {
+    if (!loading) {
+      fetchFilteredTouchpoints();
+    }
+  }, [selectedDate, selectedType, selectedCampaign, creatorFilter, effectiveCompany]);
+
+  const fetchTouchpointCounts = useCallback(async () => {
     try {
       // Fetch touchpoint counts for the current month
       const startOfMonth = new Date(selectedDate);
@@ -309,7 +365,7 @@ export default function OutreachPage() {
           }
           
           const campaignsData = await campaignsResponse.json();
-          const allCampaigns = campaignsData || [];
+          const allCampaigns = campaignsData.campaigns || [];
           
           // Initialize empty touchpoints array
           let allTouchpoints: any[] = [];
@@ -319,8 +375,11 @@ export default function OutreachPage() {
             ? allCampaigns.filter((c: { id: string }) => c.id === selectedCampaign)
             : allCampaigns;
             
+          // Ensure campaignsToFetch is always an array
+          const campaignsArray = Array.isArray(campaignsToFetch) ? campaignsToFetch : [];
+            
           // Fetch touchpoints for each campaign
-          for (const campaign of campaignsToFetch) {
+          for (const campaign of campaignsArray) {
             try {
               const campaignTouchpointsResponse = await fetch(`/api/campaign-touchpoints?campaign_id=${campaign.id}`);
               
@@ -374,7 +433,7 @@ export default function OutreachPage() {
       console.error('Error fetching touchpoint counts:', error);
       return null;
     }
-  }
+  }, [selectedDate, selectedCampaign, effectiveCompany]);
 
   const markTouchpointComplete = async (touchpointId: string, status: string) => {
     try {
@@ -437,7 +496,7 @@ export default function OutreachPage() {
     }
   };
 
-  const handleCalendarMonthChange = async (startDate: string, endDate: string) => {
+  const handleCalendarMonthChange = useCallback(async (startDate: string, endDate: string) => {
     try {
       // For Avalern, use the same approach as fetchTouchpointCounts
       if (effectiveCompany === 'Avalern') {
@@ -450,7 +509,7 @@ export default function OutreachPage() {
         }
         
         const campaignsData = await campaignsResponse.json();
-        const allCampaigns = campaignsData || [];
+        const allCampaigns = campaignsData.campaigns || [];
         
         // Initialize empty touchpoints array
         let allTouchpoints: any[] = [];
@@ -460,8 +519,11 @@ export default function OutreachPage() {
           ? allCampaigns.filter((c: { id: string }) => c.id === selectedCampaign)
           : allCampaigns;
           
+        // Ensure campaignsToFetch is always an array
+        const campaignsArray = Array.isArray(campaignsToFetch) ? campaignsToFetch : [];
+          
         // Fetch touchpoints for each campaign
-        for (const campaign of campaignsToFetch) {
+        for (const campaign of campaignsArray) {
           try {
             const campaignTouchpointsResponse = await fetch(`/api/campaign-touchpoints?campaign_id=${campaign.id}`);
             
@@ -522,7 +584,7 @@ export default function OutreachPage() {
     } catch (error) {
       console.error('Error fetching touchpoint counts for calendar month change:', error)
     }
-  }
+  }, [effectiveCompany, selectedCampaign]);
 
   const handleTouchpointClick = (touchpoint: any) => {
     // For Avalern, use district_contact info; for others, use lead info
@@ -925,11 +987,32 @@ export default function OutreachPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">All Campaigns</option>
-                    {campaigns.map(campaign => (
+                    {Array.isArray(campaigns) && campaigns.map(campaign => (
                       <option key={campaign.id} value={campaign.id}>{campaign.name}</option>
                     ))}
                   </select>
                 </div>
+                
+                {/* Creator Filter - Only show for admins */}
+                {isAdmin && users.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Created By</label>
+                    <select
+                      value={creatorFilter}
+                      onChange={(e) => setCreatorFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">All Users</option>
+                      {users.map(user => (
+                        <option key={user.id} value={user.id}>
+                          {user.firstName && user.lastName 
+                            ? `${user.firstName} ${user.lastName}` 
+                            : user.email}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
 

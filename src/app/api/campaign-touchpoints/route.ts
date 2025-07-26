@@ -51,7 +51,18 @@ export async function GET(request: NextRequest) {
         },
         include: {
           district: true,
-          touchpoints: true
+          touchpoints: {
+            include: {
+              createdBy: {
+                select: {
+                  id: true,
+                  email: true,
+                  firstName: true,
+                  lastName: true
+                }
+              }
+            }
+          }
         }
       })
       
@@ -70,6 +81,13 @@ export async function GET(request: NextRequest) {
           completed_at: tp.completedAt,
           outcome: tp.outcome || null,
           created_at: tp.createdAt,
+          created_by_id: tp.createdById,
+          created_by: tp.createdBy ? {
+            id: tp.createdBy.id,
+            email: tp.createdBy.email,
+            first_name: tp.createdBy.firstName,
+            last_name: tp.createdBy.lastName
+          } : null,
           // Add contact info
           contact: {
             id: contact.id,
@@ -100,7 +118,18 @@ export async function GET(request: NextRequest) {
           campaignId: campaignId
         },
         include: {
-          touchpoints: true
+          touchpoints: {
+            include: {
+              createdBy: {
+                select: {
+                  id: true,
+                  email: true,
+                  firstName: true,
+                  lastName: true
+                }
+              }
+            }
+          }
         }
       })
       
@@ -119,6 +148,13 @@ export async function GET(request: NextRequest) {
           completed_at: tp.completedAt,
           outcome: tp.outcome || null,
           created_at: tp.createdAt,
+          created_by_id: tp.createdById,
+          created_by: tp.createdBy ? {
+            id: tp.createdBy.id,
+            email: tp.createdBy.email,
+            first_name: tp.createdBy.firstName,
+            last_name: tp.createdBy.lastName
+          } : null,
           // Add contact info
           contact: {
             id: lead.id,

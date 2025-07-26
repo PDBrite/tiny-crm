@@ -221,6 +221,8 @@ export async function POST(request: NextRequest) {
                     (result.failed > 0 ? `\n${result.failed} districts failed to import.` : '') +
                     (result.contacts.failed > 0 ? `\n${result.contacts.failed} contacts failed to import.` : '')
 
+    console.log('Import completed successfully:', result)
+
     return NextResponse.json({
       ...result,
       errors: result.errors.length > 0 ? result.errors : undefined

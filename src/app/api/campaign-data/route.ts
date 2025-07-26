@@ -1,27 +1,101 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { prisma } from '@/lib/prisma'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
+    // Check authentication (optional)
+    const session = await getServerSession(authOptions)
+    
     // Get query parameters
     const url = new URL(request.url)
-    const campaignId = url.searchParams.get('campaign_id')
+    const campaignId = url.searchParams.get('id')
     
     if (!campaignId) {
       return NextResponse.json(
-        { error: 'campaign_id is required' },
+        { error: 'id is required' },
         { status: 400 }
       )
     }
 
-    // Check if supabaseAdmin is available
-    if (!supabaseAdmin) {
-      console.error('supabaseAdmin client is not available')
+    // Fetch campaign data with Prisma
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
+      include: {
+        outreachSequence: {
+          include: {
+            steps: {
+              orderBy: {
+                stepOrder: 'asc'
+              }
+            }
+          }
+        },
+        createdBy: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            role: true
+          }
+        }
+      }
+    })
+    
+    if (!campaign) {
       return NextResponse.json(
-        { error: 'Database client unavailable' },
-        { status: 500 }
+        { error: 'Campaign not found' },
+        { status: 404 }
       )
     }
+    
+    // Format the campaign data to match the expected structure
+    const formattedCampaign = {
+      id: campaign.id,
+      name: campaign.name,
+      company: campaign.company,
+      description: campaign.description,
+      start_date: campaign.startDate?.toISOString(),
+      end_date: campaign.endDate?.toISOString(),
+      created_at: campaign.createdAt.toISOString(),
+      status: campaign.status,
+      outreach_sequence_id: campaign.outreachSequenceId,
+      outreach_sequence: campaign.outreachSequence ? {
+        id: campaign.outreachSequence.id,
+        name: campaign.outreachSequence.name,
+        description: campaign.outreachSequence.description,
+        steps: campaign.outreachSequence.steps.map(step => ({
+          id: step.id,
+          sequence_id: step.sequenceId,
+          step_order: step.stepOrder,
+          type: step.type,
+          day_offset: step.dayOffset,
+          days_after_previous: step.daysAfterPrevious
+        }))
+      } : null,
+      instantly_campaign_id: campaign.instantlyCampaignId,
+      created_by: campaign.createdBy ? {
+        id: campaign.createdBy.id,
+        email: campaign.createdBy.email,
+        name: `${campaign.createdBy.firstName || ''} ${campaign.createdBy.lastName || ''}`.trim() || campaign.createdBy.email,
+        role: campaign.createdBy.role
+      } : null
+    }
+    
+    return NextResponse.json({
+      campaign: formattedCampaign
+    })
+    
+  } catch (error) {
+    console.error('Error in campaign data API:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+} 
 
     // Fetch campaign data
     const { data: campaign, error: campaignError } = await supabaseAdmin

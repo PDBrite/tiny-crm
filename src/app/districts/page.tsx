@@ -4,9 +4,17 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import { useCompany } from '../../contexts/CompanyContext'
-import { supabase } from '../../lib/supabase'
 import { DistrictLead, DISTRICT_STATUS_DISPLAY_MAP } from '../../types/districts'
-import { MapPin, Users, Phone, Mail, Calendar, ChevronRight, Filter, Eye, X, Save, Edit3, Upload } from 'lucide-react'
+import { MapPin, Users, Phone, Mail, Calendar, ChevronRight, Filter, Eye, X, Save, Edit3, Upload, UserPlus, Check } from 'lucide-react'
+import { UserRoleType } from '@prisma/client'
+
+interface User {
+  id: string
+  email: string
+  firstName: string | null
+  lastName: string | null
+  role: UserRoleType
+}
 
 export default function DistrictsPage() {
   const { selectedCompany } = useCompany()
@@ -17,6 +25,8 @@ export default function DistrictsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [countyFilter, setCountyFilter] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState('')
+  const [assignedOnly, setAssignedOnly] = useState(false)
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
@@ -29,12 +39,39 @@ export default function DistrictsPage() {
   const [touchpoints, setTouchpoints] = useState<any[]>([])
   const [scheduledTouchpoints, setScheduledTouchpoints] = useState<any[]>([])
   
+  // User assignment states
+  const [showAssignUsersModal, setShowAssignUsersModal] = useState(false)
+  const [availableUsers, setAvailableUsers] = useState<User[]>([])
+  const [assignedUsers, setAssignedUsers] = useState<User[]>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [assigningUsers, setAssigningUsers] = useState(false)
+  const [selectedUsersToAssign, setSelectedUsersToAssign] = useState<string[]>([])
+
+  // Fetch current user role
+  useEffect(() => {
+    const fetchCurrentUserRole = async () => {
+      try {
+        const response = await fetch('/api/auth/verify')
+        if (response.ok) {
+          const data = await response.json()
+          setCurrentUserRole(data.user?.role || null)
+        }
+      } catch (error) {
+        console.error('Error fetching current user:', error)
+      }
+    }
+    
+    fetchCurrentUserRole()
+  }, [])
+  
   // Redirect if not Avalern
   useEffect(() => {
     console.log('Districts page - checking company:', selectedCompany)
     if (selectedCompany && selectedCompany !== 'Avalern') {
       console.log('Redirecting from districts to leads because company is not Avalern')
       router.push('/leads')
+    } else {
+      console.log('Company is Avalern, staying on districts page')
     }
   }, [selectedCompany, router])
 
@@ -53,9 +90,18 @@ export default function DistrictsPage() {
         if (countyFilter !== 'all') {
           params.append('county', countyFilter)
         }
+        if (searchTerm) {
+          params.append('search', searchTerm)
+        }
+        if (assignedOnly) {
+          params.append('assignedOnly', 'true')
+        }
         
         // Fetch from our API endpoint
+        console.log('Making API call to:', `/api/districts?${params.toString()}`)
         const response = await fetch(`/api/districts?${params.toString()}`)
+        
+        console.log('API response status:', response.status)
         
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}))
@@ -76,7 +122,9 @@ export default function DistrictsPage() {
             district_name: d.name || d.district_name, // Handle both name formats
             contacts_count: d.contacts_count || d._count?.contacts || 0,
             valid_contacts_count: d.valid_contacts_count || d.contacts_count || d._count?.contacts || 0,
-            status: d.status || 'not_contacted'
+            status: d.status || 'not_contacted',
+            assigned_to_current_user: d.assigned_to_current_user || false,
+            assigned_users_count: d.assigned_users_count || 0
           })))
         } else {
           console.error('Invalid districts data format:', data)
@@ -95,7 +143,7 @@ export default function DistrictsPage() {
     } else {
       console.log('Not fetching districts because company is not Avalern:', selectedCompany)
     }
-  }, [selectedCompany, statusFilter, countyFilter])
+  }, [selectedCompany, statusFilter, countyFilter, searchTerm, assignedOnly])
 
   // Fetch touchpoints for selected district
   const fetchDistrictTouchpoints = async (districtId: string) => {
@@ -139,51 +187,23 @@ export default function DistrictsPage() {
       }
 
       // Fetch completed touchpoints
-      const { data: completedTouchpoints, error: completedError } = await supabase
-        .from('touchpoints')
-        .select(`
-          *,
-          district_contact:district_contacts(
-            id,
-            first_name,
-            last_name,
-            email,
-            title
-          )
-        `)
-        .in('district_contact_id', contactIds)
-        .not('completed_at', 'is', null)
-        .not('outcome', 'is', null)
-        .order('completed_at', { ascending: false })
+      const completedResponse = await fetch(`/api/touchpoints?district_contact_ids=${contactIds.join(',')}&completed=true`)
 
       // Fetch scheduled touchpoints
-      const { data: scheduledTouchpointsData, error: scheduledError } = await supabase
-        .from('touchpoints')
-        .select(`
-          *,
-          district_contact:district_contacts(
-            id,
-            first_name,
-            last_name,
-            email,
-            title
-          )
-        `)
-        .in('district_contact_id', contactIds)
-        .is('completed_at', null)
-        .not('scheduled_at', 'is', null)
-        .order('scheduled_at', { ascending: true })
+      const scheduledResponse = await fetch(`/api/touchpoints?district_contact_ids=${contactIds.join(',')}&scheduled=true`)
 
-      if (completedError) {
-        console.error('Error fetching completed touchpoints:', completedError)
+      if (!completedResponse.ok) {
+        console.error('Error fetching completed touchpoints:', completedResponse.status)
       } else {
-        setTouchpoints(completedTouchpoints || [])
+        const completedData = await completedResponse.json()
+        setTouchpoints(completedData.touchpoints || [])
       }
 
-      if (scheduledError) {
-        console.error('Error fetching scheduled touchpoints:', scheduledError)
+      if (!scheduledResponse.ok) {
+        console.error('Error fetching scheduled touchpoints:', scheduledResponse.status)
       } else {
-        setScheduledTouchpoints(scheduledTouchpointsData || [])
+        const scheduledData = await scheduledResponse.json()
+        setScheduledTouchpoints(scheduledData.touchpoints || [])
       }
     } catch (error) {
       console.error('Error fetching district touchpoints:', error)
@@ -253,18 +273,21 @@ export default function DistrictsPage() {
     try {
       setSaving(true)
       
-      const { error } = await supabase
-        .from('district_leads')
-        .update({
+      const response = await fetch(`/api/districts/${selectedDistrict.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
           status: editingDistrict.status,
           notes: editingDistrict.notes,
-          assigned_to: editingDistrict.assigned_to,
-          campaign_id: editingDistrict.campaign_id
+          assigned_to: editingDistrict.assigned_to
         })
-        .eq('id', selectedDistrict.id)
+      })
 
-      if (error) {
-        console.error('Error updating district:', error)
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('Error updating district:', errorData)
         alert('Failed to update district')
         return
       }
@@ -285,6 +308,606 @@ export default function DistrictsPage() {
       setSaving(false)
     }
   }
+
+  // Fetch users for assignment
+  const fetchUsersForAssignment = async (districtId: string) => {
+    if (!districtId) return
+    
+    setLoadingUsers(true)
+    try {
+      // Fetch all users
+      const response = await fetch('/api/users')
+      if (!response.ok) {
+        throw new Error('Failed to fetch users')
+      }
+      
+      const data = await response.json()
+      const users = data.users || []
+      
+      // Fetch users already assigned to this district
+      const assignedResponse = await fetch(`/api/districts/${districtId}/assigned-users`)
+      if (!assignedResponse.ok) {
+        throw new Error('Failed to fetch assigned users')
+      }
+      
+      const assignedData = await assignedResponse.json()
+      const assignedUserIds = new Set((assignedData.users || []).map((u: User) => u.id))
+      
+      // Split users into assigned and available
+      const assigned: User[] = []
+      const available: User[] = []
+      
+      users.forEach((user: User) => {
+        if (assignedUserIds.has(user.id)) {
+          assigned.push(user)
+        } else {
+          available.push(user)
+        }
+      })
+      
+      setAssignedUsers(assigned)
+      setAvailableUsers(available)
+    } catch (error) {
+      console.error('Error fetching users for assignment:', error)
+    } finally {
+      setLoadingUsers(false)
+    }
+  }
+
+  const handleOpenAssignUsersModal = () => {
+    if (!selectedDistrict) return
+    
+    fetchUsersForAssignment(selectedDistrict.id)
+    setShowAssignUsersModal(true)
+  }
+
+  const handleCloseAssignUsersModal = () => {
+    setShowAssignUsersModal(false)
+    setSelectedUsersToAssign([])
+  }
+
+  const handleToggleUserSelection = (userId: string) => {
+    setSelectedUsersToAssign(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId) 
+        : [...prev, userId]
+    )
+  }
+
+  const handleAssignUsers = async () => {
+    if (!selectedDistrict || selectedUsersToAssign.length === 0) return
+    
+    setAssigningUsers(true)
+    try {
+      const response = await fetch(`/api/users/${selectedUsersToAssign[0]}/leads`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          districtIds: [selectedDistrict.id],
+          action: 'assign'
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to assign users')
+      }
+      
+      // Refresh assigned users
+      await fetchUsersForAssignment(selectedDistrict.id)
+      
+      // Update district in the list
+      setDistricts(prev => 
+        prev.map(d => 
+          d.id === selectedDistrict.id 
+            ? { ...d, assigned_users_count: (d.assigned_users_count || 0) + selectedUsersToAssign.length }
+            : d
+        )
+      )
+      
+      setSelectedUsersToAssign([])
+    } catch (error) {
+      console.error('Error assigning users:', error)
+    } finally {
+      setAssigningUsers(false)
+    }
+  }
+
+  const handleUnassignUser = async (userId: string) => {
+    if (!selectedDistrict) return
+    
+    try {
+      const response = await fetch(`/api/users/${userId}/leads`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          districtIds: [selectedDistrict.id],
+          action: 'unassign'
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to unassign user')
+      }
+      
+      // Update local state
+      setAssignedUsers(prev => prev.filter(user => user.id !== userId))
+      setAvailableUsers(prev => [...prev, ...assignedUsers.filter(user => user.id === userId)])
+      
+      // Update district in the list
+      setDistricts(prev => 
+        prev.map(d => 
+          d.id === selectedDistrict.id 
+            ? { ...d, assigned_users_count: Math.max(0, (d.assigned_users_count || 0) - 1) }
+            : d
+        )
+      )
+    } catch (error) {
+      console.error('Error unassigning user:', error)
+    }
+  }
+
+  // Add this to the JSX where you want to show the "Show only my districts" toggle
+  const renderAssignedOnlyToggle = () => {
+    return (
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          id="assignedOnly"
+          checked={assignedOnly}
+          onChange={(e) => setAssignedOnly(e.target.checked)}
+          className="h-4 w-4 text-purple-600 rounded"
+        />
+        <label htmlFor="assignedOnly" className="text-sm text-gray-700">
+          Show only my districts
+        </label>
+        </div>
+    )
+  }
+
+  // Add this to the district detail sidebar to show the "Assign Users" button
+  const renderAssignUsersButton = () => {
+    if (currentUserRole !== 'admin') return null
+
+  return (
+                <button
+        onClick={handleOpenAssignUsersModal}
+        className="flex items-center px-3 py-1.5 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200"
+                >
+        <UserPlus className="h-4 w-4 mr-1" />
+        Assign Users
+                </button>
+    )
+  }
+
+  // Add this to render the assign users modal
+  const renderAssignUsersModal = () => {
+    if (!showAssignUsersModal) return null
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[80vh] flex flex-col">
+          <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-gray-900">Assign Users to District</h3>
+            <button onClick={handleCloseAssignUsersModal} className="text-gray-400 hover:text-gray-500">
+              <X className="h-5 w-5" />
+                </button>
+            </div>
+
+          {loadingUsers ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                  </div>
+          ) : (
+            <>
+              <div className="p-4 border-b border-gray-200">
+                <h4 className="font-medium text-gray-700 mb-2">Currently Assigned Users</h4>
+                {assignedUsers.length === 0 ? (
+                  <p className="text-sm text-gray-500">No users currently assigned to this district</p>
+                ) : (
+                  <div className="space-y-2">
+                    {assignedUsers.map(user => (
+                      <div key={user.id} className="flex items-center justify-between p-2 border border-gray-200 rounded-md">
+                        <div>
+                          <div className="font-medium">{user.firstName} {user.lastName}</div>
+                          <div className="text-sm text-gray-500">{user.email}</div>
+                  </div>
+                        <button
+                          onClick={() => handleUnassignUser(user.id)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-4">
+                <h4 className="font-medium text-gray-700 mb-2">Available Users</h4>
+                {availableUsers.length === 0 ? (
+                  <p className="text-sm text-gray-500">No available users to assign</p>
+                ) : (
+                  <div className="space-y-2">
+                    {availableUsers.map(user => (
+                      <div 
+                        key={user.id}
+                        className={`p-3 border rounded-md cursor-pointer ${
+                          selectedUsersToAssign.includes(user.id) 
+                            ? 'border-purple-500 bg-purple-50' 
+                            : 'border-gray-200 hover:bg-gray-50'
+                        }`}
+                        onClick={() => handleToggleUserSelection(user.id)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {user.firstName} {user.lastName}
+                  </div>
+                            <div className="text-sm text-gray-500">{user.email}</div>
+                            <div className="text-xs text-gray-400">{user.role}</div>
+                  </div>
+                          <div className={`w-5 h-5 rounded-full border ${
+                            selectedUsersToAssign.includes(user.id)
+                              ? 'bg-purple-500 border-purple-500 flex items-center justify-center'
+                              : 'border-gray-300'
+                          }`}>
+                            {selectedUsersToAssign.includes(user.id) && (
+                              <Check className="h-3 w-3 text-white" />
+                            )}
+                </div>
+              </div>
+                  </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="p-4 border-t border-gray-200 flex justify-between items-center">
+                <div className="text-sm text-gray-500">
+                  {selectedUsersToAssign.length} users selected
+                  </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleCloseAssignUsersModal}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAssignUsers}
+                    disabled={selectedUsersToAssign.length === 0 || assigningUsers}
+                    className={`px-4 py-2 rounded-md text-sm font-medium text-white ${
+                      selectedUsersToAssign.length === 0 || assigningUsers
+                        ? 'bg-purple-400 cursor-not-allowed'
+                        : 'bg-purple-600 hover:bg-purple-700'
+                    }`}
+                  >
+                    {assigningUsers ? (
+                      <span className="flex items-center">
+                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                        Assigning...
+                      </span>
+                    ) : (
+                      'Assign Selected Users'
+                    )}
+                  </button>
+                  </div>
+                </div>
+            </>
+          )}
+              </div>
+            </div>
+    )
+  }
+
+  // Update the Filters section to include the assignedOnly toggle
+  const renderFilters = () => (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex flex-col md:flex-row md:items-center md:space-x-6 space-y-4 md:space-y-0">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    placeholder="Search districts..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div className="flex items-center space-x-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="all">All Statuses</option>
+                      {Object.entries(DISTRICT_STATUS_DISPLAY_MAP).map(([key, value]) => (
+                        <option key={key} value={key}>{value}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">County</label>
+                    <select
+                      value={countyFilter}
+                      onChange={(e) => setCountyFilter(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="all">All Counties</option>
+                      {uniqueCounties.map(county => (
+                        <option key={county} value={county}>{county}</option>
+                      ))}
+                    </select>
+                  </div>
+          
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="assignedOnly"
+              checked={assignedOnly}
+              onChange={(e) => setAssignedOnly(e.target.checked)}
+              className="h-4 w-4 text-purple-600 rounded"
+            />
+            <label htmlFor="assignedOnly" className="text-sm text-gray-700">
+              Show only my districts
+            </label>
+                </div>
+              </div>
+            </div>
+                </div>
+  )
+
+  // Update the district item to show assignment info
+  const renderDistrictItem = (district: DistrictLead) => (
+                    <div 
+                      key={district.id}
+                      className="p-6 hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => handleDistrictClick(district)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-3">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {district.district_name}
+                            </h3>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(district.status)}`}>
+                              {DISTRICT_STATUS_DISPLAY_MAP[district.status as keyof typeof DISTRICT_STATUS_DISPLAY_MAP]}
+                            </span>
+            {district.assigned_to_current_user && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                Assigned to you
+              </span>
+            )}
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                            <div className="flex items-center space-x-1">
+                              <MapPin className="h-4 w-4" />
+                              <span>{district.county} County</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Users className="h-4 w-4" />
+                              <span>{district.contacts_count} total contacts</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Mail className="h-4 w-4" />
+                              <span>{district.valid_contacts_count} valid contacts</span>
+                            </div>
+                          </div>
+                          
+                          {district.campaign && (
+                            <div className="mt-2 flex items-center space-x-1 text-sm text-blue-600">
+                              <Calendar className="h-4 w-4" />
+                              <span>Campaign: {district.campaign.name}</span>
+                            </div>
+                          )}
+                          
+          {district.assigned_users_count && district.assigned_users_count > 0 && (
+                            <div className="mt-1">
+                              <span className="text-sm text-gray-600">
+                <UserPlus className="h-4 w-4 inline mr-1" />
+                {district.assigned_users_count} assigned users
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              router.push(`/leads?district=${district.id}`)
+                            }}
+                            className="flex items-center px-3 py-1.5 text-sm bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200"
+                          >
+                            <Users className="h-4 w-4 mr-1" />
+                            View Contacts
+                          </button>
+                          <ChevronRight className="h-5 w-5 text-gray-400" />
+                        </div>
+                      </div>
+                    </div>
+  )
+
+  // Update the district detail sidebar to include the assign users button
+  const renderDistrictDetailSidebar = () => {
+    if (!selectedDistrict || !editingDistrict) return null;
+    
+    return (
+      <div className="w-1/3 bg-white rounded-lg shadow-sm border border-gray-200 p-6 max-h-screen overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-gray-900">District Details</h2>
+          <button
+            onClick={handleCloseSidebar}
+            className="p-2 hover:bg-gray-100 rounded-lg"
+          >
+            <X className="h-5 w-5 text-gray-500" />
+          </button>
+        </div>
+
+        <div className="space-y-6">
+          {/* Basic Info */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold text-gray-900">{selectedDistrict.district_name}</h3>
+              {currentUserRole === 'admin' && (
+                <button
+                  onClick={() => router.push(`/users?assignDistrict=${selectedDistrict.id}`)}
+                  className="flex items-center px-3 py-1.5 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200"
+                >
+                  <UserPlus className="h-4 w-4 mr-1" />
+                  Assign Users
+                </button>
+              )}
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center space-x-2">
+                <MapPin className="h-4 w-4 text-gray-400" />
+                <span>{selectedDistrict.county} County</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Users className="h-4 w-4 text-gray-400" />
+                <span>{selectedDistrict.contacts_count} contacts ({selectedDistrict.valid_contacts_count} valid)</span>
+              </div>
+              {selectedDistrict.assigned_users_count && selectedDistrict.assigned_users_count > 0 && (
+                <div className="flex items-center space-x-2">
+                  <UserPlus className="h-4 w-4 text-gray-400" />
+                  <span>{selectedDistrict.assigned_users_count} assigned users</span>
+                </div>
+              )}
+              {selectedDistrict.assigned_to_current_user && (
+                <div className="mt-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-md inline-block">
+                  Assigned to you
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Editable Fields */}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+              <select
+                value={editingDistrict.status}
+                onChange={(e) => setEditingDistrict(prev => prev ? { ...prev, status: e.target.value as any } : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                {Object.entries(DISTRICT_STATUS_DISPLAY_MAP).map(([key, value]) => (
+                  <option key={key} value={key}>{value}</option>
+                ))}
+              </select>
+                </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Assigned To</label>
+              <input
+                type="text"
+                value={editingDistrict.assigned_to || ''}
+                onChange={(e) => setEditingDistrict(prev => prev ? { ...prev, assigned_to: e.target.value } : null)}
+                placeholder="Enter assignee name"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+              <textarea
+                value={editingDistrict.notes || ''}
+                onChange={(e) => setEditingDistrict(prev => prev ? { ...prev, notes: e.target.value } : null)}
+                placeholder="Add notes about this district..."
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
+            <button
+              onClick={handleSaveDistrict}
+              disabled={saving}
+              className="flex items-center justify-center w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+            >
+              {saving ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+
+          {/* Touchpoints */}
+          <div>
+            <h4 className="text-lg font-semibold text-gray-900 mb-3">Touchpoints</h4>
+            
+            {/* Completed Touchpoints */}
+            <div className="mb-6">
+              <h5 className="text-sm font-medium text-gray-700 mb-2">
+                Completed ({touchpoints.length})
+              </h5>
+              {touchpoints.length === 0 ? (
+                <p className="text-sm text-gray-500">No completed touchpoints yet</p>
+              ) : (
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {touchpoints.map((touchpoint) => (
+                    <div key={touchpoint.id} className="p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-gray-900">
+                          {touchpoint.district_contact?.first_name} {touchpoint.district_contact?.last_name}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(touchpoint.completed_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        <div>{touchpoint.type} • {touchpoint.outcome}</div>
+                        {touchpoint.notes && <div className="mt-1">{touchpoint.notes}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Scheduled Touchpoints */}
+            <div>
+              <h5 className="text-sm font-medium text-gray-700 mb-2">
+                Scheduled ({scheduledTouchpoints.length})
+              </h5>
+              {scheduledTouchpoints.length === 0 ? (
+                <p className="text-sm text-gray-500">No scheduled touchpoints</p>
+              ) : (
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {scheduledTouchpoints.map((touchpoint) => (
+                    <div key={touchpoint.id} className="p-3 bg-blue-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-gray-900">
+                          {touchpoint.district_contact?.first_name} {touchpoint.district_contact?.last_name}
+                        </span>
+                        <span className="text-xs text-blue-600">
+                          {new Date(touchpoint.scheduled_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        <div>{touchpoint.type}</div>
+                        {touchpoint.notes && <div className="mt-1">{touchpoint.notes}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   if (selectedCompany !== 'Avalern') {
     return null // Will redirect
@@ -392,49 +1015,7 @@ export default function DistrictsPage() {
             </div>
 
             {/* Filters */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex flex-col md:flex-row md:items-center md:space-x-6 space-y-4 md:space-y-0">
-                <div className="flex-1">
-                  <input
-                    type="text"
-                    placeholder="Search districts..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                </div>
-                
-                <div className="flex items-center space-x-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    >
-                      <option value="all">All Statuses</option>
-                      {Object.entries(DISTRICT_STATUS_DISPLAY_MAP).map(([key, value]) => (
-                        <option key={key} value={key}>{value}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">County</label>
-                    <select
-                      value={countyFilter}
-                      onChange={(e) => setCountyFilter(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    >
-                      <option value="all">All Counties</option>
-                      {uniqueCounties.map(county => (
-                        <option key={county} value={county}>{county}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {renderFilters()}
 
             {/* Districts List */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -457,70 +1038,7 @@ export default function DistrictsPage() {
                 </div>
               ) : (
                 <div className="divide-y divide-gray-200">
-                  {paginatedDistricts.map((district) => (
-                    <div 
-                      key={district.id}
-                      className="p-6 hover:bg-gray-50 transition-colors cursor-pointer"
-                      onClick={() => handleDistrictClick(district)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-3">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {district.district_name}
-                            </h3>
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(district.status)}`}>
-                              {DISTRICT_STATUS_DISPLAY_MAP[district.status as keyof typeof DISTRICT_STATUS_DISPLAY_MAP]}
-                            </span>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                            <div className="flex items-center space-x-1">
-                              <MapPin className="h-4 w-4" />
-                              <span>{district.county} County</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <Users className="h-4 w-4" />
-                              <span>{district.contacts_count} total contacts</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <Mail className="h-4 w-4" />
-                              <span>{district.valid_contacts_count} valid contacts</span>
-                            </div>
-                          </div>
-                          
-                          {district.campaign && (
-                            <div className="mt-2 flex items-center space-x-1 text-sm text-blue-600">
-                              <Calendar className="h-4 w-4" />
-                              <span>Campaign: {district.campaign.name}</span>
-                            </div>
-                          )}
-                          
-                          {district.assigned_to && (
-                            <div className="mt-1">
-                              <span className="text-sm text-gray-600">
-                                Assigned to: <span className="font-medium">{district.assigned_to}</span>
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              router.push(`/leads?district=${district.id}`)
-                            }}
-                            className="flex items-center px-3 py-1.5 text-sm bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200"
-                          >
-                            <Users className="h-4 w-4 mr-1" />
-                            View Contacts
-                          </button>
-                          <ChevronRight className="h-5 w-5 text-gray-400" />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                  {paginatedDistricts.map(district => renderDistrictItem(district))}
                 </div>
               )}
             </div>
@@ -604,7 +1122,18 @@ export default function DistrictsPage() {
             <div className="space-y-6">
               {/* Basic Info */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">{selectedDistrict.district_name}</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-gray-900">{selectedDistrict.district_name}</h3>
+                  {currentUserRole === 'admin' && (
+                    <button
+                      onClick={() => router.push(`/users?assignDistrict=${selectedDistrict.id}`)}
+                      className="flex items-center px-3 py-1.5 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200"
+                    >
+                      <UserPlus className="h-4 w-4 mr-1" />
+                      Assign Users
+                    </button>
+                  )}
+                </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center space-x-2">
                     <MapPin className="h-4 w-4 text-gray-400" />
@@ -614,6 +1143,17 @@ export default function DistrictsPage() {
                     <Users className="h-4 w-4 text-gray-400" />
                     <span>{selectedDistrict.contacts_count} contacts ({selectedDistrict.valid_contacts_count} valid)</span>
                   </div>
+                  {selectedDistrict.assigned_users_count && selectedDistrict.assigned_users_count > 0 && (
+                    <div className="flex items-center space-x-2">
+                      <UserPlus className="h-4 w-4 text-gray-400" />
+                      <span>{selectedDistrict.assigned_users_count} assigned users</span>
+                    </div>
+                  )}
+                  {selectedDistrict.assigned_to_current_user && (
+                    <div className="mt-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-md inline-block">
+                      Assigned to you
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -734,6 +1274,9 @@ export default function DistrictsPage() {
           </div>
         )}
       </div>
+
+      {/* Assign Users Modal */}
+      {renderAssignUsersModal()}
     </DashboardLayout>
   )
 } 

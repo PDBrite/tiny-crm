@@ -44,6 +44,12 @@ interface Campaign {
   conversionRate: number
   launch_date: string
   description?: string
+  created_by?: {
+    id: string
+    email: string
+    name: string
+    role: string
+  }
 }
 
 interface OutreachSequence {
@@ -100,202 +106,67 @@ export default function CampaignsPage() {
   useEffect(() => {
     const fetchCampaigns = async () => {
       if (!selectedCompany) {
-        // console.log('No company selected, skipping campaigns fetch')
-        setCampaigns([])
-        setLoading(false)
         return
       }
       
       setLoading(true)
-      
       try {
-        // Fetch campaigns with different data models based on company
-        let campaignsData
+        // Fetch campaigns using the API endpoint
+        const response = await fetch(`/api/campaigns?company=${selectedCompany}`)
         
-        // Fetch campaigns with basic data first (no joins)
-        // console.log('Fetching campaigns for company:', selectedCompany)
-        const { data: basicCampaigns, error: campaignsError } = await supabase
-          .from('campaigns')
-          .select('id, name, company, start_date, created_at, outreach_sequence_id, status')
-          .eq('company', selectedCompany)
-
-        if (campaignsError) {
-          // console.error('Error fetching campaigns:', campaignsError.message || campaignsError)
+        if (!response.ok) {
+          console.error('Error fetching campaigns:', response.status)
           setCampaigns([])
           setLoading(false)
           return
         }
-
-        // Fetch outreach sequences for all campaigns
-        let allSequences: any[] = []
-        try {
-          const { data: outreachSequences, error } = await supabase
-            .from('outreach_sequences')
-            .select('id, name, description')
-
-          if (error) {
-            // console.warn('Could not fetch outreach sequences:', error)
-            allSequences = []
-          } else {
-            allSequences = outreachSequences || []
-          }
-        } catch (error) {
-          // console.warn('Error fetching outreach sequences, using empty array:', error)
-          setOutreachSequences([])
-        }
-
-        // Now fetch related data separately to avoid complex join issues
-        campaignsData = []
-        // console.log('Processing campaigns:', basicCampaigns?.length || 0)
         
-        for (const campaign of basicCampaigns || []) {
-          let campaignWithData = { ...campaign }
-          
-          // Add outreach sequence info
-          const outreachSequence = allSequences.find(seq => seq.id === campaign.outreach_sequence_id)
-          if (outreachSequence) {
-            (campaignWithData as any).outreach_sequence = outreachSequence
-          }
-          
-          if (selectedCompany === 'Avalern') {
-            // For Avalern: Fetch district_leads using the API endpoint
-            try {
-              // Use the API endpoint to fetch district leads for this campaign
-              const districtsResponse = await fetch(`/api/campaign-districts?campaign_id=${campaign.id}`);
-              
-              if (!districtsResponse.ok) {
-                // If API fails, set empty array
-                (campaignWithData as any).district_leads = [];
-              } else {
-                const districtsData = await districtsResponse.json();
-                const districts = districtsData.districts || [];
-                
-                // Just store the districts, we'll count them later
-                (campaignWithData as any).district_leads = districts;
-              }
-              
-              // Now fetch touchpoints for this campaign using the campaign-touchpoints API
-              const touchpointsResponse = await fetch(`/api/campaign-touchpoints?campaign_id=${campaign.id}`);
-              if (touchpointsResponse.ok) {
-                const touchpointsData = await touchpointsResponse.json();
-                (campaignWithData as any).touchpoints = touchpointsData.touchpoints || [];
-                console.log(`Campaign ${campaign.name} has ${touchpointsData.touchpoints?.length || 0} touchpoints`);
-              } else {
-                (campaignWithData as any).touchpoints = [];
-              }
-            } catch (error) {
-              // Skip logging to avoid type issues
-              (campaignWithData as any).district_leads = [];
-              (campaignWithData as any).touchpoints = [];
+        const data = await response.json()
+        const campaignsData = data.campaigns || []
+        
+        // Transform campaign data
+        const enrichedCampaigns = await Promise.all(
+          campaignsData.map(async (campaign: any) => {
+            // Get lead count
+            let leadCount = 0
+            let emailsSent = 0
+            let callsMade = 0
+            let appointmentsBooked = 0
+            
+            // For Avalern, use district contacts; for others, use leads
+            if (selectedCompany === 'Avalern') {
+              leadCount = campaign.district_contacts_count || 0
+            } else {
+              leadCount = campaign.leads_count || 0
             }
-          } else {
-            // For CraftyCode: Fetch regular leads
-            try {
-              const { data: leads, error: leadsError } = await supabase
-                .from('leads')
-                .select('id, status')
-                .eq('campaign_id', campaign.id)
-
-              if (leadsError) {
-                // console.warn('Error fetching leads for campaign', campaign.id, ':', leadsError)
-                (campaignWithData as any).leads = []
-              } else if (leads) {
-                // Fetch touchpoints for leads
-                const leadIds = leads.map(l => l.id)
-                let touchpoints: any[] = []
-                
-                if (leadIds.length > 0) {
-                  const { data: tps, error: tpError } = await supabase
-                    .from('touchpoints')
-                    .select('type, completed_at, outcome, lead_id')
-                    .in('lead_id', leadIds)
-
-                  if (tpError) {
-                    // console.warn('Error fetching lead touchpoints:', tpError)
-                  } else if (tps) {
-                    touchpoints = tps
-                  }
-                }
-
-                // Attach data to campaign
-                (campaignWithData as any).leads = leads.map(lead => ({
-                  ...lead,
-                  touchpoints: touchpoints.filter(tp => tp.lead_id === lead.id)
-                }))
-              } else {
-                (campaignWithData as any).leads = []
-              }
-            } catch (error) {
-              // console.warn('Error in CraftyCode data fetching:', error)
-              (campaignWithData as any).leads = []
+            
+            // Return enriched campaign object
+            return {
+              id: campaign.id,
+              name: campaign.name,
+              company: campaign.company,
+              status: campaign.status || 'active',
+              start_date: campaign.start_date,
+              created_at: campaign.created_at,
+              outreach_sequence_id: campaign.outreach_sequence?.id,
+              outreach_sequence: campaign.outreach_sequence,
+              leadCount,
+              emailsSent: emailsSent || 0,
+              callsMade: callsMade || 0,
+              appointmentsBooked: appointmentsBooked || 0,
+              sales: 0,
+              conversionRate: 0,
+              launch_date: campaign.start_date || campaign.created_at,
+              description: campaign.description,
+              created_by: campaign.created_by
             }
-          }
-          
-          campaignsData.push(campaignWithData)
-        }
-
-        // console.log('Enriching campaign data for', campaignsData.length, 'campaigns')
-        const enriched = campaignsData.map(campaign => {
-          // console.log('Processing campaign:', campaign.name, 'for company:', selectedCompany)
-          let leadCount = 0
-          let allTouchpoints: any[] = []
-          let engagedCount = 0
-          let wonCount = 0
-
-          if (selectedCompany === 'Avalern') {
-            // Handle district_leads data structure
-            const districtLeads = (campaign as any).district_leads || []
-            leadCount = districtLeads.length // This correctly counts district leads
-            
-            // Get touchpoints from the campaign-touchpoints API response
-            const touchpoints = (campaign as any).touchpoints || []
-            allTouchpoints = touchpoints
-            
-            // Calculate engagement stats
-            engagedCount = districtLeads.filter((dl: any) => dl.status === 'engaged').length || 0
-            wonCount = districtLeads.filter((dl: any) => dl.status === 'won').length || 0
-          } else {
-            // Handle regular leads data structure
-            const leads = (campaign as any).leads || []
-            leadCount = leads.length
-            
-            // Flatten touchpoints from all leads
-            allTouchpoints = leads.flatMap((lead: any) => lead.touchpoints || [])
-            
-            engagedCount = leads.filter((lead: any) => lead.status === 'engaged').length
-            wonCount = leads.filter((lead: any) => lead.status === 'won').length
-          }
-          
-          // Calculate touchpoint stats based on company type
-          let emailsSent = 0;
-          let callsMade = 0;
-          let linkedinMessages = 0;
-          
-          // Calculate touchpoint stats from allTouchpoints
-          emailsSent = allTouchpoints.filter((tp: any) => tp.type === 'email' && tp.completed_at).length;
-          callsMade = allTouchpoints.filter((tp: any) => tp.type === 'call' && tp.completed_at).length;
-          linkedinMessages = allTouchpoints.filter((tp: any) => tp.type === 'linkedin_message' && tp.completed_at).length;
-          
-          const conversionRate = leadCount > 0 ? Number(((wonCount / leadCount) * 100).toFixed(1)) : 0
-
-          return {
-            ...campaign,
-            leadCount,
-            emailsSent,
-            callsMade,
-            linkedinMessages,
-            appointmentsBooked: engagedCount,
-            sales: wonCount,
-            conversionRate,
-            launch_date: campaign.start_date || campaign.created_at,
-            status: (campaign as any).status === 'complete' ? 'complete' : 'active',
-            outreach_sequence: (campaign as any).outreach_sequence || null
-          } as Campaign
-        })
-
-        setCampaigns(enriched)
+          })
+        )
+        
+        setCampaigns(enrichedCampaigns)
       } catch (error) {
-        // console.error('Error fetching campaigns:', error)
+        console.error('Error fetching campaigns:', error)
+        setCampaigns([])
       } finally {
         setLoading(false)
       }
@@ -313,22 +184,29 @@ export default function CampaignsPage() {
       }
       
       try {
-        // Check if outreach_sequences table exists
-        const { data, error } = await supabase
-          .from('outreach_sequences')
-          .select('id, name, description, company')
-          .eq('company', selectedCompany)
-
-        if (error) {
-          // console.warn('Outreach sequences table may not exist or be accessible:', error)
-          // Set empty array if table doesn't exist
+        // Fetch outreach sequences using the API endpoint
+        const response = await fetch(`/api/outreach-sequences?company=${selectedCompany}`)
+        
+        if (!response.ok) {
+          console.warn('Error fetching outreach sequences:', response.status)
           setOutreachSequences([])
           return
         }
-
-        setOutreachSequences(data || [])
+        
+        const data = await response.json()
+        const sequences = data.sequences || []
+        
+        // Format the sequences to match our interface
+        const formattedSequences = sequences.map((seq: any) => ({
+          id: seq.id,
+          name: seq.name,
+          description: seq.description,
+          company: seq.company
+        }))
+        
+        setOutreachSequences(formattedSequences)
       } catch (error) {
-        // console.warn('Error fetching outreach sequences, using empty array:', error)
+        console.warn('Error fetching outreach sequences, using empty array:', error)
         setOutreachSequences([])
       }
     }
@@ -348,102 +226,89 @@ export default function CampaignsPage() {
       return
     }
     
-    // console.log('Fetching steps for sequence:', sequenceId)
+    console.log('Fetching steps for sequence:', sequenceId)
     setFetchingSteps(true)
     try {
-      const { data: steps, error } = await supabase
-        .from('outreach_steps')
-        .select('id, step_order, type, content_link, day_offset, sequence_id')
-        .eq('sequence_id', sequenceId)
-        .order('step_order', { ascending: true })
-
-      if (error) {
-        // console.warn('Error fetching sequence steps:', error)
+      // Fetch sequence details using the API endpoint
+      const response = await fetch(`/api/outreach-sequences/${sequenceId}`)
+      
+      if (!response.ok) {
+        console.warn('Error fetching sequence steps:', response.status)
         setSelectedSequenceSteps([])
-      } else {
-        // console.log('Received sequence steps:', steps)
-        setSelectedSequenceSteps(steps || [])
-        
-                 // Auto-calculate end date based on last step
-         if (steps && steps.length > 0 && formData.launchDate) {
-           try {
-             const lastStep = steps[steps.length - 1]
-             // console.log('Using last step for end date calculation:', lastStep)
-             const launchDate = new Date(formData.launchDate)
-             
-             // Make sure we have a valid day_offset value (default to 30 if undefined/null/NaN)
-             let delayDays = 30; // Default to 30 days if no valid day_offset found
-             
-             if (lastStep && lastStep.day_offset !== undefined && lastStep.day_offset !== null) {
-               const parsedDelay = parseInt(String(lastStep.day_offset))
-               if (!isNaN(parsedDelay)) {
-                 delayDays = parsedDelay
-               } else {
-                 // console.warn('Invalid day_offset value, using default 30 days:', lastStep.day_offset)
-               }
-             } else {
-               // console.warn('No day_offset found in last step, using default 30 days')
-             }
-             
-             // console.log('Using delay days:', delayDays)
-             
-             // Calculate end date safely
-             const endDate = new Date(launchDate)
-             endDate.setDate(launchDate.getDate() + delayDays)
-             
-             if (isNaN(endDate.getTime())) {
-               // console.warn('Invalid end date calculated, using default 30 days from now')
-               const defaultEndDate = new Date(launchDate)
-               defaultEndDate.setDate(launchDate.getDate() + 30)
-               
-               setFormData(prev => ({
-                 ...prev,
-                 endDate: defaultEndDate.toISOString().split('T')[0]
-               }))
-             } else {
-               // console.log('Calculated end date:', endDate.toISOString().split('T')[0])
-               setFormData(prev => ({
-                 ...prev,
-                 endDate: endDate.toISOString().split('T')[0]
-               }))
-             }
-           } catch (error) {
-             // console.error('Error calculating end date:', error)
-             // Set a default end date 30 days from launch date
-             try {
-               const launchDate = new Date(formData.launchDate)
-               const defaultEndDate = new Date(launchDate)
-               defaultEndDate.setDate(launchDate.getDate() + 30)
-               
-               setFormData(prev => ({
-                 ...prev,
-                 endDate: defaultEndDate.toISOString().split('T')[0]
-               }))
-             } catch (e) {
-               // console.error('Failed to set default end date:', e)
-               return formData.launchDate
-             }
-           }
-         } else {
-           // No steps found, set default end date 30 days from launch date
-           try {
-             if (formData.launchDate) {
-               const launchDate = new Date(formData.launchDate)
-               const defaultEndDate = new Date(launchDate)
-               defaultEndDate.setDate(launchDate.getDate() + 30)
-               
-               setFormData(prev => ({
-                 ...prev,
-                 endDate: defaultEndDate.toISOString().split('T')[0]
-               }))
-             }
-           } catch (e) {
-             // console.error('Failed to set default end date with no steps:', e)
-           }
-         }
+        setFetchingSteps(false)
+        return
+      }
+      
+      const data = await response.json()
+      
+      if (!data.sequence || !data.sequence.steps) {
+        console.warn('No steps found in sequence')
+        setSelectedSequenceSteps([])
+        setFetchingSteps(false)
+        return
+      }
+      
+      // Format steps to match our interface
+      const formattedSteps = data.sequence.steps.map((step: any) => ({
+        id: step.id,
+        step_order: step.stepOrder,
+        type: step.type,
+        content_link: step.contentLink,
+        day_offset: step.dayOffset,
+        sequence_id: step.sequenceId
+      }))
+      
+      console.log('Received sequence steps:', formattedSteps)
+      setSelectedSequenceSteps(formattedSteps || [])
+      
+      // Auto-calculate end date based on last step
+      if (formattedSteps && formattedSteps.length > 0 && formData.launchDate) {
+        try {
+          const lastStep = formattedSteps[formattedSteps.length - 1]
+          console.log('Using last step for end date calculation:', lastStep)
+          const launchDate = new Date(formData.launchDate)
+          
+          // Make sure we have a valid day_offset value (default to 30 if undefined/null/NaN)
+          let delayDays = 30; // Default to 30 days if no valid day_offset found
+          
+          if (lastStep && lastStep.day_offset !== undefined && lastStep.day_offset !== null) {
+            const parsedDelay = parseInt(String(lastStep.day_offset))
+            if (!isNaN(parsedDelay)) {
+              delayDays = parsedDelay
+            } else {
+              console.warn('Invalid day_offset value, using default 30 days:', lastStep.day_offset)
+            }
+          } else {
+            console.warn('No day_offset found in last step, using default 30 days')
+          }
+          
+          console.log('Using delay days:', delayDays)
+          
+          // Calculate end date safely
+          const endDate = new Date(launchDate)
+          endDate.setDate(launchDate.getDate() + delayDays)
+          
+          if (isNaN(endDate.getTime())) {
+            console.warn('Invalid end date calculated, using default 30 days from now')
+            const defaultEndDate = new Date(launchDate)
+            defaultEndDate.setDate(launchDate.getDate() + 30)
+            
+            setFormData(prev => ({
+              ...prev,
+              endDate: defaultEndDate.toISOString().split('T')[0]
+            }))
+          } else {
+            setFormData(prev => ({
+              ...prev,
+              endDate: endDate.toISOString().split('T')[0]
+            }))
+          }
+        } catch (error) {
+          console.error('Error calculating end date:', error)
+        }
       }
     } catch (error) {
-      // console.error('Error calculating end date:', error)
+      console.warn('Error fetching sequence steps:', error)
       setSelectedSequenceSteps([])
     } finally {
       setFetchingSteps(false)
@@ -452,17 +317,27 @@ export default function CampaignsPage() {
 
   // Handle sequence selection change
   const handleSequenceChange = (sequenceId: string) => {
-    // console.log('Sequence selected:', sequenceId)
-    setFormData(prev => ({ ...prev, outreachSequenceId: sequenceId }))
+    setFormData({ ...formData, outreachSequenceId: sequenceId })
     
-    if (!sequenceId) {
-      // console.log('Clearing sequence steps')
+    if (sequenceId) {
+      fetchSequenceSteps(sequenceId)
+    } else {
       setSelectedSequenceSteps([])
-      return
+      
+      // Reset end date to default (30 days from launch date)
+      try {
+        const launchDate = new Date(formData.launchDate)
+        const defaultEndDate = new Date(launchDate)
+        defaultEndDate.setDate(launchDate.getDate() + 30)
+        
+        setFormData(prev => ({
+          ...prev,
+          endDate: defaultEndDate.toISOString().split('T')[0]
+        }))
+      } catch (error) {
+        console.error('Error setting default end date:', error)
+      }
     }
-    
-    // console.log('Fetching steps for sequence:', sequenceId)
-    fetchSequenceSteps(sequenceId)
   }
 
   // Handle launch date change - recalculate end date
@@ -767,6 +642,9 @@ export default function CampaignsPage() {
                         Launch Date
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Created By
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
@@ -833,6 +711,25 @@ export default function CampaignsPage() {
                          </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {new Date(campaign.launch_date).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {campaign.created_by ? (
+                            <div className="flex items-center">
+                              <div className="text-sm">
+                                <div className="font-medium text-gray-900">{campaign.created_by.name}</div>
+                                <div className="text-xs text-gray-500">{campaign.created_by.email}</div>
+                              </div>
+                              {campaign.created_by.role && (
+                                <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                  campaign.created_by.role === 'admin' 
+                                    ? 'bg-purple-100 text-purple-800' 
+                                    : 'bg-blue-100 text-blue-800'
+                                }`}>
+                                  {campaign.created_by.role}
+                                </span>
+                              )}
+                            </div>
+                          ) : 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button

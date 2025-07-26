@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
-import { TouchpointType } from '@prisma/client'
+import { TouchpointType, UserRoleType } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
 
     const userRole = session.user.role
     const allowedCompanies = session.user.allowedCompanies || []
+    const userId = session.user.id // Get the user ID from the session
 
     const { lead_id, district_contact_id, type, subject, content, completed_at, outcome } = await request.json()
     
@@ -85,7 +86,8 @@ export async function POST(request: NextRequest) {
         outcome: outcome || null,
         leadId: lead_id || null,
         districtContactId: district_contact_id || null,
-        scheduledAt: new Date() // Default to current time if not provided
+        scheduledAt: new Date(), // Default to current time if not provided
+        createdById: userId // Store the user ID of the creator
       }
     });
 
@@ -140,168 +142,36 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const userRole = session.user.role
-    const allowedCompanies = session.user.allowedCompanies || []
+    // Check authentication (optional)
+    const session = await getServerSession(authOptions);
     
     // Get query parameters
-    const url = new URL(request.url)
-    const leadId = url.searchParams.get('lead_id')
-    const districtContactId = url.searchParams.get('district_contact_id')
-    const campaignId = url.searchParams.get('campaign_id')
-    const includeDetails = url.searchParams.get('include_details') === 'true'
-    
-    console.log('Touchpoints API: Query params:', { leadId, districtContactId, campaignId, includeDetails })
+    const { searchParams } = new URL(request.url);
+    const districtContactIds = searchParams.get('district_contact_ids');
+    const districtContactId = searchParams.get('district_contact_id');
+    const completed = searchParams.get('completed') === 'true';
+    const scheduled = searchParams.get('scheduled') === 'true';
+    const leadId = searchParams.get('lead_id');
+    const includeDetails = searchParams.get('include_details') === 'true';
+    const createdById = searchParams.get('created_by_id');
 
-    // Build query based on parameters
-    let touchpointsData: any[] = []
-    
-    // Case 1: Filter by campaign_id
-    if (campaignId) {
-      console.log(`Fetching touchpoints for campaign: ${campaignId}`)
-      
-      // First check if this is an Avalern campaign
-      const campaign = await prisma.campaign.findUnique({
-        where: { id: campaignId },
-        select: { id: true, company: true }
-      });
-      
-      if (!campaign) {
-        return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
-      }
-      
-      const campaignCompany = campaign.company.toLowerCase()
-      if (!allowedCompanies.includes(campaignCompany)) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      }
-
-      if (userRole === 'member' && campaignCompany !== 'avalern') {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      }
-      
-      const isAvalern = campaign.company === 'Avalern'
-      console.log(`Campaign belongs to ${campaign.company}`)
-      
-      if (isAvalern) {
-        // For Avalern, get district contacts and their touchpoints
-        const districtContacts = await prisma.districtContact.findMany({
-          where: {
-            campaignId: campaignId
-          },
-          include: {
-            district: true,
-            touchpoints: {
-              orderBy: {
-                scheduledAt: 'asc'
-              }
-            }
-          }
-        });
-        
-        console.log(`Found ${districtContacts.length} district contacts for campaign ${campaignId}`);
-        
-        // Transform district touchpoints to match the expected format
-        const districtTouchpoints = districtContacts.flatMap(contact => {
-          return contact.touchpoints.map(tp => ({
-            id: tp.id,
-            type: tp.type,
-            subject: tp.subject,
-            content: tp.content,
-            scheduled_at: tp.scheduledAt,
-            completed_at: tp.completedAt,
-            outcome: tp.outcome,
-            created_at: tp.createdAt,
-            district_contact_id: tp.districtContactId,
-            district_contact: includeDetails ? {
-              id: contact.id,
-              first_name: contact.firstName,
-              last_name: contact.lastName,
-              email: contact.email,
-              district_lead_id: contact.districtId
-            } : undefined
-          }));
-        });
-        
-        console.log(`Found ${districtTouchpoints.length} district touchpoints`);
-        touchpointsData = [...touchpointsData, ...districtTouchpoints];
-      }
-      
-      // Get regular leads and their touchpoints
-      const leads = await prisma.lead.findMany({
-        where: {
-          campaignId: campaignId
-        },
-        include: {
-          touchpoints: {
-            orderBy: {
-              scheduledAt: 'asc'
-            }
-          }
-        }
-      });
-      
-      console.log(`Found ${leads.length} leads for campaign ${campaignId}`);
-      
-      // Transform lead touchpoints to match the expected format
-      const leadTouchpoints = leads.flatMap(lead => {
-        return lead.touchpoints.map(tp => ({
-          id: tp.id,
-          type: tp.type,
-          subject: tp.subject,
-          content: tp.content,
-          scheduled_at: tp.scheduledAt,
-          completed_at: tp.completedAt,
-          outcome: tp.outcome,
-          created_at: tp.createdAt,
-          lead_id: tp.leadId,
-          lead: includeDetails ? {
-            id: lead.id,
-            first_name: lead.firstName,
-            last_name: lead.lastName,
-            email: lead.email,
-            campaign_id: lead.campaignId
-          } : undefined
-        }));
-      });
-      
-      console.log(`Found ${leadTouchpoints.length} lead touchpoints`);
-      touchpointsData = [...touchpointsData, ...leadTouchpoints];
+    if (!districtContactIds && !districtContactId && !leadId) {
+      return NextResponse.json({ error: 'Missing district_contact_ids, district_contact_id, or lead_id parameter' }, { status: 400 });
     }
-    // Case 2: Filter by lead_id
-    else if (leadId) {
-      // Security check: Verify the user has permission to view this lead's touchpoints
-      const lead = await prisma.lead.findUnique({
-        where: { id: leadId },
-        select: {
-          campaign: {
-            select: { company: true }
-          }
-        }
-      });
 
-      if (!lead) {
-        return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
-      }
-
-      const leadCompany = lead.campaign.company.toLowerCase()
-      if (!allowedCompanies.includes(leadCompany)) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      }
-
-      if (userRole === 'member' && leadCompany !== 'avalern') {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      }
-
-      // Fetch touchpoints for this lead
-      const touchpoints = await prisma.touchpoint.findMany({
-        where: { leadId: leadId },
-        orderBy: { scheduledAt: 'asc' },
-        include: includeDetails ? {
+    // Build the query
+    const query: any = {
+      where: {},
+          include: {
+        districtContact: { 
+          select: { 
+            id: true, 
+            firstName: true, 
+            lastName: true, 
+            email: true, 
+            title: true 
+          } 
+        },
           lead: {
             select: {
               id: true,
@@ -309,12 +179,55 @@ export async function GET(request: NextRequest) {
               lastName: true,
               email: true
             }
+        },
+        createdBy: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            role: true
           }
-        } : undefined
-      });
-      
-      // Transform to match the expected format
-      touchpointsData = touchpoints.map(tp => ({
+        }
+      },
+      orderBy: {}
+    };
+
+    // Set up the where conditions
+    if (districtContactIds) {
+      const ids = districtContactIds.split(',');
+      query.where.districtContactId = { in: ids };
+    } else if (districtContactId) {
+      query.where.districtContactId = districtContactId;
+    } else if (leadId) {
+      query.where.leadId = leadId;
+    }
+
+    // Apply status filters
+    if (completed) {
+      query.where.completedAt = { not: null };
+      query.orderBy.completedAt = 'desc';
+    } else if (scheduled) {
+      query.where.completedAt = null;
+      query.where.scheduledAt = { not: null };
+      query.orderBy.scheduledAt = 'asc';
+    }
+    
+    // Filter by creator if specified
+    if (createdById) {
+      query.where.createdById = createdById;
+    }
+    
+    // For member users, restrict to their own touchpoints if not specifically querying by ID
+    if (session?.user?.role === UserRoleType.member && !districtContactId && !leadId && !districtContactIds) {
+      query.where.createdById = session.user.id;
+    }
+
+    // Execute the query
+    const touchpoints = await prisma.touchpoint.findMany(query);
+
+    // Format the response
+    const formattedTouchpoints = touchpoints.map(tp => ({
         id: tp.id,
         type: tp.type,
         subject: tp.subject,
@@ -324,91 +237,34 @@ export async function GET(request: NextRequest) {
         outcome: tp.outcome,
         created_at: tp.createdAt,
         lead_id: tp.leadId,
-        lead: includeDetails && tp.lead ? {
+      district_contact_id: tp.districtContactId,
+      created_by_id: tp.createdById,
+      created_by: tp.createdBy ? {
+        id: tp.createdBy.id,
+        email: tp.createdBy.email,
+        first_name: tp.createdBy.firstName,
+        last_name: tp.createdBy.lastName,
+        role: tp.createdBy.role
+      } : null,
+      lead: tp.lead ? {
           id: tp.lead.id,
           first_name: tp.lead.firstName,
           last_name: tp.lead.lastName,
           email: tp.lead.email
-        } : undefined
-      }));
-    }
-    // Case 3: Filter by district_contact_id
-    else if (districtContactId) {
-      // Security check: Verify the user has permission to view this contact's touchpoints
-      const districtContact = await prisma.districtContact.findUnique({
-        where: { id: districtContactId },
-        select: {
-          district: {
-            select: {
-              campaign: {
-                select: { company: true }
-              }
-            }
-          }
-        }
-      });
-
-      if (!districtContact || !districtContact.district || !districtContact.district.campaign) {
-        return NextResponse.json({ error: 'District contact not found' }, { status: 404 })
-      }
-
-      const districtCompany = districtContact.district.campaign.company.toLowerCase()
-      if (!allowedCompanies.includes(districtCompany)) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      }
-
-      if (userRole === 'member' && districtCompany !== 'avalern') {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      }
-
-      // Fetch touchpoints for this district contact
-      const touchpoints = await prisma.touchpoint.findMany({
-        where: { districtContactId: districtContactId },
-        orderBy: { scheduledAt: 'asc' },
-        include: includeDetails ? {
-          districtContact: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true
-            }
-          }
-        } : undefined
-      });
-      
-      // Transform to match the expected format
-      touchpointsData = touchpoints.map(tp => ({
-        id: tp.id,
-        type: tp.type,
-        subject: tp.subject,
-        content: tp.content,
-        scheduled_at: tp.scheduledAt,
-        completed_at: tp.completedAt,
-        outcome: tp.outcome,
-        created_at: tp.createdAt,
-        district_contact_id: tp.districtContactId,
-        district_contact: includeDetails && tp.districtContact ? {
+      } : null,
+      district_contact: tp.districtContact ? {
           id: tp.districtContact.id,
           first_name: tp.districtContact.firstName,
           last_name: tp.districtContact.lastName,
-          email: tp.districtContact.email
-        } : undefined
-      }));
-    }
-    
-    console.log(`Found ${touchpointsData.length} touchpoints`);
-    return NextResponse.json({
-      touchpoints: touchpointsData,
-      count: touchpointsData.length
-    });
-    
+        email: tp.districtContact.email,
+        title: tp.districtContact.title
+      } : null
+    }));
+
+    return NextResponse.json({ touchpoints: formattedTouchpoints });
   } catch (error) {
-    console.error('Error in touchpoints API:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    console.error('Error fetching touchpoints:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 

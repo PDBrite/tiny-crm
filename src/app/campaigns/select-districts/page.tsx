@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import DashboardLayout from '../../../components/layout/DashboardLayout'
 import { useCompany } from '../../../contexts/CompanyContext'
-import { supabase } from '../../../lib/supabase'
 import { DistrictLead, DISTRICT_STATUS_DISPLAY_MAP } from '../../../types/districts'
 import { OutreachStep } from '../../../types/leads'
 import { scheduleTouchpointsForLead } from '../../../utils/outreach-scheduler'
@@ -188,37 +187,36 @@ function SelectDistrictsContent() {
     try {
       console.log(`Creating campaign "${campaignName}" with ${selectedDistricts.length} districts`);
       
-      // Create campaign
-      const { data: campaign, error: campaignError } = await supabase
-        .from('campaigns')
-        .insert({
+      // Create campaign using API endpoint instead of direct Supabase access
+      const campaignResponse = await fetch('/api/campaigns', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           name: campaignName,
           company: selectedCompany,
           description: description,
-          start_date: launchDate,
-          end_date: endDate,
-          outreach_sequence_id: outreachSequenceId,
-          instantly_campaign_id: instantlyCampaignId || null,
-          created_at: new Date().toISOString()
+          startDate: launchDate,
+          endDate: endDate,
+          outreachSequenceId: outreachSequenceId,
+          instantlyCampaignId: instantlyCampaignId || null
         })
-        .select(`
-          *,
-          outreach_sequence:outreach_sequences(
-            id, name, description,
-            steps:outreach_steps(*)
-          )
-        `)
-        .single()
+      });
 
-      if (campaignError) {
-        console.error('Error creating campaign:', campaignError)
-        alert('Failed to create campaign')
-        return
+      if (!campaignResponse.ok) {
+        const errorData = await campaignResponse.json();
+        console.error('Error creating campaign:', errorData);
+        alert(`Failed to create campaign: ${errorData.error || 'Unknown error'}`);
+        return;
       }
 
+      const campaignResult = await campaignResponse.json();
+      const campaign = campaignResult.campaign;
+      
       console.log(`Campaign created successfully with ID: ${campaign.id}`);
       
-      // Assign selected districts to the campaign using the new API endpoint
+      // Assign selected districts to the campaign using the API endpoint
       console.log(`Assigning ${selectedDistricts.length} districts to campaign ${campaign.id}`);
       const assignResponse = await fetch('/api/assign-districts-to-campaign', {
         method: 'POST',
@@ -239,57 +237,40 @@ function SelectDistrictsContent() {
       const assignResult = await assignResponse.json();
       console.log('District assignment result:', assignResult);
 
-      // Get all district contacts from selected districts
+      // Get all district contacts from selected districts using API
       console.log(`Fetching district contacts for ${selectedDistricts.length} districts`);
-      const { data: districtContacts, error: contactsError } = await supabase
-        .from('district_contacts')
-        .select('*')
-        .in('district_lead_id', selectedDistricts)
-        .eq('status', 'Valid') // Only schedule touchpoints for valid contacts
-
-      if (contactsError) {
-        console.error('Error fetching district contacts:', contactsError)
-        alert('Campaign created but failed to fetch district contacts')
-        return
-      }
-
-      console.log(`Found ${districtContacts?.length || 0} district contacts`);
+      const contactsResponse = await fetch(`/api/district-contacts?district_ids=${selectedDistricts.join(',')}&status=Valid`);
       
-      // Double-check that districts were properly assigned
-      const { data: verifyDistricts, error: verifyError } = await supabase
-        .from('district_leads')
-        .select('id, district_name, campaign_id')
-        .eq('campaign_id', campaign.id);
-        
-      if (verifyError) {
-        console.error('Error verifying district assignment:', verifyError);
-      } else {
-        console.log(`Verified ${verifyDistricts?.length || 0} districts assigned to campaign ${campaign.id}`);
-        if (verifyDistricts?.length === 0) {
-          console.warn('No districts found assigned to the campaign after assignment!');
-        }
+      if (!contactsResponse.ok) {
+        const errorData = await contactsResponse.json();
+        console.error('Error fetching district contacts:', errorData);
+        alert('Campaign created but failed to fetch district contacts');
+        return;
       }
-
+      
+      const contactsData = await contactsResponse.json();
+      const districtContacts = contactsData.contacts || [];
+      
+      console.log(`Found ${districtContacts.length} district contacts`);
+      
+      // Get outreach sequence details
+      const sequenceResponse = await fetch(`/api/outreach-sequences/${outreachSequenceId}`);
+      if (!sequenceResponse.ok) {
+        console.error('Error fetching outreach sequence details');
+        alert('Campaign created but failed to fetch outreach sequence details');
+        return;
+      }
+      
+      const sequenceData = await sequenceResponse.json();
+      const outreachSequence = sequenceData.sequence;
+      
       // Schedule touchpoints for all district contacts
-      if (districtContacts && districtContacts.length > 0 && campaign.outreach_sequence?.steps) {
-        const campaignStartDate = new Date(launchDate)
-        const dbSteps = campaign.outreach_sequence.steps as any[]
-        
-        // Map database steps to OutreachStep interface
-        const outreachSteps: OutreachStep[] = dbSteps.map(step => ({
-          id: step.id,
-          sequence_id: step.sequence_id || step.outreach_sequence_id,
-          step_order: step.step_order || step.step_number,
-          type: step.type,
-          name: step.name,
-          content_link: step.content_link,
-          day_offset: step.day_offset,
-          created_at: step.created_at,
-          updated_at: step.updated_at
-        }))
+      if (districtContacts.length > 0 && outreachSequence?.steps?.length > 0) {
+        const campaignStartDate = new Date(launchDate);
+        const outreachSteps = outreachSequence.steps;
         
         console.log(`Using ${outreachSteps.length} outreach steps for scheduling touchpoints`);
-        const touchpointsToCreate = []
+        const touchpointsToCreate = [];
         
         for (const contact of districtContacts) {
           const scheduledTouchpoints = scheduleTouchpointsForLead(
@@ -297,40 +278,37 @@ function SelectDistrictsContent() {
             campaignStartDate,
             outreachSteps,
             {
-              first_name: contact.first_name,
-              last_name: contact.last_name,
+              first_name: contact.first_name || contact.firstName,
+              last_name: contact.last_name || contact.lastName,
               company: '', // Will be populated from district
               city: '' // Will be populated from district
             }
-          )
+          );
           
           // Filter touchpoints based on available contact methods
           const filteredTouchpoints = scheduledTouchpoints.filter(tp => {
             // Only schedule email touchpoints if contact has email
             if (tp.type === 'email') {
-              return contact.email && contact.email.trim().length > 0
+              return contact.email && contact.email.trim().length > 0;
             }
             // Only schedule call touchpoints if contact has phone
             if (tp.type === 'call') {
-              return contact.phone && contact.phone.trim().length > 0
+              return contact.phone && contact.phone.trim().length > 0;
             }
             // LinkedIn messages don't require email or phone
             if (tp.type === 'linkedin_message') {
-              return true
+              return true;
             }
-            return true
-          })
+            return true;
+          });
           
-          touchpointsToCreate.push(...filteredTouchpoints)
+          touchpointsToCreate.push(...filteredTouchpoints);
         }
 
         if (touchpointsToCreate.length > 0) {
-          console.log(`Creating ${touchpointsToCreate.length} touchpoints for ${districtContacts?.length || 0} contacts`)
-          console.log('Sample touchpoint (full data):', JSON.stringify(touchpointsToCreate[0], null, 2))
-          console.log('All touchpoint types:', touchpointsToCreate.map(tp => tp.type))
-          
-          // Use the API endpoint instead of direct Supabase access
-          console.log(`Creating ${touchpointsToCreate.length} touchpoints via API`)
+          console.log(`Creating ${touchpointsToCreate.length} touchpoints for ${districtContacts.length} contacts`);
+          console.log('Sample touchpoint (full data):', JSON.stringify(touchpointsToCreate[0], null, 2));
+          console.log('All touchpoint types:', touchpointsToCreate.map(tp => tp.type));
           
           // Create touchpoints in smaller batches to avoid timeouts
           const BATCH_SIZE = 50;
@@ -368,18 +346,18 @@ function SelectDistrictsContent() {
             console.log(`Successfully created ${successCount} touchpoints`);
           }
         } else {
-          console.log('No touchpoints to create - all contacts may be missing required contact information')
+          console.log('No touchpoints to create - all contacts may be missing required contact information');
         }
       }
 
-      alert(`Campaign "${campaignName}" created successfully with ${selectedDistricts.length} districts and ${districtContacts?.length || 0} contacts!`)
-      router.push(`/campaigns/${campaign.id}`)
+      alert(`Campaign "${campaignName}" created successfully with ${selectedDistricts.length} districts and ${districtContacts.length} contacts!`);
+      router.push(`/campaigns/${campaign.id}`);
       
     } catch (error) {
-      console.error('Error creating campaign:', error)
-      alert('Failed to create campaign')
+      console.error('Error creating campaign:', error);
+      alert('Failed to create campaign');
     } finally {
-      setCreating(false)
+      setCreating(false);
     }
   }
 

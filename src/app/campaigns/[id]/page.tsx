@@ -60,6 +60,12 @@ interface Campaign {
   launch_date: string
   description?: string
   instantly_campaign_id?: string
+  created_by?: {
+    id: string
+    email: string
+    name: string
+    role: string
+  }
 }
 
 interface OutreachSequence {
@@ -138,6 +144,10 @@ export default function CampaignDetailPage() {
     status: 'active'
   })
 
+  // Add states for creator filter and users
+  const [touchpointCreatorFilter, setTouchpointCreatorFilter] = useState('');
+  const [users, setUsers] = useState<Array<{ id: string, email: string, first_name?: string, last_name?: string }>>([]);
+
   useEffect(() => {
     if (campaignId) {
       fetchCampaign()
@@ -199,9 +209,8 @@ export default function CampaignDetailPage() {
   }, [campaignLeads]);
   
   useEffect(() => {
-    console.log(`Campaign touchpoints loaded: ${campaignTouchpoints.length}`);
+    if (!campaignTouchpoints) return;
     
-    // Filter touchpoints based on selected filters
     let filtered = [...campaignTouchpoints];
     
     // Apply type filter
@@ -211,41 +220,57 @@ export default function CampaignDetailPage() {
     
     // Apply outcome filter
     if (touchpointOutcomeFilter) {
-      if (touchpointOutcomeFilter === 'scheduled') {
-        filtered = filtered.filter(tp => !tp.completed_at);
-      } else if (touchpointOutcomeFilter === 'completed') {
+      if (touchpointOutcomeFilter === 'completed') {
         filtered = filtered.filter(tp => tp.completed_at);
+      } else if (touchpointOutcomeFilter === 'scheduled') {
+        filtered = filtered.filter(tp => !tp.completed_at);
       }
     }
     
-    // Apply date filters
+    // Apply date range filters
     if (touchpointDateFromFilter) {
-      const fromDate = new Date(touchpointDateFromFilter);
       filtered = filtered.filter(tp => {
-        const tpDate = new Date(tp.scheduled_at || tp.completed_at);
-        return tpDate >= fromDate;
+        const date = tp.scheduled_at || tp.completed_at;
+        return date && new Date(date) >= new Date(touchpointDateFromFilter);
       });
     }
     
     if (touchpointDateToFilter) {
-      const toDate = new Date(touchpointDateToFilter);
-      toDate.setHours(23, 59, 59, 999); // End of day
       filtered = filtered.filter(tp => {
-        const tpDate = new Date(tp.scheduled_at || tp.completed_at);
-        return tpDate <= toDate;
+        const date = tp.scheduled_at || tp.completed_at;
+        return date && new Date(date) <= new Date(touchpointDateToFilter + 'T23:59:59');
       });
+    }
+    
+    // Apply creator filter
+    if (touchpointCreatorFilter) {
+      filtered = filtered.filter(tp => tp.created_by_id === touchpointCreatorFilter);
     }
     
     // Calculate total pages for pagination
     const totalPages = Math.max(1, Math.ceil(filtered.length / touchpointItemsPerPage));
     setTouchpointTotalPages(totalPages);
     
-    // Reset to page 1 when filters change
-    setTouchpointCurrentPage(1);
-    
-    // Update filtered touchpoints
     setFilteredCampaignTouchpoints(filtered);
-  }, [campaignTouchpoints, touchpointTypeFilter, touchpointOutcomeFilter, touchpointDateFromFilter, touchpointDateToFilter, touchpointItemsPerPage]);
+    setTouchpointCurrentPage(1); // Reset to first page when filters change
+  }, [campaignTouchpoints, touchpointTypeFilter, touchpointOutcomeFilter, touchpointDateFromFilter, touchpointDateToFilter, touchpointCreatorFilter, touchpointItemsPerPage]);
+
+  // Fetch users for touchpoint filtering
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('/api/users?for_touchpoints=true');
+        if (response.ok) {
+          const data = await response.json();
+          setUsers(data.users || []);
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+    
+    fetchUsers();
+  }, []);
 
   // Helper function to get touchpoint counts for a lead/contact
   const getTouchpointCounts = (leadId: string, isDistrictContact: boolean = false) => {
@@ -270,7 +295,7 @@ export default function CampaignDetailPage() {
     setLoadingSequenceSteps(true)
     try {
       // Use API endpoint to fetch sequence steps
-      const response = await fetch(`/api/outreach-sequences/${sequenceId}/steps`)
+      const response = await fetch(`/api/outreach-sequences/${sequenceId}`)
 
       if (!response.ok) {
         console.error('Error fetching sequence steps:', response.status)
@@ -278,22 +303,25 @@ export default function CampaignDetailPage() {
       }
       
       const data = await response.json()
-      console.log('Fetched sequence steps:', data.steps)
+      console.log('Fetched sequence data:', data.sequence)
+      
+      // Extract steps from the sequence
+      const steps = data.sequence?.steps || []
         
-        // Calculate days_after_previous for each step
-      const stepsWithDaysAfterPrevious = data.steps?.map((step: any, index: number, steps: any[]) => {
+      // Calculate days_after_previous for each step
+      const stepsWithDaysAfterPrevious = steps.map((step: any, index: number, steps: any[]) => {
           if (index === 0) {
             // First step has no previous step
-            return { ...step, days_after_previous: step.day_offset }
+            return { ...step, days_after_previous: step.dayOffset }
           } else {
             // Calculate days after previous step
             const previousStep = steps[index - 1]
-            const daysAfterPrevious = step.day_offset - previousStep.day_offset
+            const daysAfterPrevious = step.dayOffset - previousStep.dayOffset
             return { ...step, days_after_previous: daysAfterPrevious }
           }
         }) || []
         
-        setSequenceSteps(stepsWithDaysAfterPrevious)
+      setSequenceSteps(stepsWithDaysAfterPrevious)
     } catch (error) {
       console.error('Error in fetchSequenceSteps:', error)
     } finally {
@@ -898,6 +926,9 @@ export default function CampaignDetailPage() {
               setTouchpointDateFromFilter={setTouchpointDateFromFilter}
               touchpointDateToFilter={touchpointDateToFilter}
               setTouchpointDateToFilter={setTouchpointDateToFilter}
+              touchpointCreatorFilter={touchpointCreatorFilter}
+              setTouchpointCreatorFilter={setTouchpointCreatorFilter}
+              users={users}
               currentPage={touchpointCurrentPage}
               setCurrentPage={setTouchpointCurrentPage}
               itemsPerPage={touchpointItemsPerPage}

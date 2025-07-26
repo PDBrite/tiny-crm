@@ -1,5 +1,8 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import type { NextAuthOptions } from "next-auth";
+import { UserRoleType } from "@prisma/client";
+import { prisma } from "./prisma";
+import { compare } from "bcrypt";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -16,41 +19,51 @@ export const authOptions: NextAuthOptions = {
         }
 
         console.log("Checking credentials for:", credentials.email);
-        console.log("Admin email from env:", process.env.ADMIN_EMAIL);
-        console.log("Member email from env:", process.env.MEMBER_EMAIL);
 
-        // Admin user
-        if (
-          credentials.email === process.env.ADMIN_EMAIL &&
-          credentials.password === process.env.ADMIN_PASSWORD
-        ) {
-          console.log("Admin credentials matched");
+        try {
+          // Find user in database
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+            include: {
+              companyAccess: {
+                select: {
+                  company: true
+                }
+              }
+            }
+          });
+
+          if (!user) {
+            console.log("User not found in database");
+            return null;
+          }
+
+          // Verify password
+          const isPasswordValid = await compare(credentials.password, user.passwordHash);
+          
+          if (!isPasswordValid) {
+            console.log("Invalid password for user:", credentials.email);
+            return null;
+          }
+
+          console.log("Credentials matched for user:", user.email, "Role:", user.role);
+
+          // Get allowed companies from user's company access
+          const allowedCompanies = user.companyAccess.map(access => 
+            access.company.toLowerCase()
+          );
+
           return {
-            id: "admin",
-            email: process.env.ADMIN_EMAIL,
-            name: "Admin User",
-            role: "admin",
-            allowedCompanies: ["avalern", "craftycode"]
+            id: user.id,
+            email: user.email,
+            name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+            role: user.role,
+            allowedCompanies: allowedCompanies
           };
+        } catch (error) {
+          console.error("Error during authentication:", error);
+          return null;
         }
-
-        // Member user
-        if (
-          credentials.email === process.env.MEMBER_EMAIL &&
-          credentials.password === process.env.MEMBER_PASSWORD
-        ) {
-          console.log("Member credentials matched");
-          return {
-            id: "member",
-            email: process.env.MEMBER_EMAIL,
-            name: "Member User",
-            role: "member",
-            allowedCompanies: ["avalern"]
-          };
-        }
-
-        console.log("No credentials matched");
-        return null;
       }
     })
   ],
@@ -65,6 +78,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = user.role;
         token.allowedCompanies = user.allowedCompanies;
+        token.id = user.id;
       }
       
       // Add custom claims for Supabase RLS
@@ -80,8 +94,9 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.role = token.user_role as string;
+        session.user.role = token.user_role as UserRoleType;
         session.user.allowedCompanies = token.allowedCompanies as string[];
+        session.user.id = token.id as string;
       }
       return session;
     }

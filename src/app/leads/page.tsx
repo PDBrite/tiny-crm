@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState, useEffect, useMemo, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import { useCompany } from '../../contexts/CompanyContext'
 import { STATUS_DISPLAY_MAP } from '../../types/leads'
 import { useLeads } from '../../hooks/useLeads'
 import { exportToCSV } from '../../lib/csv-utils'
 import { ArrowLeft } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
+import { prisma } from '@/lib/prisma'
 
 // Components
 import {
@@ -117,28 +117,26 @@ function LeadsContent() {
     const fetchDistrictName = async () => {
       if (districtFilter && isAvalern) {
         try {
-          const { data, error } = await supabase
-            .from('district_leads')
-            .select('district_name')
-            .eq('id', districtFilter)
-            .single()
-          
-          if (error) {
-            console.error('Error fetching district name:', error)
-            return
+          const response = await fetch(`/api/districts?id=${districtFilter}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.districts && data.districts.length > 0) {
+              setFilteredDistrictName(data.districts[0].name || null);
+            }
+          } else {
+            setFilteredDistrictName(null);
           }
-          
-          setFilteredDistrictName(data?.district_name || null)
         } catch (error) {
-          console.error('Error fetching district name:', error)
+          console.error('Error fetching district name:', error);
+          setFilteredDistrictName(null);
         }
       } else {
-        setFilteredDistrictName(null)
+        setFilteredDistrictName(null);
       }
-    }
+    };
     
-    fetchDistrictName()
-  }, [districtFilter, isAvalern])
+    fetchDistrictName();
+  }, [districtFilter, isAvalern]);
 
   const handleImportLeads = () => {
     window.location.href = '/import'
@@ -297,9 +295,26 @@ function LeadsContent() {
               onSelectLead={handleSelectLead}
               onSelectAll={handleSelectAll}
               onLeadClick={handleOpenLeadPanel}
-              onDistrictContactClick={(contact) => {
-                // TODO: Implement district contact detail panel
-                console.log('District contact clicked:', contact)
+              onDistrictContactClick={async (contact) => {
+                // Use the new API endpoint for district contact touchpoints
+                try {
+                  console.log('District contact clicked:', contact);
+                  
+                  // Fetch touchpoints for this contact using the new API endpoint
+                  const response = await fetch(`/api/district-contact-touchpoints?district_contact_id=${contact.id}&include_details=true`);
+                  
+                  if (!response.ok) {
+                    throw new Error(`Error fetching touchpoints: ${response.statusText}`);
+                  }
+                  
+                  const data = await response.json();
+                  console.log('Touchpoints for district contact:', data);
+                  
+                  // TODO: Implement district contact detail panel
+                  // For now, just log the data
+                } catch (error) {
+                  console.error('Error handling district contact click:', error);
+                }
               }}
             />
 

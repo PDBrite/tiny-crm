@@ -53,10 +53,11 @@ export async function GET(request: NextRequest) {
     // Get query parameters
     const url = new URL(request.url)
     const districtId = url.searchParams.get('district_id')
+    const districtIds = url.searchParams.get('district_ids')
     const status = url.searchParams.get('status')
     const searchTerm = url.searchParams.get('search')
 
-    console.log('District contacts API: Query params:', { districtId, status, searchTerm })
+    console.log('District contacts API: Query params:', { districtId, districtIds, status, searchTerm })
 
     // Build query conditions
     const whereConditions: any = {}
@@ -64,6 +65,11 @@ export async function GET(request: NextRequest) {
     if (districtId) {
       whereConditions.districtId = districtId
       console.log('District contacts API: Filtering by districtId:', districtId)
+    } else if (districtIds) {
+      // Handle multiple district IDs
+      const idsArray = districtIds.split(',')
+      whereConditions.districtId = { in: idsArray }
+      console.log('District contacts API: Filtering by multiple districtIds:', idsArray.length)
     }
     
     if (status) {

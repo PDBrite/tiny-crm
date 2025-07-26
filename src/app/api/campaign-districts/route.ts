@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { CompanyType } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,117 +17,122 @@ export async function GET(request: NextRequest) {
     
     console.log('Campaign districts API: Query params:', { searchTerm, status, county, campaignId })
 
-    // Check if supabaseAdmin is available
-    if (!supabaseAdmin) {
-      console.error('supabaseAdmin client is not available')
-      return NextResponse.json(
-        { error: 'Database client unavailable', message: 'Server-side Supabase client not initialized' },
-        { status: 500 }
-      )
+    // Check authentication
+    const session = await getServerSession(authOptions)
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Debug query - first check if the campaign exists
     if (campaignId) {
-      const { data: campaign, error: campaignError } = await supabaseAdmin
-        .from('campaigns')
-        .select('id, name, company')
-        .eq('id', campaignId)
-        .single()
+      try {
+        const campaign = await prisma.campaign.findUnique({
+          where: { id: campaignId },
+          select: { id: true, name: true, company: true }
+        })
         
-      if (campaignError) {
-        console.error(`Campaign districts API: Error finding campaign with ID ${campaignId}:`, campaignError)
+        if (!campaign) {
+          console.error(`Campaign districts API: Campaign with ID ${campaignId} not found`)
+        } else {
+          console.log(`Campaign districts API: Found campaign: ${campaign?.name || 'Unknown'} (${campaign?.id || 'No ID'}) - Company: ${campaign?.company}`)
+        }
+        
+        // Debug query - check if any districts have this campaign_id
+        const districtCount = await prisma.districtContact.count({
+          where: { campaignId }
+        })
+        
+        console.log(`Campaign districts API: Found ${districtCount || 0} district contacts with campaign_id ${campaignId}`)
+      } catch (error) {
+        console.error('Error checking campaign:', error)
+      }
+    }
+
+    // Build query to get districts with their contacts
+    try {
+      // First get all districts
+      const districts = await prisma.district.findMany({
+        where: {
+          ...(searchTerm ? {
+            OR: [
+              { name: { contains: searchTerm, mode: 'insensitive' } },
+              { county: { contains: searchTerm, mode: 'insensitive' } }
+            ]
+          } : {}),
+          ...(county ? { county } : {})
+        },
+        include: {
+          contacts: {
+            where: {
+              ...(campaignId ? { campaignId } : {}),
+              ...(status ? { status: status as any } : {})
+            }
+          }
+        },
+        orderBy: { name: 'asc' }
+      })
+      
+      // Format the response to match the expected structure
+      const formattedDistricts = districts.map(district => {
+        // Calculate contact counts
+        const totalContacts = district.contacts.length;
+        
+        // Valid contacts are those with email addresses
+        const validContacts = district.contacts.filter(contact => 
+          contact.email && contact.email.trim() !== ''
+        );
+        
+        return {
+          id: district.id,
+          district_name: district.name,
+          county: district.county,
+          state: district.state,
+          district_type: district.type,
+          size: district.size,
+          budget: district.budget,
+          website: district.website,
+          notes: district.notes,
+          campaign_id: campaignId || null,
+          // Add contact counts
+          contacts_count: totalContacts,
+          valid_contacts_count: validContacts.length,
+          district_contacts: district.contacts.map(contact => ({
+            id: contact.id,
+            first_name: contact.firstName,
+            last_name: contact.lastName,
+            email: contact.email,
+            phone: contact.phone,
+            status: contact.status,
+            title: contact.title
+          }))
+        };
+      });
+
+      // Add additional debug info
+      if (formattedDistricts && formattedDistricts.length > 0) {
+        console.log(`Found ${formattedDistricts.length} districts${campaignId ? ` for campaign ${campaignId}` : ''}`)
+        console.log('Sample district data:', {
+          id: formattedDistricts[0].id,
+          name: formattedDistricts[0].district_name,
+          campaign_id: formattedDistricts[0].campaign_id,
+          contact_count: formattedDistricts[0].contacts_count,
+          valid_contact_count: formattedDistricts[0].valid_contacts_count
+        })
       } else {
-        console.log(`Campaign districts API: Found campaign: ${campaign?.name || 'Unknown'} (${campaign?.id || 'No ID'}) - Company: ${campaign?.company}`)
+        console.log(`Found ${formattedDistricts?.length || 0} districts${campaignId ? ` for campaign ${campaignId}` : ''}`)
       }
       
-      // Debug query - check if any districts have this campaign_id
-      const { count: districtCount, error: countError } = await supabaseAdmin
-        .from('district_leads')
-        .select('*', { count: 'exact', head: true })
-        .eq('campaign_id', campaignId)
-        
-      if (countError) {
-        console.error(`Campaign districts API: Error counting districts with campaign_id ${campaignId}:`, countError)
-      } else {
-        console.log(`Campaign districts API: Found ${districtCount || 0} districts with campaign_id ${campaignId}`)
-      }
-    }
-
-    // Build query
-    let query = supabaseAdmin
-      .from('district_leads')
-      .select(`
-        *,
-        district_contacts(id, first_name, last_name, email, phone, status, title)
-      `)
-    
-    // Apply campaign filter if provided
-    if (campaignId) {
-      query = query.eq('campaign_id', campaignId)
-      console.log(`Campaign districts API: Filtering by campaign_id: ${campaignId}`)
-    } else {
-      // If no campaign ID, filter by company
-      query = query.eq('company', 'Avalern')
-    }
-    
-    // Apply other filters if provided
-    if (status) {
-      query = query.eq('status', status)
-    }
-    
-    if (county) {
-      query = query.eq('county', county)
-    }
-    
-    if (searchTerm) {
-      query = query.or(`district_name.ilike.%${searchTerm}%,county.ilike.%${searchTerm}%`)
-    }
-
-    // Execute the query with ordering
-    const { data, error } = await query.order('district_name', { ascending: true })
-
-    if (error) {
-      console.error('Error fetching districts:', error)
+      return NextResponse.json({
+        districts: formattedDistricts || [],
+        count: formattedDistricts?.length || 0
+      })
+    } catch (error) {
+      console.error('Error fetching districts with Prisma:', error)
       return NextResponse.json(
-        { error: 'Failed to fetch districts', details: error.message },
+        { error: 'Failed to fetch districts', details: error instanceof Error ? error.message : 'Unknown error' },
         { status: 500 }
       )
     }
-
-    // Add additional debug info
-    if (data && data.length > 0) {
-      console.log(`Found ${data.length} districts${campaignId ? ` for campaign ${campaignId}` : ''}`)
-      console.log('Sample district data:', {
-        id: data[0].id,
-        name: data[0].district_name,
-        campaign_id: data[0].campaign_id,
-        contact_count: data[0].district_contacts?.length || 0
-      })
-    } else {
-      console.log(`Found ${data?.length || 0} districts${campaignId ? ` for campaign ${campaignId}` : ''}`)
-      
-      // If no districts found with campaign_id, check if any exist at all
-      if (campaignId) {
-        const { data: allDistricts, error: allError } = await supabaseAdmin
-          .from('district_leads')
-          .select('id, district_name, campaign_id', { count: 'exact' })
-          .limit(5)
-          
-        if (allError) {
-          console.error('Error checking for any districts:', allError)
-        } else {
-          console.log(`Found ${allDistricts?.length || 0} sample districts in the database:`, 
-            allDistricts?.map(d => ({ id: d.id, name: d.district_name, campaign_id: d.campaign_id })) || []
-          )
-        }
-      }
-    }
-    
-    return NextResponse.json({
-      districts: data || [],
-      count: data?.length || 0
-    })
-    
   } catch (error) {
     console.error('Error in campaign districts API:', error)
     return NextResponse.json(

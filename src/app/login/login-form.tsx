@@ -118,10 +118,10 @@ export default function LoginForm() {
           Demo credentials:
         </p>
         <p className="text-gray-600">
-          Admin: admin@example.com / adminpassword
+          Admins: admin@example.com, sarah.admin@example.com, mike.admin@example.com / adminpassword
         </p>
         <p className="text-gray-600">
-          Member: member@example.com / memberpassword
+          Members: member@example.com, lisa.member@example.com / memberpassword
         </p>
       </div>
     </div>

@@ -231,20 +231,8 @@ export function validateDistrictData(data: ProcessedDistrictData[]): {
         }
       }
 
-      // Check for phone duplicates (if phone exists)
-      if (phoneKey && phoneKey.length >= 10) {
-        const phoneDupKey = `phone:${phoneKey}`
-        if (allContactsMap.has(phoneDupKey)) {
-          const existing = allContactsMap.get(phoneDupKey)!
-          contactDuplicates.push({
-            district: district.districtName,
-            contact,
-            duplicateOf: existing
-          })
-        } else {
-          allContactsMap.set(phoneDupKey, { district: district.districtName, contact })
-        }
-      }
+      // Note: Removed phone duplicate checking - only email duplicates are flagged
+      // Multiple contacts can have the same phone number
     })
   })
 
@@ -282,13 +270,8 @@ export function validateDistrictData(data: ProcessedDistrictData[]): {
         contactErrors.push(`Contact ${index + 1}: Title is required`)
       }
       
-      // Require either email OR phone (not both)
-      const hasValidEmail = contact.email && contact.email.trim().length > 0
-      const hasValidPhone = contact.phone && contact.phone.trim().length > 0
-      
-      if (!hasValidEmail && !hasValidPhone) {
-        contactErrors.push(`Contact ${index + 1}: Either email or phone number is required`)
-      }
+      // Note: Both email and phone can be empty - no strict requirements
+      // Phone number format is not strictly validated - any non-empty value is accepted
 
       // If contact has no errors, it's valid
       if (contactErrors.length === 0) {

@@ -1,7 +1,7 @@
 'use client'
 
-import React from 'react'
-import { Calendar, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Calendar, CheckCircle } from 'lucide-react';
+import { useState } from 'react';
 
 interface CampaignTouchpointsTabProps {
   campaignTouchpoints: any[]
@@ -15,11 +15,14 @@ interface CampaignTouchpointsTabProps {
   setTouchpointDateFromFilter: (filter: string) => void
   touchpointDateToFilter: string
   setTouchpointDateToFilter: (filter: string) => void
+  touchpointCreatorFilter?: string
+  setTouchpointCreatorFilter?: (filter: string) => void
+  users?: Array<{ id: string, email: string, first_name?: string, last_name?: string }>
   // Pagination props
   currentPage: number
   setCurrentPage: (page: number) => void
   itemsPerPage: number
-  setItemsPerPage: (itemsPerPage: number) => void
+  setItemsPerPage: (count: number) => void
   totalPages: number
 }
 
@@ -35,6 +38,9 @@ export default function CampaignTouchpointsTab({
   setTouchpointDateFromFilter,
   touchpointDateToFilter,
   setTouchpointDateToFilter,
+  touchpointCreatorFilter = '',
+  setTouchpointCreatorFilter = () => {},
+  users = [],
   // Pagination props
   currentPage,
   setCurrentPage,
@@ -43,135 +49,132 @@ export default function CampaignTouchpointsTab({
   totalPages
 }: CampaignTouchpointsTabProps) {
   
-  // Function to get current page items
+  // Function to get items for current page
   const getCurrentPageItems = () => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return filteredCampaignTouchpoints.slice(startIndex, endIndex);
   };
-
-  // Function to handle page change
-  const handlePageChange = (page: number) => {
-    if (page < 1 || page > totalPages) return;
-    setCurrentPage(page);
-  };
   
+  // Add the creator filter to the filters section
+  const renderFilters = () => (
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-6">
+      <div className="px-6 py-4 border-b border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+      </div>
+      <div className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {/* Type Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+            <select
+              value={touchpointTypeFilter}
+              onChange={(e) => setTouchpointTypeFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            >
+              <option value="">All Types</option>
+              <option value="email">Email</option>
+              <option value="call">Call</option>
+              <option value="linkedin_message">LinkedIn Message</option>
+            </select>
+          </div>
+          
+          {/* Status Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <select
+              value={touchpointOutcomeFilter}
+              onChange={(e) => setTouchpointOutcomeFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            >
+              <option value="">All Status</option>
+              <option value="completed">Completed</option>
+              <option value="scheduled">Scheduled</option>
+            </select>
+          </div>
+          
+          {/* Date Range Filters */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+            <input
+              type="date"
+              value={touchpointDateFromFilter}
+              onChange={(e) => setTouchpointDateFromFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+            <input
+              type="date"
+              value={touchpointDateToFilter}
+              onChange={(e) => setTouchpointDateToFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          
+          {/* Creator Filter */}
+          {users.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Created By</label>
+              <select
+                value={touchpointCreatorFilter}
+                onChange={(e) => setTouchpointCreatorFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              >
+                <option value="">All Users</option>
+                {users.map(user => (
+                  <option key={user.id} value={user.id}>
+                    {user.first_name && user.last_name 
+                      ? `${user.first_name} ${user.last_name}` 
+                      : user.email}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+        
+        {/* Clear Filters Button */}
+        <div className="mt-4 flex justify-end">
+          <button
+            onClick={() => {
+              setTouchpointTypeFilter('');
+              setTouchpointOutcomeFilter('');
+              setTouchpointDateFromFilter('');
+              setTouchpointDateToFilter('');
+              if (setTouchpointCreatorFilter) setTouchpointCreatorFilter('');
+            }}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+          >
+            Clear Filters
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="p-6">
-      <div className="space-y-6">
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-4">Filter Touchpoints</h4>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Type</label>
-              <select
-                value={touchpointTypeFilter}
-                onChange={(e) => setTouchpointTypeFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-              >
-                <option value="">All Types</option>
-                <option value="email">Email</option>
-                <option value="call">Call</option>
-                <option value="linkedin_message">LinkedIn Message</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
-              <select
-                value={touchpointOutcomeFilter}
-                onChange={(e) => setTouchpointOutcomeFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-              >
-                <option value="">All Statuses</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="completed">Completed</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">From Date</label>
-              <input
-                type="date"
-                value={touchpointDateFromFilter}
-                onChange={(e) => setTouchpointDateFromFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">To Date</label>
-              <input
-                type="date"
-                value={touchpointDateToFilter}
-                onChange={(e) => setTouchpointDateToFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-              />
-            </div>
-          </div>
+    <>
+      {renderFilters()}
+      
+      {/* Touchpoints Table */}
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Touchpoints ({filteredCampaignTouchpoints.length} of {campaignTouchpoints.length})
+          </h3>
         </div>
 
-        {/* Touchpoint Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <p className="text-sm text-gray-600 mb-1">Total Touchpoints</p>
-            <p className="text-2xl font-bold text-gray-900">{campaignTouchpoints.length}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <p className="text-sm text-gray-600 mb-1">Scheduled</p>
-            <p className="text-2xl font-bold text-blue-600">
-              {campaignTouchpoints.filter(tp => !tp.completed_at).length}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <p className="text-sm text-gray-600 mb-1">Completed</p>
-            <p className="text-2xl font-bold text-green-600">
-              {campaignTouchpoints.filter(tp => tp.completed_at).length}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <p className="text-sm text-gray-600 mb-1">Upcoming (7 days)</p>
-            <p className="text-2xl font-bold text-purple-600">
-              {campaignTouchpoints.filter(tp => {
-                if (!tp.scheduled_at || tp.completed_at) return false;
-                const scheduled = new Date(tp.scheduled_at);
-                const now = new Date();
-                const sevenDaysLater = new Date();
-                sevenDaysLater.setDate(now.getDate() + 7);
-                return scheduled >= now && scheduled <= sevenDaysLater;
-              }).length}
-            </p>
-          </div>
-        </div>
-
-        {/* Touchpoints List */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-gray-900">Touchpoint Schedule</h3>
-            <div className="flex items-center space-x-2">
-              <select
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value));
-                  setCurrentPage(1); // Reset to first page when changing items per page
-                }}
-                className="px-2 py-1 border border-gray-300 rounded text-sm"
-              >
-                <option value="5">5 per page</option>
-                <option value="10">10 per page</option>
-                <option value="20">20 per page</option>
-                <option value="50">50 per page</option>
-              </select>
-              <span className="text-sm text-gray-500">
-                {filteredCampaignTouchpoints?.length || 0} touchpoints
-              </span>
+        <div className="p-6">
+          {loadingTouchpoints ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-3 text-gray-600">Loading touchpoints...</span>
             </div>
-          </div>
-          <div className="p-6">
-            {loadingTouchpoints ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <span className="ml-3 text-gray-600">Loading touchpoints...</span>
-              </div>
-            ) : campaignTouchpoints.length === 0 ? (
+          ) : filteredCampaignTouchpoints.length === 0 ? (
+            campaignTouchpoints.length === 0 ? (
               <div className="text-center py-8">
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No touchpoints found</h3>
                 <p className="text-gray-500 mb-4">
@@ -181,208 +184,123 @@ export default function CampaignTouchpointsTab({
                   Touchpoints are created automatically when you add leads or district contacts to a campaign with an outreach sequence.
                 </p>
               </div>
-            ) : filteredCampaignTouchpoints.length === 0 ? (
+            ) : (
               <div className="text-center py-8">
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No matching touchpoints</h3>
                 <p className="text-gray-500 mb-4">
                   No touchpoints match your current filters. Try adjusting your search criteria.
                 </p>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {getCurrentPageItems().map((touchpoint) => {
-                  // Handle different data structures for CraftyCode vs Avalern
-                  const contact = touchpoint.lead || touchpoint.district_contact || touchpoint.contact
-                  const contactEmail = contact?.email
-                  const isScheduled = !touchpoint.completed_at
-                  const isPast = touchpoint.scheduled_at && new Date(touchpoint.scheduled_at) < new Date()
-                  
-                  return (
-                    <div 
-                      key={touchpoint.id} 
-                      className={`flex items-center justify-between p-4 rounded-lg transition-colors ${
-                        isScheduled 
-                          ? isPast 
-                            ? 'bg-amber-50 border border-amber-200' 
-                            : 'bg-blue-50 border border-blue-200'
-                          : 'bg-green-50 border border-green-200'
-                      }`}
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            touchpoint.type === 'email' ? 'bg-blue-100 text-blue-800' :
-                            touchpoint.type === 'call' ? 'bg-green-100 text-green-800' :
-                            touchpoint.type === 'linkedin_message' ? 'bg-purple-100 text-purple-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {touchpoint.type?.replace('_', ' ').toUpperCase() || 'UNKNOWN'}
-                          </span>
-                          <span className="font-medium">
-                            {contact?.first_name} {contact?.last_name}
-                          </span>
-                          {touchpoint.district_contact && touchpoint.district_contact.district_lead && (
-                            <span className="text-xs text-gray-500">
-                              ({touchpoint.district_contact.district_lead.district_name})
-                            </span>
-                          )}
-                        </div>
-                        {touchpoint.subject && (
-                          <p className="text-sm font-medium text-gray-700 mt-1">{touchpoint.subject}</p>
-                        )}
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
-                          {contactEmail && (
-                            <p className="text-xs text-gray-500">{contactEmail}</p>
-                          )}
-                          {touchpoint.scheduled_at && (
-                            <p className="text-xs text-gray-500 flex items-center">
-                              <Calendar className="h-3 w-3 mr-1" />
-                              Scheduled: {new Date(touchpoint.scheduled_at).toLocaleDateString()} {new Date(touchpoint.scheduled_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                            </p>
-                          )}
-                          {touchpoint.completed_at && (
-                            <p className="text-xs text-gray-500 flex items-center">
-                              <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
-                              Completed: {new Date(touchpoint.completed_at).toLocaleDateString()}
-                            </p>
-                          )}
-                        </div>
-                        {touchpoint.content && (
-                          <p className="text-sm text-gray-600 mt-2 line-clamp-2">
-                            {touchpoint.content.substring(0, 100)}{touchpoint.content.length > 100 ? '...' : ''}
-                          </p>
-                        )}
-                        {touchpoint.outcome && (
-                          <p className="text-sm text-gray-600 mt-1 flex items-center">
-                            <span className="font-medium mr-1">Outcome:</span> 
-                            <span className={`${
-                              touchpoint.outcome.toLowerCase().includes('positive') ? 'text-green-600' :
-                              touchpoint.outcome.toLowerCase().includes('negative') ? 'text-red-600' :
-                              'text-gray-600'
-                            }`}>{touchpoint.outcome}</span>
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex-shrink-0 ml-4">
-                        <div className={`w-3 h-3 rounded-full ${
-                          isScheduled
-                            ? isPast
-                              ? 'bg-amber-500'
-                              : 'bg-blue-500'
-                            : 'bg-green-500'
-                        }`}></div>
-                      </div>
-                    </div>
-                  )
-                })}
+            )
+          ) : (
+            <div className="space-y-4">
+              {getCurrentPageItems().map((touchpoint) => {
+                // Handle different data structures for CraftyCode vs Avalern
+                const contact = touchpoint.lead || touchpoint.district_contact || touchpoint.contact
+                const contactEmail = contact?.email
+                const isScheduled = !touchpoint.completed_at
+                const isPast = touchpoint.scheduled_at && new Date(touchpoint.scheduled_at) < new Date()
                 
-                {/* Pagination Controls */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6 mt-4">
-                    <div className="flex flex-1 justify-between sm:hidden">
-                      <button
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Previous
-                      </button>
-                      <button
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Next
-                      </button>
-                    </div>
-                    <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                      <div>
-                        <p className="text-sm text-gray-700">
-                          Showing <span className="font-medium">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredCampaignTouchpoints.length)}</span> to{' '}
-                          <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredCampaignTouchpoints.length)}</span> of{' '}
-                          <span className="font-medium">{filteredCampaignTouchpoints.length}</span> results
+                return (
+                  <div 
+                    key={touchpoint.id} 
+                    className={`flex items-center justify-between p-4 rounded-lg transition-colors ${
+                      isScheduled 
+                        ? isPast 
+                          ? 'bg-amber-50 border border-amber-200' 
+                          : 'bg-blue-50 border border-blue-200'
+                        : 'bg-green-50 border border-green-200'
+                    }`}
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          touchpoint.type === 'email' ? 'bg-blue-100 text-blue-800' :
+                          touchpoint.type === 'call' ? 'bg-green-100 text-green-800' :
+                          touchpoint.type === 'linkedin_message' ? 'bg-purple-100 text-purple-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {touchpoint.type?.replace('_', ' ').toUpperCase() || 'UNKNOWN'}
+                        </span>
+                        <span className="font-medium">
+                          {contact?.first_name} {contact?.last_name}
+                        </span>
+                        {touchpoint.district_contact && touchpoint.district_contact.district_lead && (
+                          <span className="text-xs text-gray-500">
+                            ({touchpoint.district_contact.district_lead.district_name})
+                          </span>
+                        )}
+                        
+                        {/* Show creator if available */}
+                        {touchpoint.created_by && (
+                          <span className="text-xs text-gray-500">
+                            Created by: {touchpoint.created_by.first_name && touchpoint.created_by.last_name
+                              ? `${touchpoint.created_by.first_name} ${touchpoint.created_by.last_name}`
+                              : touchpoint.created_by.email}
+                          </span>
+                        )}
+                      </div>
+                      {touchpoint.subject && (
+                        <p className="text-sm font-medium text-gray-700 mt-1">{touchpoint.subject}</p>
+                      )}
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
+                        {contactEmail && (
+                          <p className="text-xs text-gray-500">{contactEmail}</p>
+                        )}
+                        {touchpoint.scheduled_at && (
+                          <p className="text-xs text-gray-500 flex items-center">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            Scheduled: {new Date(touchpoint.scheduled_at).toLocaleDateString()} {new Date(touchpoint.scheduled_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </p>
+                        )}
+                        {touchpoint.completed_at && (
+                          <p className="text-xs text-gray-500 flex items-center">
+                            <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
+                            Completed: {new Date(touchpoint.completed_at).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                      {touchpoint.content && (
+                        <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                          {touchpoint.content.substring(0, 100)}{touchpoint.content.length > 100 ? '...' : ''}
                         </p>
-                      </div>
-                      <div>
-                        <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                          <button
-                            onClick={() => handlePageChange(1)}
-                            disabled={currentPage === 1}
-                            className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <span className="sr-only">First</span>
-                            <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-                            <ChevronLeft className="h-5 w-5 -ml-2" aria-hidden="true" />
-                          </button>
-                          <button
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                            className="relative inline-flex items-center px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <span className="sr-only">Previous</span>
-                            <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-                          </button>
-                          
-                          {/* Page numbers */}
-                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            // Show pages around the current page
-                            let pageNum;
-                            if (totalPages <= 5) {
-                              // If 5 or fewer pages, show all
-                              pageNum = i + 1;
-                            } else if (currentPage <= 3) {
-                              // If near the start
-                              pageNum = i + 1;
-                            } else if (currentPage >= totalPages - 2) {
-                              // If near the end
-                              pageNum = totalPages - 4 + i;
-                            } else {
-                              // In the middle
-                              pageNum = currentPage - 2 + i;
-                            }
-                            
-                            return (
-                              <button
-                                key={pageNum}
-                                onClick={() => handlePageChange(pageNum)}
-                                className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                                  currentPage === pageNum
-                                    ? 'bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
-                                    : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
-                                }`}
-                              >
-                                {pageNum}
-                              </button>
-                            );
-                          })}
-                          
-                          <button
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                            className="relative inline-flex items-center px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <span className="sr-only">Next</span>
-                            <ChevronRight className="h-5 w-5" aria-hidden="true" />
-                          </button>
-                          <button
-                            onClick={() => handlePageChange(totalPages)}
-                            disabled={currentPage === totalPages}
-                            className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <span className="sr-only">Last</span>
-                            <ChevronRight className="h-5 w-5" aria-hidden="true" />
-                            <ChevronRight className="h-5 w-5 -ml-2" aria-hidden="true" />
-                          </button>
-                        </nav>
-                      </div>
+                      )}
                     </div>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
+                );
+              })}
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
+                  <div className="text-sm text-gray-600">
+                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredCampaignTouchpoints.length)} of {filteredCampaignTouchpoints.length}
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 border border-gray-300 rounded-md text-sm disabled:opacity-50"
+                    >
+                      Previous
+                    </button>
+                    <span className="px-3 py-1 text-sm">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1 border border-gray-300 rounded-md text-sm disabled:opacity-50"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
-    </div>
-  )
+    </>
+  );
 }

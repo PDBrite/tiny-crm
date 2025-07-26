@@ -44,16 +44,25 @@ enum CampaignStatusType {
   paused
 }
 
+enum UserRoleType {
+  admin
+  member
+}
+
 // Models
 model User {
-  id           String             @id @default(uuid())
-  email        String             @unique
-  passwordHash String             @map("password_hash")
-  firstName    String?            @map("first_name")
-  lastName     String?            @map("last_name")
-  role         String             @default("user")
-  createdAt    DateTime           @default(now()) @map("created_at")
-  companyAccess UserCompanyAccess[]
+  id                 String                @id @default(uuid())
+  email              String                @unique
+  passwordHash       String                @map("password_hash")
+  firstName          String?               @map("first_name")
+  lastName           String?               @map("last_name")
+  role               UserRoleType          @default(member)
+  createdAt          DateTime              @default(now()) @map("created_at")
+  companyAccess      UserCompanyAccess[]
+  leadAssignments    UserLeadAssignment[]
+  districtAssignments UserDistrictAssignment[]
+  campaigns          Campaign[]
+  touchpoints        Touchpoint[]
 
   @@map("app_users")
 }
@@ -77,12 +86,14 @@ model Campaign {
   startDate          DateTime?           @map("start_date")
   endDate            DateTime?           @map("end_date")
   createdAt          DateTime            @default(now()) @map("created_at")
+  createdById        String?             @map("created_by_id")
   outreachSequenceId String?             @map("outreach_sequence_id")
   instantlyCampaignId String?            @map("instantly_campaign_id")
   status             CampaignStatusType  @default(draft)
   outreachSequence   OutreachSequence?   @relation(fields: [outreachSequenceId], references: [id])
   leads              Lead[]
   districtContacts   DistrictContact[]
+  createdBy          User?               @relation(fields: [createdById], references: [id])
 
   @@map("campaigns")
 }
@@ -107,6 +118,7 @@ model Lead {
   lastContactedAt DateTime?      @map("last_contacted_at")
   campaign        Campaign?      @relation(fields: [campaignId], references: [id])
   touchpoints     Touchpoint[]
+  userAssignments UserLeadAssignment[]
 
   @@map("leads")
 }
@@ -124,6 +136,7 @@ model District {
   createdAt    DateTime          @default(now()) @map("created_at")
   updatedAt    DateTime          @default(now()) @map("updated_at")
   contacts     DistrictContact[]
+  userAssignments UserDistrictAssignment[]
 
   @@unique([name, county, state])
   @@map("districts")
@@ -194,8 +207,34 @@ model Touchpoint {
   outcome           String?
   outcomeEnum       TouchpointOutcome? @map("outcome_enum")
   createdAt         DateTime           @default(now()) @map("created_at")
+  createdById       String?            @map("created_by_id")
   lead              Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
   districtContact   DistrictContact?   @relation(fields: [districtContactId], references: [id], onDelete: SetNull)
+  createdBy         User?              @relation(fields: [createdById], references: [id])
 
   @@map("touchpoints")
+}
+
+model UserLeadAssignment {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  leadId    String   @map("lead_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, leadId])
+  @@map("user_lead_assignments")
+}
+
+model UserDistrictAssignment {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  districtId  String   @map("district_id")
+  assignedAt  DateTime @default(now()) @map("assigned_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  district    District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, districtId])
+  @@map("user_district_assignments")
 } 

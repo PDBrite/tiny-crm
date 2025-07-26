@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { prisma } from '@/lib/prisma'
 import { scheduleTouchpointsForLead } from '@/utils/outreach-scheduler'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
+import { TouchpointType } from '@prisma/client'
+import { OutreachStep } from '@/types/leads'
 
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions)
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { campaign_id, district_ids } = await request.json()
 
     if (!campaign_id || !district_ids || !Array.isArray(district_ids)) {
@@ -13,95 +23,90 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!supabaseAdmin) {
-      console.error('supabaseAdmin client is not available')
-      return NextResponse.json(
-        { error: 'Database client unavailable' },
-        { status: 500 }
-      )
-    }
-
     // Get campaign information including outreach sequence
-    const { data: campaign, error: campaignError } = await supabaseAdmin
-      .from('campaigns')
-      .select(`
-        *,
-        outreach_sequence:outreach_sequences(
-          *,
-          steps:outreach_steps(*)
-        )
-      `)
-      .eq('id', campaign_id)
-      .single()
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaign_id },
+      include: {
+        outreachSequence: {
+          include: {
+            steps: {
+              orderBy: {
+                stepOrder: 'asc'
+              }
+            }
+          }
+        }
+      }
+    })
 
-    if (campaignError) {
-      console.error('Error fetching campaign:', campaignError)
+    if (!campaign) {
       return NextResponse.json(
-        { error: 'Failed to fetch campaign details', details: campaignError.message },
-        { status: 500 }
+        { error: 'Campaign not found' },
+        { status: 404 }
       )
     }
 
-    // Update district_leads to associate them with the campaign
-    const { data: updatedDistricts, error: updateError } = await supabaseAdmin
-      .from('district_leads')
-      .update({ 
-        campaign_id: campaign_id,
-        status: 'actively_contacting' 
-      })
-      .in('id', district_ids)
-      .select()
-
-    if (updateError) {
-      console.error('Error assigning districts to campaign:', updateError)
-      return NextResponse.json(
-        { error: 'Failed to assign districts to campaign', details: updateError.message },
-        { status: 500 }
+    // Update districts to associate them with the campaign
+    const updateResult = await prisma.$transaction(
+      district_ids.map(districtId => 
+        prisma.district.update({
+          where: { id: districtId },
+          data: { 
+            // We don't have a status field in the District model, so we're just updating the campaign
+            // If you need to update status, you'd need to update the related DistrictContact records
+          }
+        })
       )
-    }
+    )
 
     // Fetch all district contacts for these districts
-    const { data: districtContacts, error: contactsError } = await supabaseAdmin
-      .from('district_contacts')
-      .select('id, first_name, last_name, email, phone, district_lead_id')
-      .in('district_lead_id', district_ids)
+    const districtContacts = await prisma.districtContact.findMany({
+      where: {
+        districtId: { in: district_ids }
+      },
+      include: {
+        district: true
+      }
+    })
 
-    if (contactsError) {
-      console.error('Error fetching district contacts:', contactsError)
-      return NextResponse.json({
-        success: true,
-        message: 'Districts assigned to campaign successfully, but failed to fetch contacts',
-        data: updatedDistricts,
-        contacts_error: contactsError.message
-      })
-    }
+    // Update district contacts to associate them with the campaign
+    const updatedContacts = await prisma.$transaction(
+      districtContacts.map(contact => 
+        prisma.districtContact.update({
+          where: { id: contact.id },
+          data: { 
+            campaignId: campaign_id,
+            status: 'actively_contacting'
+          }
+        })
+      )
+    )
 
     // If the campaign has an outreach sequence, create touchpoints for the contacts
-    let touchpointsCreated = 0;
-    if (campaign.outreach_sequence && campaign.outreach_sequence.steps && districtContacts && districtContacts.length > 0) {
-      const campaignStartDate = new Date(campaign.start_date || campaign.created_at);
-      const outreachSteps = campaign.outreach_sequence.steps;
-      const touchpointsToCreate = [];
+    let touchpointsCreated = 0
+    if (campaign.outreachSequence?.steps && districtContacts.length > 0) {
+      const campaignStartDate = new Date(campaign.startDate || campaign.createdAt)
       
-      // Get district information for each contact
-      const districtLeadIds = [...new Set(districtContacts.map(contact => contact.district_lead_id))];
-      const { data: districts } = await supabaseAdmin
-        .from('district_leads')
-        .select('id, district_name')
-        .in('id', districtLeadIds);
+      // Convert Prisma steps to OutreachStep format expected by the scheduler
+      const outreachSteps: OutreachStep[] = campaign.outreachSequence.steps.map(step => ({
+        id: step.id,
+        sequence_id: step.sequenceId,
+        step_order: step.stepOrder,
+        type: step.type,
+        name: step.name || undefined,
+        content_link: step.contentLink || undefined,
+        day_offset: step.dayOffset,
+        days_after_previous: step.daysAfterPrevious || undefined,
+        created_at: step.createdAt.toISOString(),
+        updated_at: step.updatedAt.toISOString()
+      }))
       
-      // Create a map of district_lead_id to district_name
-      const districtNameMap = new Map();
-      if (districts) {
-        districts.forEach(district => {
-          districtNameMap.set(district.id, district.district_name);
-        });
-      }
+      const touchpointsToCreate = []
       
       // Create touchpoints for each contact
       for (const contact of districtContacts) {
         // Get district name to use as company name
-        const districtName = districtNameMap.get(contact.district_lead_id) || '';
+        const districtName = contact.district?.name || ''
         
         // Schedule touchpoints for this contact
         const scheduledTouchpoints = scheduleTouchpointsForLead(
@@ -109,44 +114,53 @@ export async function POST(request: NextRequest) {
           campaignStartDate,
           outreachSteps,
           {
-            first_name: contact.first_name,
-            last_name: contact.last_name,
+            first_name: contact.firstName,
+            last_name: contact.lastName,
             company: districtName,
             city: ''
           }
-        );
+        )
         
         // Filter touchpoints based on available contact methods
         const filteredTouchpoints = scheduledTouchpoints.filter(tp => {
           // Only schedule email touchpoints if contact has email
           if (tp.type === 'email') {
-            return contact.email && contact.email.trim().length > 0;
+            return contact.email && contact.email.trim().length > 0
           }
           // Only schedule call touchpoints if contact has phone
           if (tp.type === 'call') {
-            return contact.phone && contact.phone.trim().length > 0;
+            return contact.phone && contact.phone.trim().length > 0
           }
           // LinkedIn messages don't require email or phone
-          return true;
-        });
+          return true
+        })
         
-        touchpointsToCreate.push(...filteredTouchpoints);
+        touchpointsToCreate.push(...filteredTouchpoints)
       }
       
       // Insert touchpoints in batches to avoid timeouts
       if (touchpointsToCreate.length > 0) {
-        const BATCH_SIZE = 50;
+        const BATCH_SIZE = 50
         for (let i = 0; i < touchpointsToCreate.length; i += BATCH_SIZE) {
-          const batch = touchpointsToCreate.slice(i, i + BATCH_SIZE);
-          const { data, error: insertError } = await supabaseAdmin
-            .from('touchpoints')
-            .insert(batch)
-            .select();
+          const batch = touchpointsToCreate.slice(i, i + BATCH_SIZE)
           
-          if (insertError) {
-            console.error(`Error inserting touchpoints batch ${Math.floor(i/BATCH_SIZE) + 1}:`, insertError);
-          } else {
-            touchpointsCreated += data?.length || 0;
+          try {
+            const createdTouchpoints = await prisma.touchpoint.createMany({
+              data: batch.map(tp => ({
+                leadId: tp.lead_id,
+                districtContactId: tp.district_contact_id,
+                type: tp.type as TouchpointType,
+                subject: tp.subject || null,
+                content: tp.content || null,
+                scheduledAt: tp.scheduled_at ? new Date(tp.scheduled_at) : null,
+                completedAt: null,
+                outcome: null
+              }))
+            })
+            
+            touchpointsCreated += createdTouchpoints.count
+          } catch (batchError) {
+            console.error(`Error inserting touchpoints batch ${Math.floor(i/BATCH_SIZE) + 1}:`, batchError)
           }
         }
       }
@@ -155,9 +169,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       message: 'Districts assigned to campaign successfully',
-      data: updatedDistricts,
+      data: updateResult,
       contacts: districtContacts,
-      contacts_count: districtContacts?.length || 0,
+      contacts_count: districtContacts.length,
       touchpoints_created: touchpointsCreated
     })
 

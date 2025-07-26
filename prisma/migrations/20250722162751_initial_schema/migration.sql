@@ -13,6 +13,9 @@ CREATE TYPE "LeadStatusType" AS ENUM ('not_contacted', 'actively_contacting', 'e
 -- CreateEnum
 CREATE TYPE "CampaignStatusType" AS ENUM ('active', 'completed', 'draft', 'paused');
 
+-- CreateEnum
+CREATE TYPE "UserRoleType" AS ENUM ('admin', 'member');
+
 -- CreateTable
 CREATE TABLE "app_users" (
     "id" TEXT NOT NULL,
@@ -20,7 +23,7 @@ CREATE TABLE "app_users" (
     "password_hash" TEXT NOT NULL,
     "first_name" TEXT,
     "last_name" TEXT,
-    "role" TEXT NOT NULL DEFAULT 'user',
+    "role" "UserRoleType" NOT NULL DEFAULT 'member',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "app_users_pkey" PRIMARY KEY ("id")
@@ -45,6 +48,7 @@ CREATE TABLE "campaigns" (
     "start_date" TIMESTAMP(3),
     "end_date" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_by_id" TEXT,
     "outreach_sequence_id" TEXT,
     "instantly_campaign_id" TEXT,
     "status" "CampaignStatusType" NOT NULL DEFAULT 'draft',
@@ -93,33 +97,20 @@ CREATE TABLE "districts" (
 );
 
 -- CreateTable
-CREATE TABLE "district_leads" (
-    "id" TEXT NOT NULL,
-    "district_name" TEXT NOT NULL,
-    "county" TEXT NOT NULL,
-    "company" "CompanyType" NOT NULL,
-    "status" "LeadStatusType" NOT NULL DEFAULT 'not_contacted',
-    "notes" TEXT,
-    "campaign_id" TEXT,
-    "district_id" TEXT,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "last_contacted_at" TIMESTAMP(3),
-
-    CONSTRAINT "district_leads_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "district_contacts" (
     "id" TEXT NOT NULL,
-    "district_lead_id" TEXT NOT NULL,
+    "district_id" TEXT NOT NULL,
     "first_name" TEXT NOT NULL,
     "last_name" TEXT NOT NULL,
     "title" TEXT,
     "email" TEXT,
     "phone" TEXT,
     "linkedin_url" TEXT,
-    "status" TEXT NOT NULL DEFAULT 'Valid',
+    "status" "LeadStatusType" NOT NULL DEFAULT 'not_contacted',
+    "notes" TEXT,
+    "campaign_id" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "last_contacted_at" TIMESTAMP(3),
     "state" TEXT NOT NULL DEFAULT 'California',
 
     CONSTRAINT "district_contacts_pkey" PRIMARY KEY ("id")
@@ -166,8 +157,29 @@ CREATE TABLE "touchpoints" (
     "outcome" TEXT,
     "outcome_enum" "TouchpointOutcome",
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_by_id" TEXT,
 
     CONSTRAINT "touchpoints_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "user_lead_assignments" (
+    "id" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "lead_id" TEXT NOT NULL,
+    "assigned_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "user_lead_assignments_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "user_district_assignments" (
+    "id" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "district_id" TEXT NOT NULL,
+    "assigned_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "user_district_assignments_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -183,10 +195,16 @@ CREATE UNIQUE INDEX "leads_email_key" ON "leads"("email");
 CREATE UNIQUE INDEX "districts_name_county_state_key" ON "districts"("name", "county", "state");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "district_leads_district_name_county_key" ON "district_leads"("district_name", "county");
+CREATE UNIQUE INDEX "district_contacts_district_id_email_key" ON "district_contacts"("district_id", "email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "outreach_steps_sequence_id_step_order_key" ON "outreach_steps"("sequence_id", "step_order");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "user_lead_assignments_user_id_lead_id_key" ON "user_lead_assignments"("user_id", "lead_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "user_district_assignments_user_id_district_id_key" ON "user_district_assignments"("user_id", "district_id");
 
 -- AddForeignKey
 ALTER TABLE "user_company_access" ADD CONSTRAINT "user_company_access_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "app_users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -195,16 +213,16 @@ ALTER TABLE "user_company_access" ADD CONSTRAINT "user_company_access_user_id_fk
 ALTER TABLE "campaigns" ADD CONSTRAINT "campaigns_outreach_sequence_id_fkey" FOREIGN KEY ("outreach_sequence_id") REFERENCES "outreach_sequences"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "campaigns" ADD CONSTRAINT "campaigns_created_by_id_fkey" FOREIGN KEY ("created_by_id") REFERENCES "app_users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "leads" ADD CONSTRAINT "leads_campaign_id_fkey" FOREIGN KEY ("campaign_id") REFERENCES "campaigns"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "district_leads" ADD CONSTRAINT "district_leads_campaign_id_fkey" FOREIGN KEY ("campaign_id") REFERENCES "campaigns"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "district_contacts" ADD CONSTRAINT "district_contacts_district_id_fkey" FOREIGN KEY ("district_id") REFERENCES "districts"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "district_leads" ADD CONSTRAINT "district_leads_district_id_fkey" FOREIGN KEY ("district_id") REFERENCES "districts"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "district_contacts" ADD CONSTRAINT "district_contacts_district_lead_id_fkey" FOREIGN KEY ("district_lead_id") REFERENCES "district_leads"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "district_contacts" ADD CONSTRAINT "district_contacts_campaign_id_fkey" FOREIGN KEY ("campaign_id") REFERENCES "campaigns"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "outreach_steps" ADD CONSTRAINT "outreach_steps_sequence_id_fkey" FOREIGN KEY ("sequence_id") REFERENCES "outreach_sequences"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -214,3 +232,18 @@ ALTER TABLE "touchpoints" ADD CONSTRAINT "touchpoints_lead_id_fkey" FOREIGN KEY 
 
 -- AddForeignKey
 ALTER TABLE "touchpoints" ADD CONSTRAINT "touchpoints_district_contact_id_fkey" FOREIGN KEY ("district_contact_id") REFERENCES "district_contacts"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "touchpoints" ADD CONSTRAINT "touchpoints_created_by_id_fkey" FOREIGN KEY ("created_by_id") REFERENCES "app_users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_lead_assignments" ADD CONSTRAINT "user_lead_assignments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "app_users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_lead_assignments" ADD CONSTRAINT "user_lead_assignments_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "leads"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_district_assignments" ADD CONSTRAINT "user_district_assignments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "app_users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_district_assignments" ADD CONSTRAINT "user_district_assignments_district_id_fkey" FOREIGN KEY ("district_id") REFERENCES "districts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
