@@ -24,6 +24,7 @@ export default function DistrictsPage() {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [countyFilter, setCountyFilter] = useState<string>('all')
+  const [stateFilter, setStateFilter] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [assignedOnly, setAssignedOnly] = useState(false)
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
@@ -90,6 +91,9 @@ export default function DistrictsPage() {
         if (countyFilter !== 'all') {
           params.append('county', countyFilter)
         }
+        if (stateFilter !== 'all') {
+          params.append('state', stateFilter)
+        }
         if (searchTerm) {
           params.append('search', searchTerm)
         }
@@ -143,7 +147,7 @@ export default function DistrictsPage() {
     } else {
       console.log('Not fetching districts because company is not Avalern:', selectedCompany)
     }
-  }, [selectedCompany, statusFilter, countyFilter, searchTerm, assignedOnly])
+  }, [selectedCompany, statusFilter, countyFilter, stateFilter, searchTerm, assignedOnly])
 
   // Fetch touchpoints for selected district
   const fetchDistrictTouchpoints = async (districtId: string) => {
@@ -210,18 +214,21 @@ export default function DistrictsPage() {
     }
   }
 
-  // Get unique counties for filter
+  // Get unique counties and states for filter
   const uniqueCounties = Array.from(new Set(districts.map(d => d.county))).filter(Boolean)
+  const uniqueStates = Array.from(new Set(districts.map(d => d.state))).filter(Boolean)
 
   // Filter districts
   const filteredDistricts = districts.filter(district => {
     const matchesStatus = statusFilter === 'all' || district.status === statusFilter
     const matchesCounty = countyFilter === 'all' || district.county === countyFilter
+    const matchesState = stateFilter === 'all' || district.state === stateFilter
     const matchesSearch = searchTerm === '' || 
       district.district_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      district.county.toLowerCase().includes(searchTerm.toLowerCase())
+      district.county.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      district.state.toLowerCase().includes(searchTerm.toLowerCase())
     
-    return matchesStatus && matchesCounty && matchesSearch
+    return matchesStatus && matchesCounty && matchesState && matchesSearch
   })
 
   // Pagination
@@ -647,6 +654,20 @@ export default function DistrictsPage() {
                       ))}
                     </select>
                   </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                    <select
+                      value={stateFilter}
+                      onChange={(e) => setStateFilter(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="all">All States</option>
+                      {uniqueStates.map(state => (
+                        <option key={state} value={state}>{state}</option>
+                      ))}
+                    </select>
+                  </div>
           
           <div className="flex items-center space-x-2">
             <input
@@ -688,10 +709,10 @@ export default function DistrictsPage() {
             )}
                           </div>
                           
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-600">
                             <div className="flex items-center space-x-1">
                               <MapPin className="h-4 w-4" />
-                              <span>{district.county} County</span>
+                              <span>{district.county} County, {district.state}</span>
                             </div>
                             <div className="flex items-center space-x-1">
                               <Users className="h-4 w-4" />
@@ -700,6 +721,10 @@ export default function DistrictsPage() {
                             <div className="flex items-center space-x-1">
                               <Mail className="h-4 w-4" />
                               <span>{district.valid_contacts_count} valid contacts</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Calendar className="h-4 w-4" />
+                              <span>{district.touchpoints_count || 0} touchpoints</span>
                             </div>
                           </div>
                           
@@ -1137,7 +1162,7 @@ export default function DistrictsPage() {
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center space-x-2">
                     <MapPin className="h-4 w-4 text-gray-400" />
-                    <span>{selectedDistrict.county} County</span>
+                    <span>{selectedDistrict.county} County, {selectedDistrict.state}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Users className="h-4 w-4 text-gray-400" />

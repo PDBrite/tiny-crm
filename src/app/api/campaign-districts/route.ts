@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     const searchTerm = url.searchParams.get('search')
     const status = url.searchParams.get('status')
     const county = url.searchParams.get('county')
+    const state = url.searchParams.get('state')
     const campaignId = url.searchParams.get('campaign_id')
     
     console.log('Campaign districts API: Query params:', { searchTerm, status, county, campaignId })
@@ -56,10 +57,12 @@ export async function GET(request: NextRequest) {
           ...(searchTerm ? {
             OR: [
               { name: { contains: searchTerm, mode: 'insensitive' } },
-              { county: { contains: searchTerm, mode: 'insensitive' } }
+              { county: { contains: searchTerm, mode: 'insensitive' } },
+              { state: { contains: searchTerm, mode: 'insensitive' } }
             ]
           } : {}),
-          ...(county ? { county } : {})
+          ...(county ? { county } : {}),
+          ...(state ? { state } : {})
         },
         include: {
           contacts: {
@@ -82,6 +85,24 @@ export async function GET(request: NextRequest) {
           contact.email && contact.email.trim() !== ''
         );
         
+        // Calculate district status based on contact statuses
+        const statusCounts = district.contacts.reduce((acc, contact) => {
+          acc[contact.status] = (acc[contact.status] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        
+        // Determine the most common status, with priority for engaged/won
+        let districtStatus = 'not_contacted';
+        if (statusCounts['won'] > 0) {
+          districtStatus = 'won';
+        } else if (statusCounts['engaged'] > 0) {
+          districtStatus = 'engaged';
+        } else if (statusCounts['actively_contacting'] > 0) {
+          districtStatus = 'actively_contacting';
+        } else if (statusCounts['not_interested'] > 0) {
+          districtStatus = 'not_interested';
+        }
+        
         return {
           id: district.id,
           district_name: district.name,
@@ -92,6 +113,7 @@ export async function GET(request: NextRequest) {
           budget: district.budget,
           website: district.website,
           notes: district.notes,
+          status: districtStatus, // Add computed status
           campaign_id: campaignId || null,
           // Add contact counts
           contacts_count: totalContacts,

@@ -43,7 +43,9 @@ export async function GET(request: NextRequest) {
     // If specific date is provided, use that; otherwise use today
     let targetDate: Date
     if (date) {
-      targetDate = new Date(date + 'T00:00:00.000Z')
+      // Create date in local timezone to match frontend expectations
+      const [year, month, day] = date.split('-').map(Number)
+      targetDate = new Date(year, month - 1, day, 0, 0, 0, 0)
     } else {
       targetDate = new Date()
       targetDate.setHours(0, 0, 0, 0)
@@ -392,10 +394,11 @@ export async function POST(request: NextRequest) {
           select: {
             district: {
               select: {
-                campaign: {
-                  select: { company: true }
-                }
+                name: true
               }
+            },
+            campaign: {
+              select: { company: true }
             }
           }
         }
@@ -411,8 +414,8 @@ export async function POST(request: NextRequest) {
     
     if (touchpointToUpdate.lead?.campaign?.company) {
       touchpointCompany = touchpointToUpdate.lead.campaign.company;
-    } else if (touchpointToUpdate.districtContact?.district?.campaign?.company) {
-      touchpointCompany = touchpointToUpdate.districtContact.district.campaign.company;
+    } else if (touchpointToUpdate.districtContact?.campaign?.company) {
+      touchpointCompany = touchpointToUpdate.districtContact.campaign.company;
     }
 
     if (!touchpointCompany) {

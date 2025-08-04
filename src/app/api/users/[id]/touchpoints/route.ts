@@ -6,7 +6,7 @@ import { UserRoleType } from '@prisma/client';
 
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -16,7 +16,7 @@ export async function GET(
     }
 
     // Get the user ID from the params
-    const { id: userId } = await context.params;
+    const { id: userId } = await params;
 
     // Only admin users can access other users' touchpoints
     if (session.user.role !== UserRoleType.admin && session.user.id !== userId) {
@@ -32,16 +32,31 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // Get query parameters for date filtering
+    const url = new URL(request.url);
+    const startDate = url.searchParams.get('startDate');
+    const endDate = url.searchParams.get('endDate');
+
+    // Build where clause
+    let whereClause: any = {};
+    
+    // Add date range filtering if provided
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999); // End of day
+      
+      whereClause.createdAt = {
+        gte: start,
+        lte: end
+      };
+    }
+
     // Get touchpoints created by this user
     // For now, we'll use a simple approach - in a real app, you might track
     // which user created each touchpoint
     const touchpoints = await prisma.touchpoint.findMany({
-      where: {
-        // This is a simplified approach - in a real app, you'd have a created_by field
-        // OR: [
-        //   { created_by: userId },
-        // ]
-      },
+      where: whereClause,
       include: {
         lead: {
           select: {
@@ -63,7 +78,7 @@ export async function GET(
       orderBy: {
         createdAt: 'desc'
       },
-      take: 50 // Limit to 50 most recent touchpoints
+      take: startDate && endDate ? 1000 : 50 // Allow more results for analytics
     });
 
     // Transform touchpoints to match the expected format
@@ -89,6 +104,20 @@ export async function GET(
         email: tp.districtContact.email
       } : undefined
     }));
+
+    // Calculate analytics if date range is provided
+    if (startDate && endDate) {
+      const byType = formattedTouchpoints.reduce((acc, tp) => {
+        acc[tp.type] = (acc[tp.type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      return NextResponse.json({
+        total: formattedTouchpoints.length,
+        by_type: byType,
+        touchpoints: formattedTouchpoints
+      });
+    }
 
     return NextResponse.json({
       touchpoints: formattedTouchpoints,

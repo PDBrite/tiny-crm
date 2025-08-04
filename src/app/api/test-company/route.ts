@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { supabase } from '@/lib/supabase'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,16 +15,18 @@ export async function GET(request: NextRequest) {
     }
     
     // Test database connection
-    const { data: testData, error: testError } = await supabase
-      .from('district_leads')
-      .select('count')
+    const testData = await prisma.district.count()
     
     // Test district query
-    const { data: districts, error: districtsError } = await supabase
-      .from('district_leads')
-      .select('id, district_name, county, company')
-      .eq('company', 'Avalern')
-      .limit(5)
+    const districts = await prisma.district.findMany({
+      select: {
+        id: true,
+        name: true,
+        county: true,
+        state: true
+      },
+      take: 5
+    })
     
     return NextResponse.json({
       user: {
@@ -33,14 +35,14 @@ export async function GET(request: NextRequest) {
         allowedCompanies: session.user?.allowedCompanies
       },
       dbTest: {
-        success: !testError,
-        error: testError ? testError.message : null,
-        data: testData
+        success: true,
+        error: null,
+        data: { count: testData }
       },
       districtsTest: {
-        success: !districtsError,
-        error: districtsError ? districtsError.message : null,
-        count: districts?.length || 0,
+        success: true,
+        error: null,
+        count: districts.length,
         data: districts
       }
     })

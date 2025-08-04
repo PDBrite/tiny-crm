@@ -2,6 +2,7 @@ export interface DistrictLead {
   id: string
   district_name: string
   county: string
+  state: string
   company: string
   status: 'not_contacted' | 'actively_contacting' | 'engaged' | 'won' | 'not_interested'
   campaign_id?: string

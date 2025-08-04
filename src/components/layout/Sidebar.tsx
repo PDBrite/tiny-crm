@@ -36,12 +36,7 @@ export default function Sidebar() {
   const { data: session } = useSession();
   const user = session?.user;
 
-  // Debug logging
-  console.log('Sidebar Debug:', {
-    selectedCompany,
-    pathname,
-    user
-  })
+  // Debug logging removed
 
   const handleSignOut = async () => {
     await signOut({ redirect: true, callbackUrl: "/login" });
@@ -83,12 +78,30 @@ export default function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 px-4 py-6 space-y-2">
         {filteredNav.map((item) => {
-          const isActive = pathname === item.href
+          // Improved active state detection with better logic
+          let isActive = false
+          
+          if (item.href === '/') {
+            // Dashboard is active for root path or dashboard path
+            isActive = pathname === '/' || pathname === '/dashboard'
+          } else if (item.href === '/campaigns') {
+            // Campaigns is active for campaigns and related paths, but not for select pages
+            isActive = pathname.startsWith('/campaigns') && 
+                      !pathname.includes('/select-leads') && 
+                      !pathname.includes('/select-districts')
+          } else if (item.href === '/leads') {
+            // Leads is active for leads and district-contacts
+            isActive = pathname.startsWith('/leads') || pathname.startsWith('/district-contacts')
+          } else {
+            // For other items, check if path starts with href
+            isActive = pathname.startsWith(item.href)
+          }
+          
           return (
             <Link
               key={item.name}
               href={item.href}
-              onClick={() => console.log(`Clicked on ${item.name}, navigating to ${item.href}`)}
+
               className={`
                 flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors
                 ${isActive 

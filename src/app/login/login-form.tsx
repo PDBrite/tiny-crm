@@ -28,7 +28,7 @@ export default function LoginForm() {
     setIsLoading(true);
 
     try {
-      console.log("Attempting to sign in with:", email);
+  
       const result = await signIn("credentials", {
         redirect: false,
         email,
@@ -36,7 +36,7 @@ export default function LoginForm() {
         callbackUrl,
       });
 
-      console.log("Sign in result:", result);
+
 
       if (result?.error) {
         setError(`Authentication failed: ${result.error}`);

@@ -29,10 +29,22 @@ export default function DeleteCampaignModal({
         </div>
         
         <div className="mb-6">
-          <p className="text-gray-700">
-            Are you sure you want to delete <strong>"{campaignName}"</strong>? 
-            This will remove the campaign and unassign all leads from it.
+          <p className="text-gray-700 mb-3">
+            Are you sure you want to delete <strong>"{campaignName}"</strong>?
           </p>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+            <p className="text-sm text-red-700">
+              <strong>This action will:</strong>
+            </p>
+            <ul className="text-sm text-red-700 mt-2 space-y-1">
+              <li>• Delete all scheduled touchpoints in the future</li>
+              <li>• Unassign all leads and district contacts from this campaign</li>
+              <li>• Permanently remove the campaign</li>
+            </ul>
+            <p className="text-xs text-red-600 mt-2">
+              This action cannot be undone.
+            </p>
+          </div>
         </div>
         
         <div className="flex items-center justify-end space-x-3">

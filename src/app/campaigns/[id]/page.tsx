@@ -22,7 +22,9 @@ import {
   ChevronRight,
   Clock,
   MessageSquare,
-  Activity
+  Activity,
+  FileText,
+  Pause
 } from 'lucide-react'
 
 // Import modular components
@@ -675,7 +677,12 @@ export default function CampaignDetailPage() {
         return
       }
 
-      alert('Campaign deleted successfully!')
+      const result = await response.json()
+      
+      // Show cleanup summary
+      const cleanupMessage = `Campaign deleted successfully!\n\nCleanup summary:\n• ${result.cleanup.deletedTouchpoints} scheduled touchpoints deleted\n• ${result.cleanup.unassignedLeads} leads unassigned\n• ${result.cleanup.unassignedDistrictContacts} district contacts unassigned`
+      
+      alert(cleanupMessage)
       // Navigate back to campaigns page
       window.location.href = '/campaigns'
     } catch (error) {

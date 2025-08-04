@@ -58,9 +58,11 @@ function SelectDistrictsContent() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('')
   const [selectedCounty, setSelectedCounty] = useState('')
+  const [selectedState, setSelectedState] = useState('')
 
   // Computed values
   const uniqueCounties = [...new Set((districts || []).map(d => d.county).filter(Boolean))].sort()
+  const uniqueStates = [...new Set((districts || []).map(d => d.state).filter(Boolean))].sort()
   const availableStatuses = Object.keys(DISTRICT_STATUS_DISPLAY_MAP)
 
   // Pagination info
@@ -97,6 +99,10 @@ function SelectDistrictsContent() {
           params.append('county', selectedCounty)
         }
         
+        if (selectedState) {
+          params.append('state', selectedState)
+        }
+        
         // Use the API endpoint with filters
         const response = await fetch(`/api/campaign-districts?${params.toString()}`)
         
@@ -125,7 +131,7 @@ function SelectDistrictsContent() {
     if (selectedCompany === 'Avalern') {
       fetchFilteredDistricts()
     }
-  }, [selectedCompany, searchTerm, selectedStatus, selectedCounty])
+  }, [selectedCompany, searchTerm, selectedStatus, selectedCounty, selectedState])
 
   // Pagination logic
   useEffect(() => {
@@ -239,12 +245,13 @@ function SelectDistrictsContent() {
 
       // Get all district contacts from selected districts using API
       console.log(`Fetching district contacts for ${selectedDistricts.length} districts`);
-      const contactsResponse = await fetch(`/api/district-contacts?district_ids=${selectedDistricts.join(',')}&status=Valid`);
+      console.log('Selected district IDs:', selectedDistricts);
+      const contactsResponse = await fetch(`/api/district-contacts?district_ids=${selectedDistricts.join(',')}`);
       
       if (!contactsResponse.ok) {
         const errorData = await contactsResponse.json();
         console.error('Error fetching district contacts:', errorData);
-        alert('Campaign created but failed to fetch district contacts');
+        alert(`Campaign created but failed to fetch district contacts: ${errorData.error || 'Unknown error'}`);
         return;
       }
       
@@ -482,12 +489,27 @@ function SelectDistrictsContent() {
               </select>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+              <select
+                value={selectedState}
+                onChange={(e) => setSelectedState(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="">All States</option>
+                {uniqueStates.map(state => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
+            </div>
+
             <div className="flex items-end">
               <button
                 onClick={() => {
                   setSearchTerm('')
                   setSelectedStatus('')
                   setSelectedCounty('')
+                  setSelectedState('')
                 }}
                 className="flex items-center px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
               >
@@ -629,7 +651,7 @@ function SelectDistrictsContent() {
                           </div>
                           <div className="flex items-center text-sm text-gray-500 mt-1">
                             <MapPin className="h-4 w-4 mr-1" />
-                            {district.county}
+                            {district.county}, {district.state}
                           </div>
                         </div>
                       </td>

@@ -74,6 +74,8 @@ export default function ImportPage() {
   const [showAllInvalid, setShowAllInvalid] = useState(false)
   const [showAllDuplicates, setShowAllDuplicates] = useState(false)
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [users, setUsers] = useState<any[]>([])
+  const [selectedUserId, setSelectedUserId] = useState<string>('')
   
   // Fetch campaigns for the dropdown
   const fetchAvailableCampaigns = async () => {
@@ -181,11 +183,26 @@ export default function ImportPage() {
     }
   }
   
-  // Fetch campaigns when component mounts or when company changes
+  // Fetch users for the dropdown
+  const fetchAvailableUsers = async () => {
+    try {
+      const response = await fetch('/api/users')
+      if (response.ok) {
+        const data = await response.json()
+        setUsers(data.users || [])
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+      setUsers([])
+    }
+  }
+
+  // Fetch campaigns and users when component mounts or when company changes
   useEffect(() => {
     // Only fetch if we're in the browser and have a selected company
     if (typeof window !== 'undefined' && selectedCompany) {
       fetchAvailableCampaigns()
+      fetchAvailableUsers()
     }
   }, [selectedCompany, /* eslint-disable-line react-hooks/exhaustive-deps */])
 
@@ -533,7 +550,8 @@ export default function ImportPage() {
         body: JSON.stringify({
           districts: districtValidationResult.valid,
           company: selectedCompany,
-          campaign_id: selectedCampaignId || undefined
+          campaign_id: selectedCampaignId || undefined,
+          assigned_user_id: selectedUserId || undefined
         }),
       })
 
@@ -615,6 +633,24 @@ export default function ImportPage() {
             continue
           }
           
+          // Assign lead to user if selected
+          if (selectedUserId && insertedLead) {
+            try {
+              const { error: assignmentError } = await supabase
+                .from('user_leads')
+                .insert({
+                  user_id: selectedUserId,
+                  lead_id: insertedLead.id
+                })
+              
+              if (assignmentError) {
+                console.warn('Failed to assign lead to user:', assignmentError)
+              }
+            } catch (assignmentError) {
+              console.warn('Error assigning lead to user:', assignmentError)
+            }
+          }
+          
           // Insert initial touchpoint if email was sent or call was made
           if (csvLead.emailSent === 'Yes' || csvLead.callMade === 'Yes') {
             const touchpointData = {
@@ -694,26 +730,47 @@ Robert,Kim,rkim@compass.com,https://www.zillow.com/profile/robertkim,(818) 555-0
         <div className="flex items-center justify-end space-x-3">
           {/* Action Buttons - All aligned to the right */}
           
-                      {/* Campaign Selector (only for Avalern districts) */}
-            {selectedCompany === 'Avalern' && districtValidationResult && districtValidationResult.valid.length > 0 && (
-              <select
-                value={selectedCampaignId}
-                onChange={(e) => setSelectedCampaignId(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                disabled={isProcessing}
-              >
-                <option value="">No Campaign (Optional)</option>
-                {campaigns && campaigns.length > 0 ? (
-                  campaigns.map((campaign) => (
-                    <option key={campaign.id} value={campaign.id}>
-                      {campaign.name}
-                    </option>
-                  ))
-                ) : (
-                  <option value="" disabled>No campaigns available</option>
-                )}
-              </select>
-            )}
+          {/* User Selector (for both leads and districts) */}
+          {(validationResult && validationResult.valid.length > 0) || (districtValidationResult && districtValidationResult.valid.length > 0) ? (
+            <select
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isProcessing}
+            >
+              <option value="">No User Assignment (Optional)</option>
+              {users && users.length > 0 ? (
+                users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.firstName || ''} {user.lastName || ''} ({user.email})
+                  </option>
+                ))
+              ) : (
+                <option value="" disabled>No users available</option>
+              )}
+            </select>
+          ) : null}
+          
+          {/* Campaign Selector (only for Avalern districts) */}
+          {selectedCompany === 'Avalern' && districtValidationResult && districtValidationResult.valid.length > 0 && (
+            <select
+              value={selectedCampaignId}
+              onChange={(e) => setSelectedCampaignId(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              disabled={isProcessing}
+            >
+              <option value="">No Campaign (Optional)</option>
+              {campaigns && campaigns.length > 0 ? (
+                campaigns.map((campaign) => (
+                  <option key={campaign.id} value={campaign.id}>
+                    {campaign.name}
+                  </option>
+                ))
+              ) : (
+                <option value="" disabled>No campaigns available</option>
+              )}
+            </select>
+          )}
             
             {/* Import Button - Now with purple color */}
             {(validationResult && validationResult.valid.length > 0) || (districtValidationResult && districtValidationResult.valid.length > 0) ? (
@@ -731,6 +788,7 @@ Robert,Kim,rkim@compass.com,https://www.zillow.com/profile/robertkim,(818) 555-0
                   <>
                     <Upload className="h-4 w-4 mr-2" />
                     Import {validationResult ? `${validationResult.valid.length} Leads` : `${districtValidationResult?.valid.length || 0} Districts`}
+                    {selectedUserId ? ` to ${users.find(u => u.id === selectedUserId)?.firstName || 'User'}` : ''}
                     {selectedCompany === 'Avalern' && selectedCampaignId ? ` to ${campaigns.find(c => c.id === selectedCampaignId)?.name || 'Campaign'}` : ''}
                   </>
                 )}

@@ -8,6 +8,7 @@ import { Calendar, Phone, Mail, MessageSquare, Plus, Target, Edit2, Trash2, List
 import CalendarPopup from '../../components/CalendarPopup'
 import LeadDetailPanel from '../../components/leads/LeadDetailPanel'
 import { Lead, STATUS_DISPLAY_MAP } from '../../types/leads'
+import { getCurrentDateString, createDateRangeForDate, formatDateToLocalString, debugDateInfo } from '../../utils/date-utils'
 
 interface TouchpointSummary {
   today?: {
@@ -85,7 +86,7 @@ export default function OutreachPage() {
   const [touchpoints, setTouchpoints] = useState<TouchpointSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedCampaign, setSelectedCampaign] = useState('')
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]) // YYYY-MM-DD format
+  const [selectedDate, setSelectedDate] = useState(getCurrentDateString()) // YYYY-MM-DD format
   const [touchpointCounts, setTouchpointCounts] = useState<Record<string, number>>({})
   const [selectedType, setSelectedType] = useState('')
   const [campaigns, setCampaigns] = useState<any[]>([]) // Initialize as empty array
@@ -212,15 +213,17 @@ export default function OutreachPage() {
           }
         }
         
-        // Filter touchpoints by date
-        const dateStart = new Date(selectedDate);
-        dateStart.setHours(0, 0, 0, 0);
-        const dateEnd = new Date(selectedDate);
-        dateEnd.setHours(23, 59, 59, 999);
+        // Filter touchpoints by date using local timezone
+        const selectedDateObj = new Date(selectedDate);
+        selectedDateObj.setHours(0, 0, 0, 0);
+        const nextDay = new Date(selectedDateObj);
+        nextDay.setDate(nextDay.getDate() + 1);
         
         const filteredByDate = allTouchpoints.filter((tp: any) => {
           const tpDate = new Date(tp.scheduled_at || tp.completed_at);
-          return tpDate >= dateStart && tpDate <= dateEnd;
+          // Convert to local date for comparison
+          const tpLocalDate = new Date(tpDate.getFullYear(), tpDate.getMonth(), tpDate.getDate());
+          return tpLocalDate >= selectedDateObj && tpLocalDate < nextDay;
         });
         
         touchpointsData = {
@@ -344,8 +347,8 @@ export default function OutreachPage() {
       endOfMonth.setDate(0);
 
       const params = new URLSearchParams();
-      params.append('startDate', startOfMonth.toISOString().split('T')[0]);
-      params.append('endDate', endOfMonth.toISOString().split('T')[0]);
+      params.append('startDate', formatDateToLocalString(startOfMonth));
+      params.append('endDate', formatDateToLocalString(endOfMonth));
       params.append('company', effectiveCompany);
       if (selectedCampaign) {
         params.append('campaignId', selectedCampaign);
@@ -394,12 +397,14 @@ export default function OutreachPage() {
             }
           }
           
-          // Group touchpoints by date
+          // Group touchpoints by date using local timezone
           const countsByDate: Record<string, number> = {};
           allTouchpoints.forEach((tp: any) => {
             const date = new Date(tp.scheduled_at || tp.completed_at);
-            if (date >= startOfMonth && date <= endOfMonth) {
-              const dateStr = date.toISOString().split('T')[0];
+            // Convert to local date for comparison
+            const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            if (localDate >= startOfMonth && localDate <= endOfMonth) {
+              const dateStr = formatDateToLocalString(localDate);
               countsByDate[dateStr] = (countsByDate[dateStr] || 0) + 1;
             }
           });
@@ -542,12 +547,14 @@ export default function OutreachPage() {
         const startDateObj = new Date(startDate);
         const endDateObj = new Date(endDate);
         
-        // Group touchpoints by date
+        // Group touchpoints by date using local timezone
         const countsByDate: Record<string, number> = {};
         allTouchpoints.forEach((tp: any) => {
           const date = new Date(tp.scheduled_at || tp.completed_at);
-          if (date >= startDateObj && date <= endDateObj) {
-            const dateStr = date.toISOString().split('T')[0];
+          // Convert to local date for comparison
+          const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+          if (localDate >= startDateObj && localDate <= endDateObj) {
+            const dateStr = formatDateToLocalString(localDate);
             countsByDate[dateStr] = (countsByDate[dateStr] || 0) + 1;
           }
         });
@@ -587,6 +594,8 @@ export default function OutreachPage() {
   }, [effectiveCompany, selectedCampaign]);
 
   const handleTouchpointClick = (touchpoint: any) => {
+    console.log('Touchpoint clicked:', touchpoint);
+    
     // For Avalern, use district_contact info; for others, use lead info
     const isAvalern = effectiveCompany === 'Avalern';
     let lead: ExtendedLead | null = null;
@@ -728,17 +737,45 @@ export default function OutreachPage() {
 
     setSaving(true)
     try {
-      // Implementation for saving lead changes
-      console.log('Saving lead:', editingLead)
+      console.log('Saving lead/contact:', editingLead)
+      
+      if (editingLead.is_district_contact || editingLead.district_contact_id) {
+        // Save district contact
+        const response = await fetch(`/api/district-contacts/${editingLead.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            first_name: editingLead.first_name,
+            last_name: editingLead.last_name,
+            email: editingLead.email,
+            phone: editingLead.phone,
+            title: editingLead.title,
+            status: editingLead.status,
+            notes: editingLead.notes
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to update district contact: ${response.status}`)
+        }
+
+        const updatedContact = await response.json()
+        console.log('District contact updated:', updatedContact)
+      } else {
+        // Save regular lead (implement if needed)
+        console.log('Regular lead saving not implemented yet')
+      }
       
       // Refresh touchpoints data
       await fetchFilteredTouchpoints()
       
-      alert('Lead updated successfully!')
+      alert('Contact updated successfully!')
       handleCloseLead()
     } catch (error) {
-      console.error('Error saving lead:', error)
-      alert('Failed to save lead')
+      console.error('Error saving lead/contact:', error)
+      alert('Failed to save contact')
     } finally {
       setSaving(false)
     }
@@ -827,7 +864,7 @@ export default function OutreachPage() {
     link.setAttribute('href', url)
     
     // Generate filename with date and company
-    const dateStr = selectedDate || new Date().toISOString().split('T')[0]
+    const dateStr = selectedDate || getCurrentDateString()
     const filename = `${effectiveCompany.toLowerCase()}_touchpoints_${dateStr}.csv`
     link.setAttribute('download', filename)
     
@@ -870,6 +907,14 @@ export default function OutreachPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Daily Touchpoints</h1>
             <p className="text-gray-600">Manage scheduled touchpoints for {effectiveCompany}</p>
+            {/* Debug info */}
+            <div className="text-xs text-gray-500 mt-1">
+              Debug: Selected Date: {selectedDate} | Current: {getCurrentDateString()} | 
+              {(() => {
+                const debug = debugDateInfo();
+                return ` TZ: ${debug.timezone} | ISO: ${debug.toISOStringDate}`;
+              })()}
+            </div>
           </div>
           <div className="flex items-center space-x-3">
             <Link
@@ -883,8 +928,8 @@ export default function OutreachPage() {
         </div>
 
         {/* Touchpoints Content */}
-        <div className={`flex gap-6 ${selectedLead ? 'grid grid-cols-2' : ''}`}>
-          <div className={selectedLead ? 'col-span-1' : 'w-full'}>
+        <div className="flex gap-6">
+          <div className={selectedLead ? 'flex-1' : 'w-full'}>
             {/* Summary Cards */}
             {touchpoints && (
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -1336,7 +1381,7 @@ export default function OutreachPage() {
 
         {/* Lead Detail Panel */}
         {selectedLead && (
-          <div className="col-span-1">
+          <div className="w-96 flex-shrink-0">
             <LeadDetailPanel
               selectedLead={editingLead || selectedLead}
               editingLead={editingLead || selectedLead}

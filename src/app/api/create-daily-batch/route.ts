@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '../../../lib/supabase'
+import { prisma } from '@/lib/prisma'
 import { getNextBatchStartDate } from '../../../utils/outreach-scheduler'
 
 export async function POST(request: NextRequest) {
@@ -14,26 +14,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Get campaign with outreach sequence
-    const { data: campaign, error: campaignError } = await supabase
-      .from('campaigns')
-      .select(`
-        *,
-        outreach_sequence:outreach_sequences(
-          *,
-          steps:outreach_steps(*)
-        )
-      `)
-      .eq('id', campaignId)
-      .single()
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
+      include: {
+        outreachSequence: {
+          include: {
+            steps: {
+              orderBy: { stepOrder: 'asc' }
+            }
+          }
+        }
+      }
+    })
 
-    if (campaignError || !campaign) {
+    if (!campaign) {
       return NextResponse.json(
         { error: 'Campaign not found' },
         { status: 404 }
       )
     }
 
-    if (!campaign.outreach_sequence) {
+    if (!campaign.outreachSequence) {
       return NextResponse.json(
         { error: 'Campaign does not have an outreach sequence assigned' },
         { status: 400 }
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
       success: false,
       message: 'This endpoint has been deprecated. Please use the assign-districts-to-campaign endpoint instead.',
       campaign_name: campaign.name,
-      sequence_name: campaign.outreach_sequence.name
+      sequence_name: campaign.outreachSequence.name
     })
 
   } catch (error) {
@@ -66,14 +67,17 @@ export async function GET(request: NextRequest) {
     // This endpoint is now deprecated
     let campaignInfo = null
     if (campaignId) {
-      const { data: campaign } = await supabase
-        .from('campaigns')
-        .select(`
-          *,
-          outreach_sequence:outreach_sequences(name, description)
-        `)
-        .eq('id', campaignId)
-        .single()
+      const campaign = await prisma.campaign.findUnique({
+        where: { id: campaignId },
+        include: {
+          outreachSequence: {
+            select: {
+              name: true,
+              description: true
+            }
+          }
+        }
+      })
 
       campaignInfo = campaign
     }

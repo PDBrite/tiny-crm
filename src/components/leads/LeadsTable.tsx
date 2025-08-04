@@ -108,7 +108,10 @@ export default function LeadsTable({
             ) : isAvalern ? (
               // Render district contacts
               districtContacts.map((contact) => (
-                <tr key={contact.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => onDistrictContactClick?.(contact)}>
+                <tr key={contact.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => {
+                  // Navigate to the district contact detail page
+                  window.location.href = `/district-contacts/${contact.id}`;
+                }}>
                   <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
@@ -151,7 +154,7 @@ export default function LeadsTable({
                         </div>
                         <div className="text-xs text-gray-500 flex items-center">
                           <MapPin className="h-3 w-3 mr-1" />
-                          {contact.district_lead?.county || 'Unknown County'}
+                          {contact.district_lead?.county || 'Unknown County'}, {contact.district_lead?.state || 'Unknown State'}
                         </div>
                       </td>
                       <td className="px-6 py-4">

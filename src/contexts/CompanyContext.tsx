@@ -21,21 +21,16 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (status === 'loading') {
-      console.log('CompanyContext: Session is loading');
+  
       return;
     }
 
     if (status === 'unauthenticated') {
-      console.log('CompanyContext: User is unauthenticated');
       setIsLoading(false)
       return;
     }
 
-    console.log('CompanyContext: Session data:', {
-      user: session?.user,
-      status,
-      isAuthenticated: status === 'authenticated'
-    });
+    // Force Avalern as the only company
 
     // Force Avalern as the only company
     setAvailableCompanies(['Avalern']);

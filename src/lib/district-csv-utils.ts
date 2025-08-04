@@ -72,8 +72,7 @@ export function parseDistrictCSV(csvText: string): CSVDistrictData[] {
 
   // Store warnings but don't block processing
   if (errors.length > 0) {
-    // Use console.log instead of console.warn to avoid linter error
-    console.log(`CSV validation warnings:\n${errors.slice(0, 10).join('\n')}${errors.length > 10 ? `\n... and ${errors.length - 10} more warnings` : ''}`)
+    // Validation warnings suppressed
     
     // Store warnings in a separate property
     Object.defineProperty(data, 'warnings', {
@@ -199,40 +198,25 @@ export function validateDistrictData(data: ProcessedDistrictData[]): {
   // First pass: collect all contacts and check for duplicates
   data.forEach(district => {
     district.contacts.forEach(contact => {
-      // Create unique keys for different types of duplicates
+      // Only check for exact duplicates (same name AND same email AND same phone)
+      // This is much more restrictive than before
       const nameKey = `${contact.firstName.toLowerCase()}-${contact.lastName.toLowerCase()}`
-      const emailKey = contact.email ? contact.email.toLowerCase() : null
-      const phoneKey = contact.phone ? contact.phone.replace(/\D/g, '') : null
+      const emailKey = contact.email ? contact.email.toLowerCase() : 'no-email'
+      const phoneKey = contact.phone ? contact.phone.replace(/\D/g, '') : 'no-phone'
+      
+      // Create a composite key that requires ALL fields to match
+      const compositeKey = `${nameKey}-${emailKey}-${phoneKey}`
 
-      // Check for name duplicates
-      if (allContactsMap.has(nameKey)) {
-        const existing = allContactsMap.get(nameKey)!
+      if (allContactsMap.has(compositeKey)) {
+        const existing = allContactsMap.get(compositeKey)!
         contactDuplicates.push({
           district: district.districtName,
           contact,
           duplicateOf: existing
         })
       } else {
-        allContactsMap.set(nameKey, { district: district.districtName, contact })
+        allContactsMap.set(compositeKey, { district: district.districtName, contact })
       }
-
-      // Check for email duplicates (if email exists)
-      if (emailKey) {
-        const emailDupKey = `email:${emailKey}`
-        if (allContactsMap.has(emailDupKey)) {
-          const existing = allContactsMap.get(emailDupKey)!
-          contactDuplicates.push({
-            district: district.districtName,
-            contact,
-            duplicateOf: existing
-          })
-        } else {
-          allContactsMap.set(emailDupKey, { district: district.districtName, contact })
-        }
-      }
-
-      // Note: Removed phone duplicate checking - only email duplicates are flagged
-      // Multiple contacts can have the same phone number
     })
   })
 

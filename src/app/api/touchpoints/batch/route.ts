@@ -25,9 +25,12 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`Processing ${touchpoints.length} touchpoints in batch`)
+    console.log('Sample touchpoint:', JSON.stringify(touchpoints[0], null, 2))
     
     // Validate touchpoints
     for (const tp of touchpoints) {
+      console.log('Validating touchpoint:', { type: tp.type, lead_id: tp.lead_id, district_contact_id: tp.district_contact_id })
+      
       if (!tp.type) {
         return NextResponse.json(
           { error: 'Each touchpoint must have a type' },
@@ -53,25 +56,30 @@ export async function POST(request: NextRequest) {
       
       try {
         // Create touchpoints using Prisma
+        const mappedData = batch.map(tp => ({
+          type: tp.type as TouchpointType,
+          subject: tp.subject || null,
+          content: tp.content || null,
+          scheduledAt: tp.scheduled_at ? new Date(tp.scheduled_at) : new Date(),
+          completedAt: tp.completed_at ? new Date(tp.completed_at) : null,
+          outcome: tp.outcome || null,
+          leadId: tp.lead_id || null,
+          districtContactId: tp.district_contact_id || null,
+          createdById: userId // Add the creator ID to each touchpoint
+        }));
+        
+        console.log('Mapped touchpoint data sample:', JSON.stringify(mappedData[0], null, 2));
+        
         const result = await prisma.touchpoint.createMany({
-          data: batch.map(tp => ({
-            type: tp.type as TouchpointType,
-            subject: tp.subject || null,
-            content: tp.content || null,
-            scheduledAt: tp.scheduled_at ? new Date(tp.scheduled_at) : new Date(),
-            completedAt: tp.completed_at ? new Date(tp.completed_at) : null,
-            outcome: tp.outcome || null,
-            leadId: tp.lead_id || null,
-            districtContactId: tp.district_contact_id || null,
-            createdById: userId // Add the creator ID to each touchpoint
-          }))
+          data: mappedData
         });
         
         successCount += result.count;
         console.log(`Successfully created batch ${Math.floor(i/BATCH_SIZE) + 1} with ${result.count} touchpoints`);
-      } catch (batchError) {
-        console.error(`Error processing batch ${Math.floor(i/BATCH_SIZE) + 1}:`, batchError);
-      }
+              } catch (batchError) {
+          console.error(`Error processing batch ${Math.floor(i/BATCH_SIZE) + 1}:`, batchError);
+          throw new Error(`Batch ${Math.floor(i/BATCH_SIZE) + 1} failed: ${batchError instanceof Error ? batchError.message : 'Unknown error'}`);
+        }
     }
     
     return NextResponse.json({

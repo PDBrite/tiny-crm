@@ -19,8 +19,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  List
+  List,
+  FileText,
+  Pause
 } from 'lucide-react'
+import { getCurrentDateString, formatDateToLocalString } from '@/utils/date-utils'
 
 interface Campaign {
   id: string
@@ -75,6 +78,8 @@ export default function CampaignsPage() {
   const [outreachSequences, setOutreachSequences] = useState<OutreachSequence[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedStatus, setSelectedStatus] = useState('all')
+  const [selectedCreatedBy, setSelectedCreatedBy] = useState('all')
+  const [users, setUsers] = useState<Array<{ id: string, email: string, firstName?: string, lastName?: string }>>([])
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [creating, setCreating] = useState(false)
   const [selectedSequenceSteps, setSelectedSequenceSteps] = useState<Array<{
@@ -95,12 +100,25 @@ export default function CampaignsPage() {
   const [formData, setFormData] = useState<CampaignFormData>({
     name: '',
     company: selectedCompany,
-    launchDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+    launchDate: getCurrentDateString(),
+    endDate: formatDateToLocalString(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)), // 30 days from now
     outreachSequenceId: '',
     description: '',
     instantlyCampaignId: ''
   })
+
+  // Fetch users for filtering
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/users?for_touchpoints=true')
+      if (response.ok) {
+        const data = await response.json()
+        setUsers(data.users || [])
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    }
+  }
 
   // Fetch campaigns
   useEffect(() => {
@@ -111,8 +129,18 @@ export default function CampaignsPage() {
       
       setLoading(true)
       try {
+        // Build query parameters
+        const params = new URLSearchParams()
+        params.append('company', selectedCompany)
+        if (selectedStatus !== 'all') {
+          params.append('status', selectedStatus)
+        }
+        if (selectedCreatedBy !== 'all') {
+          params.append('createdBy', selectedCreatedBy)
+        }
+        
         // Fetch campaigns using the API endpoint
-        const response = await fetch(`/api/campaigns?company=${selectedCompany}`)
+        const response = await fetch(`/api/campaigns?${params.toString()}`)
         
         if (!response.ok) {
           console.error('Error fetching campaigns:', response.status)
@@ -173,7 +201,8 @@ export default function CampaignsPage() {
     }
 
     fetchCampaigns()
-  }, [selectedCompany])
+    fetchUsers()
+  }, [selectedCompany, selectedStatus, selectedCreatedBy])
 
   // Fetch outreach sequences
   useEffect(() => {
@@ -295,12 +324,12 @@ export default function CampaignsPage() {
             
             setFormData(prev => ({
               ...prev,
-              endDate: defaultEndDate.toISOString().split('T')[0]
+              endDate: formatDateToLocalString(defaultEndDate)
             }))
           } else {
             setFormData(prev => ({
               ...prev,
-              endDate: endDate.toISOString().split('T')[0]
+              endDate: formatDateToLocalString(endDate)
             }))
           }
         } catch (error) {
@@ -332,7 +361,7 @@ export default function CampaignsPage() {
         
         setFormData(prev => ({
           ...prev,
-          endDate: defaultEndDate.toISOString().split('T')[0]
+          endDate: formatDateToLocalString(defaultEndDate)
         }))
       } catch (error) {
         console.error('Error setting default end date:', error)
@@ -378,13 +407,13 @@ export default function CampaignsPage() {
           
           setFormData(prev => ({
             ...prev,
-            endDate: defaultEndDate.toISOString().split('T')[0]
+            endDate: formatDateToLocalString(defaultEndDate)
           }))
         } else {
           // console.log('Calculated new end date after launch date change:', endDate.toISOString().split('T')[0])
           setFormData(prev => ({
             ...prev,
-            endDate: endDate.toISOString().split('T')[0]
+            endDate: formatDateToLocalString(endDate)
           }))
         }
       } catch (error) {
@@ -470,10 +499,8 @@ export default function CampaignsPage() {
     window.location.href = `/campaigns/${campaign.id}`
   }
 
-  const filteredCampaigns = campaigns.filter(campaign => {
-    if (selectedStatus === 'all') return true
-    return campaign.status === selectedStatus
-  })
+  // No need for frontend filtering since we're filtering on the backend
+  const filteredCampaigns = campaigns
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredCampaigns.length / itemsPerPage)
@@ -484,7 +511,7 @@ export default function CampaignsPage() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1)
-  }, [selectedStatus])
+  }, [selectedStatus, selectedCreatedBy])
   
   // Debug when sequence steps change
   useEffect(() => {
@@ -578,6 +605,24 @@ export default function CampaignsPage() {
                   ))}
                 </select>
               </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Created By</label>
+                <select
+                  value={selectedCreatedBy}
+                  onChange={(e) => setSelectedCreatedBy(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">All Users</option>
+                  {users.map(user => (
+                    <option key={user.id} value={user.id}>
+                      {user.firstName && user.lastName 
+                        ? `${user.firstName} ${user.lastName}` 
+                        : user.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             
             <div className="text-sm text-gray-600">
@@ -593,8 +638,8 @@ export default function CampaignsPage() {
               <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No campaigns found</h3>
               <p className="text-gray-500 mb-4">
-                {selectedStatus !== 'all' 
-                  ? `No ${selectedStatus} campaigns found for ${selectedCompany}.`
+                {selectedStatus !== 'all' || selectedCreatedBy !== 'all'
+                  ? `No campaigns found for ${selectedCompany} with the selected filters.`
                   : `No campaigns found for ${selectedCompany}. Get started by creating your first campaign.`
                 }
               </p>

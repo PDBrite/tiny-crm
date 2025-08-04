@@ -15,10 +15,13 @@ interface LeadsFiltersProps {
   onSourceChange: (value: string) => void
   selectedCity: string
   onCityChange: (value: string) => void
+  selectedState: string
+  onStateChange: (value: string) => void
   availableStatuses: string[]
   campaigns: Campaign[]
   uniqueSources: string[]
   uniqueCities: string[]
+  uniqueStates: string[]
   statusDisplayMap: Record<string, string>
   selectedCount: number
   totalCount: number
@@ -37,10 +40,13 @@ export default function LeadsFilters({
   onSourceChange,
   selectedCity,
   onCityChange,
+  selectedState,
+  onStateChange,
   availableStatuses,
   campaigns,
   uniqueSources,
   uniqueCities,
+  uniqueStates,
   statusDisplayMap,
   selectedCount,
   totalCount,
@@ -91,7 +97,7 @@ export default function LeadsFilters({
 
       {/* Filter Options */}
       {showFilters && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 pt-4 border-t border-gray-200">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
@@ -144,6 +150,20 @@ export default function LeadsFilters({
               <option value="all">All Cities</option>
               {(uniqueCities || []).map(city => (
                 <option key={city} value={city}>{city}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+            <select
+              value={selectedState}
+              onChange={(e) => onStateChange(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All States</option>
+              {(uniqueStates || []).map(state => (
+                <option key={state} value={state}>{state}</option>
               ))}
             </select>
           </div>

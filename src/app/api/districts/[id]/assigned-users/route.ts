@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -15,7 +15,7 @@ export async function GET(
     }
 
     // Get the district ID from the params
-    const { id: districtId } = await context.params;
+    const { id: districtId } = await params;
 
     // Verify district exists
     const district = await prisma.district.findUnique({

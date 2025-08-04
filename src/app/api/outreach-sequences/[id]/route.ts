@@ -6,14 +6,14 @@ import { UserRoleType } from '@prisma/client'
 
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication (optional)
     const session = await getServerSession(authOptions)
     
     // Get the sequence ID from the params
-    const { id: sequenceId } = await context.params
+    const { id: sequenceId } = await params
     
     if (!sequenceId) {
       return NextResponse.json({ error: 'Sequence ID is required' }, { status: 400 })

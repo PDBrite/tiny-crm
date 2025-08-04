@@ -6,7 +6,7 @@ import { UserRoleType } from '@prisma/client';
 
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -16,7 +16,7 @@ export async function GET(
     }
 
     // Get the user ID from the params
-    const { id: userId } = await context.params;
+    const { id: userId } = await params;
 
     // Only admin users can access other users' leads
     if (session.user.role !== UserRoleType.admin && session.user.id !== userId) {
@@ -228,7 +228,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -243,7 +243,7 @@ export async function POST(
     }
 
     // Get the user ID from the params
-    const { id: userId } = await context.params;
+    const { id: userId } = await params;
     const body = await request.json();
     const { leadIds, districtIds, action } = body;
 

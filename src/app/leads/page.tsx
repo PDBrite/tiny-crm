@@ -9,6 +9,7 @@ import { useLeads } from '../../hooks/useLeads'
 import { exportToCSV } from '../../lib/csv-utils'
 import { ArrowLeft } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
+import { getCurrentDateString } from '../../utils/date-utils'
 
 // Components
 import {
@@ -59,6 +60,7 @@ function LeadsContent() {
     selectedCampaign,
     selectedSource,
     selectedCity,
+    selectedState,
     
     // Selection states
     selectedLeads,
@@ -80,6 +82,7 @@ function LeadsContent() {
     // Computed values
     uniqueSources,
     uniqueCities,
+    uniqueStates,
     availableStatuses,
     totalCompanyLeads,
     isAvalern,
@@ -90,6 +93,7 @@ function LeadsContent() {
     setSelectedCampaign,
     setSelectedSource,
     setSelectedCity,
+    setSelectedState,
     handleSelectLead,
     handleSelectAll,
     handleSelectNumber,
@@ -150,7 +154,7 @@ function LeadsContent() {
       const selectedContactObjects = allDistrictContacts.filter(contact => selectedLeads.includes(contact.id))
       
       // Generate filename with timestamp
-      const timestamp = new Date().toISOString().split('T')[0]
+      const timestamp = getCurrentDateString()
       const filename = `selected-district-contacts-${timestamp}`
       
       // Convert to CSV format for district contacts
@@ -181,7 +185,7 @@ function LeadsContent() {
       const selectedLeadObjects = allLeads.filter(lead => selectedLeads.includes(lead.id))
       
       // Generate filename with timestamp
-      const timestamp = new Date().toISOString().split('T')[0]
+      const timestamp = getCurrentDateString()
       const filename = `selected-leads-${timestamp}`
       
       // Convert to database Lead type for export
@@ -275,10 +279,13 @@ function LeadsContent() {
               onSourceChange={setSelectedSource}
               selectedCity={selectedCity}
               onCityChange={setSelectedCity}
+              selectedState={selectedState}
+              onStateChange={setSelectedState}
               availableStatuses={availableStatuses}
               campaigns={campaigns}
               uniqueSources={uniqueSources}
               uniqueCities={uniqueCities}
+              uniqueStates={uniqueStates}
               statusDisplayMap={STATUS_DISPLAY_MAP}
               selectedCount={selectedLeads.length}
               totalCount={totalFilteredCount}
@@ -296,25 +303,8 @@ function LeadsContent() {
               onSelectAll={handleSelectAll}
               onLeadClick={handleOpenLeadPanel}
               onDistrictContactClick={async (contact) => {
-                // Use the new API endpoint for district contact touchpoints
-                try {
-                  console.log('District contact clicked:', contact);
-                  
-                  // Fetch touchpoints for this contact using the new API endpoint
-                  const response = await fetch(`/api/district-contact-touchpoints?district_contact_id=${contact.id}&include_details=true`);
-                  
-                  if (!response.ok) {
-                    throw new Error(`Error fetching touchpoints: ${response.statusText}`);
-                  }
-                  
-                  const data = await response.json();
-                  console.log('Touchpoints for district contact:', data);
-                  
-                  // TODO: Implement district contact detail panel
-                  // For now, just log the data
-                } catch (error) {
-                  console.error('Error handling district contact click:', error);
-                }
+                // Navigate to the district contact detail page
+                window.location.href = `/district-contacts/${contact.id}`;
               }}
             />
 

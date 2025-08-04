@@ -8,6 +8,7 @@ interface ImportDistrictRequest {
   districts: ProcessedDistrictData[]
   company: string
   campaign_id?: string // Optional campaign ID to associate with imported districts
+  assigned_user_id?: string // Optional user ID to assign districts to
 }
 
 interface ImportResult {
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
       }, { status: 503 })
     }
 
-    const { districts, company, campaign_id }: ImportDistrictRequest = await request.json()
+    const { districts, company, campaign_id, assigned_user_id }: ImportDistrictRequest = await request.json()
 
     if (!districts || !Array.isArray(districts)) {
       return NextResponse.json({ error: 'Invalid districts data' }, { status: 400 })
@@ -139,10 +140,35 @@ export async function POST(request: NextRequest) {
           result.imported++
         }
         
+        // Assign district to user if specified
+        if (assigned_user_id) {
+          try {
+            // Check if assignment already exists
+            const existingAssignment = await prisma.userDistricts.findFirst({
+              where: {
+                userId: assigned_user_id,
+                districtId: districtId
+              }
+            })
+            
+            if (!existingAssignment) {
+              await prisma.userDistricts.create({
+                data: {
+                  userId: assigned_user_id,
+                  districtId: districtId
+                }
+              })
+            }
+          } catch (assignmentError) {
+            console.warn('Failed to assign district to user:', assignmentError)
+            result.errors.push(`Failed to assign district ${district.districtName} to user: ${assignmentError instanceof Error ? assignmentError.message : 'Unknown error'}`)
+          }
+        }
+        
         // Process contacts for this district
         for (const contact of district.contacts) {
           try {
-            // Check if contact already exists by email or name
+            // Check if contact already exists by email only
             let existingContact = null
             
             if (contact.email) {
@@ -150,16 +176,6 @@ export async function POST(request: NextRequest) {
                 where: {
                   districtId: districtId,
                   email: contact.email
-                }
-              })
-            }
-            
-            if (!existingContact) {
-              existingContact = await prisma.districtContact.findFirst({
-                where: {
-                  districtId: districtId,
-                  firstName: contact.firstName,
-                  lastName: contact.lastName
                 }
               })
             }

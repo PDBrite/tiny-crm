@@ -48,7 +48,10 @@ export default function CampaignDistrictContactsTable({
               </tr>
             ) : (
               campaignLeads.map((lead) => (
-                <tr key={lead.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => handleOpenContactEditPanel(lead)}>
+                <tr key={lead.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => {
+                  // Navigate to the district contact detail page
+                  window.location.href = `/district-contacts/${lead.id}`;
+                }}>
                   <td className="px-6 py-4">
                     <div className="flex items-center">
                       <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">

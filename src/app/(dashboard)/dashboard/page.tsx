@@ -19,6 +19,7 @@ import {
   BarChart3
 } from 'lucide-react'
 import CalendarPopup from '@/components/CalendarPopup'
+import { getCurrentDateString, formatDateToLocalString } from '@/utils/date-utils'
 
 interface DashboardStats {
   totalLeads: number
@@ -57,7 +58,7 @@ export default function Dashboard() {
   const [recentLeads, setRecentLeads] = useState<Lead[]>([])
   const [scheduledTouchpoints, setScheduledTouchpoints] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const [selectedDate, setSelectedDate] = useState(getCurrentDateString())
   const [selectedType, setSelectedType] = useState('')
   const [selectedCampaign, setSelectedCampaign] = useState('')
   const [showCalendarPopup, setShowCalendarPopup] = useState(false)
@@ -164,7 +165,7 @@ export default function Dashboard() {
           
           // Fetch today's touchpoints for email and call counts
           try {
-            const todayDateString = todayStart.toISOString().split('T')[0];
+            const todayDateString = formatDateToLocalString(todayStart);
             const touchpointsResponse = await fetch(`/api/touchpoint-counts?date=${todayDateString}&company=${effectiveCompany}`);
             if (touchpointsResponse.ok) {
               const touchpointsResult = await touchpointsResponse.json();
@@ -180,7 +181,7 @@ export default function Dashboard() {
           // For Avalern, use the district data
           // Calculate email and call counts from touchpoints
           try {
-            const todayDateString = todayStart.toISOString().split('T')[0];
+            const todayDateString = formatDateToLocalString(todayStart);
             const touchpointsResponse = await fetch(`/api/touchpoint-counts?date=${todayDateString}&company=${effectiveCompany}`);
             if (touchpointsResponse.ok) {
               const touchpointsResult = await touchpointsResponse.json();
@@ -452,8 +453,8 @@ export default function Dashboard() {
       endOfMonth.setDate(0)
 
       const params = new URLSearchParams()
-      params.append('startDate', startOfMonth.toISOString().split('T')[0])
-      params.append('endDate', endOfMonth.toISOString().split('T')[0])
+      params.append('startDate', formatDateToLocalString(startOfMonth))
+      params.append('endDate', formatDateToLocalString(endOfMonth))
       params.append('company', effectiveCompany)
       if (selectedCampaign) {
         params.append('campaignId', selectedCampaign)

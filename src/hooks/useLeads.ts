@@ -24,6 +24,7 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
   const [selectedCampaign, setSelectedCampaign] = useState<string>('all')
   const [selectedSource, setSelectedSource] = useState<string>('all')
   const [selectedCity, setSelectedCity] = useState<string>('all')
+  const [selectedState, setSelectedState] = useState<string>('all')
 
   // Selection states
   const [selectedLeads, setSelectedLeads] = useState<string[]>([])
@@ -47,11 +48,11 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
     try {
       // Skip if no company selected yet
       if (!selectedCompany) {
-        console.log('No company selected yet, skipping campaign fetch')
+    
         return
       }
       
-      console.log('Fetching campaigns for company:', selectedCompany)
+  
       
       const response = await fetch(`/api/campaigns?company=${selectedCompany}`)
       
@@ -61,7 +62,7 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
       }
       
       const data = await response.json()
-      console.log('Fetched campaigns:', data.campaigns?.length || 0)
+  
       
       setCampaigns(data.campaigns || [])
     } catch (error) {
@@ -83,7 +84,7 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
       }
       
       const data = await response.json()
-      console.log('Fetched leads:', data.leads?.length || 0)
+  
       
       setLeads(data.leads || [])
     } catch (error) {
@@ -114,7 +115,7 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
   const fetchDistrictContacts = async () => {
     try {
       setLoading(true)
-      console.log('Fetching district contacts for company:', selectedCompany)
+  
       
       // Build query parameters
       const params = new URLSearchParams()
@@ -130,7 +131,7 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
       }
       
       const data = await response.json()
-      console.log('Fetched district contacts:', data.contacts?.length || 0)
+  
       
       setDistrictContacts(data.contacts || [])
     } catch (error) {
@@ -187,7 +188,8 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
           (contact.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
           (contact.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
           (contact.district_lead?.district_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (contact.district_lead?.county || '').toLowerCase().includes(searchTerm.toLowerCase())
+          (contact.district_lead?.county || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (contact.district_lead?.state || '').toLowerCase().includes(searchTerm.toLowerCase())
         )
       }
 
@@ -204,6 +206,11 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
       // City filter (based on county for districts)
       if (selectedCity !== 'all') {
         filtered = filtered.filter(contact => contact.district_lead?.county === selectedCity)
+      }
+
+      // State filter (based on district state)
+      if (selectedState !== 'all') {
+        filtered = filtered.filter(contact => contact.district_lead?.state === selectedState)
       }
 
       setFilteredDistrictContacts(filtered)
@@ -245,7 +252,7 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
     
     // Reset to first page when filters change
     setCurrentPage(1)
-  }, [leads, districtContacts, searchTerm, selectedStage, selectedCampaign, selectedSource, selectedCity, selectedCompany])
+  }, [leads, districtContacts, searchTerm, selectedStage, selectedCampaign, selectedSource, selectedCity, selectedState, selectedCompany])
 
   // Pagination logic
   useEffect(() => {
@@ -460,6 +467,10 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
     ? [...new Set((districtContacts || []).map(c => c.district_lead?.county).filter((county): county is string => Boolean(county)))].sort()
     : [...new Set((leads || []).map(l => l.city).filter((city): city is string => Boolean(city)))].sort()
   
+  const uniqueStates = selectedCompany === 'Avalern'
+    ? [...new Set((districtContacts || []).map(c => c.district_lead?.state).filter((state): state is string => Boolean(state)))].sort()
+    : [...new Set((leads || []).map(l => l.state).filter((state): state is string => Boolean(state)))].sort()
+  
   const availableStatuses = Object.keys(STATUS_DISPLAY_MAP)
   const totalCompanyLeads = selectedCompany === 'Avalern' ? districtContacts.length : leads.length
 
@@ -491,6 +502,7 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
     selectedCampaign,
     selectedSource,
     selectedCity,
+    selectedState,
     
     // Selection states
     selectedLeads,
@@ -512,6 +524,7 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
     // Computed values
     uniqueSources,
     uniqueCities,
+    uniqueStates,
     availableStatuses,
     totalCompanyLeads,
     isAvalern: selectedCompany === 'Avalern',
@@ -522,6 +535,7 @@ export function useLeads(selectedCompany: string, districtFilter?: string | null
     setSelectedCampaign,
     setSelectedSource,
     setSelectedCity,
+    setSelectedState,
     handleSelectLead,
     handleSelectAll,
     handleSelectNumber,

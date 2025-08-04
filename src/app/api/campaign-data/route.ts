@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '../../../lib/prisma'
 import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
+import { authOptions } from '../../../lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
@@ -57,9 +57,9 @@ export async function GET(request: NextRequest) {
       name: campaign.name,
       company: campaign.company,
       description: campaign.description,
-      start_date: campaign.startDate?.toISOString(),
-      end_date: campaign.endDate?.toISOString(),
-      created_at: campaign.createdAt.toISOString(),
+      start_date: campaign.startDate ? campaign.startDate.toISOString().split('T')[0] : null,
+      end_date: campaign.endDate ? campaign.endDate.toISOString().split('T')[0] : null,
+      created_at: campaign.createdAt.toISOString().split('T')[0],
       status: campaign.status,
       outreach_sequence_id: campaign.outreachSequenceId,
       outreach_sequence: campaign.outreachSequence ? {
@@ -83,93 +83,50 @@ export async function GET(request: NextRequest) {
         role: campaign.createdBy.role
       } : null
     }
-    
-    return NextResponse.json({
-      campaign: formattedCampaign
-    })
-    
-  } catch (error) {
-    console.error('Error in campaign data API:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
-} 
 
-    // Fetch campaign data
-    const { data: campaign, error: campaignError } = await supabaseAdmin
-      .from('campaigns')
-      .select('id, name, company, status, created_at')
-      .eq('id', campaignId)
-      .single()
-    
-    if (campaignError) {
-      console.error('Error fetching campaign:', campaignError)
-      return NextResponse.json(
-        { error: 'Failed to fetch campaign', details: campaignError.message },
-        { status: 500 }
-      )
-    }
-    
-    // Fetch district leads associated with this campaign
-    const { data: districtLeads, error: districtError } = await supabaseAdmin
-      .from('district_leads')
-      .select('id, district_name, county, status')
-      .eq('campaign_id', campaignId)
-    
-    if (districtError) {
-      console.error('Error fetching district leads:', districtError)
-      return NextResponse.json({
-        campaign,
-        district_leads_error: 'Error fetching district leads',
-        district_leads: [],
-        district_leads_count: 0
-      })
-    }
-    
-    // If we have district leads, fetch their contacts
-    let districtContacts: any[] = []
-    let contactsErrorMessage = null
-    
-    if (districtLeads && districtLeads.length > 0) {
-      const districtIds = districtLeads.map(d => d.id)
-      
-      const { data: contacts, error: contactsError } = await supabaseAdmin
-        .from('district_contacts')
-        .select('id, first_name, last_name, email, district_lead_id')
-        .in('district_lead_id', districtIds)
-      
-      if (contactsError) {
-        console.error('Error fetching district contacts:', contactsError)
-        contactsErrorMessage = 'Error fetching district contacts'
-      } else {
-        districtContacts = contacts || []
+    // Fetch district contacts associated with this campaign
+    const allDistrictContacts = await prisma.districtContact.findMany({
+      where: { campaignId: campaignId },
+      include: {
+        district: {
+          select: {
+            id: true,
+            name: true,
+            county: true
+          }
+        }
       }
-    }
+    })
+
+    // Get unique districts from the contacts
+    const districtLeads = allDistrictContacts
+      .map(contact => contact.district)
+      .filter((district, index, self) => 
+        district && self.findIndex(d => d?.id === district.id) === index
+      )
+
+    // Use the already fetched district contacts
+    const districtContacts = allDistrictContacts
+    let contactsErrorMessage: string | null = null
     
     // Fetch touchpoints for this campaign
     let touchpoints: any[] = []
-    let touchpointsErrorMessage = null
+    let touchpointsErrorMessage: string | null = null
     
     if (districtContacts && districtContacts.length > 0) {
       try {
         // Get touchpoints for district contacts
         const districtContactIds = districtContacts.map(c => c.id)
         
-        // Use a more direct query to get all touchpoints for these contacts
-        const { data: districtTouchpoints, error: dtError } = await supabaseAdmin
-          .from('touchpoints')
-          .select('*')
-          .in('district_contact_id', districtContactIds)
+        touchpoints = await prisma.touchpoint.findMany({
+          where: {
+            districtContactId: {
+              in: districtContactIds
+            }
+          }
+        })
         
-        if (dtError) {
-          console.error('Error fetching district contact touchpoints:', dtError)
-          touchpointsErrorMessage = 'Error fetching district contact touchpoints'
-        } else {
-          touchpoints = districtTouchpoints || []
-          console.log(`Found ${touchpoints.length} touchpoints for district contacts`)
-        }
+        console.log(`Found ${touchpoints.length} touchpoints for district contacts`)
       } catch (error) {
         console.error('Error fetching touchpoints:', error)
         touchpointsErrorMessage = 'Error fetching touchpoints'
@@ -178,27 +135,24 @@ export async function GET(request: NextRequest) {
       // Try to get touchpoints directly for the campaign
       try {
         // First get all leads for this campaign
-        const { data: campaignLeads, error: leadsError } = await supabaseAdmin
-          .from('leads')
-          .select('id')
-          .eq('campaign_id', campaignId)
+        const campaignLeads = await prisma.lead.findMany({
+          where: { campaignId: campaignId },
+          select: { id: true }
+        })
           
-        if (!leadsError && campaignLeads && campaignLeads.length > 0) {
+        if (campaignLeads && campaignLeads.length > 0) {
           const leadIds = campaignLeads.map(l => l.id)
           
           // Get touchpoints for these leads
-          const { data: leadTouchpoints, error: ltError } = await supabaseAdmin
-            .from('touchpoints')
-            .select('*')
-            .in('lead_id', leadIds)
+          touchpoints = await prisma.touchpoint.findMany({
+            where: {
+              leadId: {
+                in: leadIds
+              }
+            }
+          })
             
-          if (ltError) {
-            console.error('Error fetching lead touchpoints:', ltError)
-            touchpointsErrorMessage = 'Error fetching lead touchpoints'
-          } else {
-            touchpoints = leadTouchpoints || []
-            console.log(`Found ${touchpoints.length} touchpoints for leads`)
-          }
+          console.log(`Found ${touchpoints.length} touchpoints for leads`)
         }
       } catch (error) {
         console.error('Error fetching lead touchpoints:', error)
@@ -207,7 +161,7 @@ export async function GET(request: NextRequest) {
     }
     
     return NextResponse.json({
-      campaign,
+      campaign: formattedCampaign,
       district_leads: districtLeads || [],
       district_leads_count: districtLeads?.length || 0,
       district_contacts: districtContacts,

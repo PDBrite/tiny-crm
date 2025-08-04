@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -15,7 +15,7 @@ export async function GET(
     }
 
     // Get the district ID from the params
-    const { id: districtId } = await context.params;
+    const { id: districtId } = await params;
 
     // Get district with contacts
     const district = await prisma.district.findUnique({
@@ -83,7 +83,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -93,7 +93,7 @@ export async function PATCH(
     }
 
     // Get the district ID from the params
-    const { id: districtId } = await context.params;
+    const { id: districtId } = await params;
     const { status, notes } = await request.json();
 
     // Verify district exists
@@ -105,7 +105,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'District not found' }, { status: 404 });
     }
 
-    // Update district
+    // Update district notes
     const updatedDistrict = await prisma.district.update({
       where: { id: districtId },
       data: {
@@ -114,7 +114,32 @@ export async function PATCH(
       }
     });
 
-    return NextResponse.json(updatedDistrict);
+    // If status is provided, update all district contacts with that status
+    if (status) {
+      // Validate status
+      const validStatuses = ['not_contacted', 'actively_contacting', 'engaged', 'won', 'not_interested'];
+      if (!validStatuses.includes(status)) {
+        return NextResponse.json(
+          { error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
+          { status: 400 }
+        );
+      }
+
+      // Update all contacts in this district to the new status
+      await prisma.districtContact.updateMany({
+        where: { districtId },
+        data: { 
+          status: status as any, // Type assertion since we validated above
+          lastContactedAt: status === 'engaged' ? new Date() : undefined
+        }
+      });
+    }
+
+    return NextResponse.json({
+      ...updatedDistrict,
+      status_updated: !!status,
+      message: status ? `District contacts updated to status: ${status}` : 'District updated successfully'
+    });
   } catch (error) {
     console.error('Error updating district:', error);
     return NextResponse.json(

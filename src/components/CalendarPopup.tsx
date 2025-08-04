@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Calendar, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { formatDateToLocalString } from '../utils/date-utils'
 
 interface CalendarPopupProps {
   isOpen: boolean
@@ -53,8 +54,8 @@ export default function CalendarPopup({
       const startOfMonth = new Date(newMonth.getFullYear(), newMonth.getMonth(), 1)
       const endOfMonth = new Date(newMonth.getFullYear(), newMonth.getMonth() + 1, 0)
       onMonthChange(
-        startOfMonth.toISOString().split('T')[0],
-        endOfMonth.toISOString().split('T')[0]
+        formatDateToLocalString(startOfMonth),
+        formatDateToLocalString(endOfMonth)
       )
     }
   }
@@ -70,7 +71,7 @@ export default function CalendarPopup({
   }
 
   const formatDateForAPI = (date: Date) => {
-    return date.toISOString().split('T')[0]
+    return formatDateToLocalString(date)
   }
 
   const isToday = (date: Date) => {

@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
     const districtId = url.searchParams.get('district_id')
     const districtIds = url.searchParams.get('district_ids')
     const status = url.searchParams.get('status')
+    const state = url.searchParams.get('state')
     const searchTerm = url.searchParams.get('search')
 
     console.log('District contacts API: Query params:', { districtId, districtIds, status, searchTerm })
@@ -82,6 +83,13 @@ export async function GET(request: NextRequest) {
         { lastName: { contains: searchTerm, mode: 'insensitive' } },
         { email: { contains: searchTerm, mode: 'insensitive' } }
       ]
+    }
+    
+    // Add state filter through district relation
+    if (state) {
+      whereConditions.district = {
+        state: state
+      }
     }
     
     // Execute query with Prisma
@@ -156,7 +164,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       contacts: enrichedContacts || [],
-      count: contacts.length
+      count: contacts.length,
+      debug: {
+        queryParams: { districtId, districtIds, status, searchTerm },
+        whereConditions,
+        rawCount: contacts.length
+      }
     })
     
   } catch (error) {

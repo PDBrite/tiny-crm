@@ -51,12 +51,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Date information is required (either date or startDate+endDate)' }, { status: 400 })
     }
 
-    // Parse the start and end dates
-    const parsedStartDate = new Date(startDate);
-    parsedStartDate.setHours(0, 0, 0, 0); // Set to start of day
+    // Parse the start and end dates in UTC to avoid timezone issues
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+    const parsedStartDate = new Date(Date.UTC(startYear, startMonth - 1, startDay, 0, 0, 0, 0));
     
-    const parsedEndDate = new Date(endDate);
-    parsedEndDate.setHours(23, 59, 59, 999); // Set to end of day
+    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+    const parsedEndDate = new Date(Date.UTC(endYear, endMonth - 1, endDay, 23, 59, 59, 999));
     
     let touchpoints = [];
     

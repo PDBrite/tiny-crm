@@ -256,19 +256,26 @@ function SelectLeadsContent() {
           for (const step of campaign.outreachSequence.steps) {
             const scheduledDate = addBusinessDays(launchDateObj, step.dayOffset)
             
+            console.log('Creating touchpoint for step:', {
+              stepType: step.type,
+              stepName: step.name,
+              stepContentLink: step.contentLink,
+              dayOffset: step.dayOffset
+            })
+            
             touchpointsToCreate.push({
               lead_id: leadId,
               type: step.type,
               subject: step.name || '',
               content: step.contentLink || '',
-              scheduled_at: scheduledDate.toISOString(),
-              created_at: new Date().toISOString()
+              scheduled_at: scheduledDate.toISOString()
             })
           }
         }
 
         // Use the API endpoint instead of direct Supabase access
         console.log(`Creating ${touchpointsToCreate.length} touchpoints via API`)
+        console.log('Sample touchpoint data:', JSON.stringify(touchpointsToCreate[0], null, 2))
         
         // Create touchpoints in smaller batches to avoid timeouts
         const BATCH_SIZE = 50;
@@ -290,6 +297,7 @@ function SelectLeadsContent() {
             if (!response.ok) {
               const errorData = await response.json();
               console.error(`Error creating touchpoints batch ${i/BATCH_SIZE + 1}:`, errorData);
+              throw new Error(`Touchpoint batch ${i/BATCH_SIZE + 1} failed: ${errorData.error || 'Unknown error'}`);
             } else {
               const result = await response.json();
               successCount += result.count || 0;
@@ -313,7 +321,7 @@ function SelectLeadsContent() {
 
     } catch (error) {
       console.error('Error creating campaign:', error)
-      alert('Failed to create campaign')
+      alert(`Failed to create campaign: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setCreating(false)
     }

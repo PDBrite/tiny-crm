@@ -14,11 +14,11 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          console.log("Missing credentials");
+    
           return null;
         }
 
-        console.log("Checking credentials for:", credentials.email);
+
 
         try {
           // Find user in database
@@ -34,7 +34,7 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!user) {
-            console.log("User not found in database");
+  
             return null;
           }
 
@@ -42,11 +42,11 @@ export const authOptions: NextAuthOptions = {
           const isPasswordValid = await compare(credentials.password, user.passwordHash);
           
           if (!isPasswordValid) {
-            console.log("Invalid password for user:", credentials.email);
+  
             return null;
           }
 
-          console.log("Credentials matched for user:", user.email, "Role:", user.role);
+
 
           // Get allowed companies from user's company access
           const allowedCompanies = user.companyAccess.map(access => 

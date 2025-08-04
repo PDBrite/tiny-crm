@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const allowedCompanies = session.user.allowedCompanies || []
     const userId = session.user.id // Get the user ID from the session
 
-    const { lead_id, district_contact_id, type, subject, content, completed_at, outcome } = await request.json()
+    const { lead_id, district_contact_id, type, subject, content, completed_at, outcome, scheduled_at } = await request.json()
     
     if ((!lead_id && !district_contact_id) || !type) {
       return NextResponse.json(
@@ -40,6 +40,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
       }
 
+      if (!lead.campaign) {
+        return NextResponse.json({ error: 'Lead not associated with a campaign' }, { status: 400 })
+      }
+
       const leadCompany = lead.campaign.company.toLowerCase()
       if (!allowedCompanies.includes(leadCompany)) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -52,26 +56,19 @@ export async function POST(request: NextRequest) {
       const districtContact = await prisma.districtContact.findUnique({
         where: { id: district_contact_id },
         select: {
-          district: {
-            select: {
-              campaign: {
-                select: { company: true }
-              }
-            }
+          campaign: {
+            select: { company: true }
           }
         }
       });
 
-      if (!districtContact || !districtContact.district || !districtContact.district.campaign) {
+      if (!districtContact) {
         return NextResponse.json({ error: 'District contact not found' }, { status: 404 })
       }
 
-      const districtCompany = districtContact.district.campaign.company.toLowerCase()
-      if (!allowedCompanies.includes(districtCompany)) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      }
-
-      if (userRole === 'member' && districtCompany !== 'avalern') {
+      // Allow creating touchpoints for district contacts even without campaigns
+      // For Avalern, district contacts are always allowed
+      if (userRole === 'member' && !allowedCompanies.includes('avalern')) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
     }
@@ -86,7 +83,7 @@ export async function POST(request: NextRequest) {
         outcome: outcome || null,
         leadId: lead_id || null,
         districtContactId: district_contact_id || null,
-        scheduledAt: new Date(), // Default to current time if not provided
+        scheduledAt: scheduled_at ? new Date(scheduled_at) : new Date(), // Use provided scheduled_at or default to current time
         createdById: userId // Store the user ID of the creator
       }
     });
@@ -100,18 +97,11 @@ export async function POST(request: NextRequest) {
           data: { lastContactedAt: new Date(completed_at) }
         });
       } else if (district_contact_id) {
-        // For district contacts, update the district's lastContactedAt
-        const districtContact = await prisma.districtContact.findUnique({
+        // For district contacts, update the contact's lastContactedAt
+        await prisma.districtContact.update({
           where: { id: district_contact_id },
-          select: { districtId: true }
+          data: { lastContactedAt: new Date(completed_at) }
         });
-        
-        if (districtContact) {
-          await prisma.district.update({
-            where: { id: districtContact.districtId },
-            data: { lastContactedAt: new Date(completed_at) }
-          });
-        }
       }
     }
 
@@ -247,15 +237,15 @@ export async function GET(request: NextRequest) {
         role: tp.createdBy.role
       } : null,
       lead: tp.lead ? {
-          id: tp.lead.id,
-          first_name: tp.lead.firstName,
-          last_name: tp.lead.lastName,
-          email: tp.lead.email
+        id: tp.lead.id,
+        first_name: tp.lead.firstName,
+        last_name: tp.lead.lastName,
+        email: tp.lead.email
       } : null,
       district_contact: tp.districtContact ? {
-          id: tp.districtContact.id,
-          first_name: tp.districtContact.firstName,
-          last_name: tp.districtContact.lastName,
+        id: tp.districtContact.id,
+        first_name: tp.districtContact.firstName,
+        last_name: tp.districtContact.lastName,
         email: tp.districtContact.email,
         title: tp.districtContact.title
       } : null
@@ -301,12 +291,8 @@ export async function PUT(request: NextRequest) {
         },
         districtContact: {
           select: {
-            district: {
-              select: {
-                campaign: {
-                  select: { company: true }
-                }
-              }
+            campaign: {
+              select: { company: true }
             }
           }
         }
@@ -322,8 +308,8 @@ export async function PUT(request: NextRequest) {
     
     if (touchpointToUpdate.lead?.campaign?.company) {
       touchpointCompany = touchpointToUpdate.lead.campaign.company;
-    } else if (touchpointToUpdate.districtContact?.district?.campaign?.company) {
-      touchpointCompany = touchpointToUpdate.districtContact.district.campaign.company;
+    } else if (touchpointToUpdate.districtContact?.campaign?.company) {
+      touchpointCompany = touchpointToUpdate.districtContact.campaign.company;
     }
 
     if (!touchpointCompany) {
@@ -380,8 +366,8 @@ export async function PUT(request: NextRequest) {
       });
     } else if (updatedTouchpoint.districtContactId && updatedTouchpoint.districtContact?.district?.id) {
       // For district contacts, update the district's last_contacted_at
-      await prisma.district.update({
-        where: { id: updatedTouchpoint.districtContact.district.id },
+      await prisma.districtContact.update({
+        where: { id: updatedTouchpoint.districtContactId },
         data: { lastContactedAt: new Date() }
       });
     }
