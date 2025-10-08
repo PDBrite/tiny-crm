@@ -1,26 +1,16 @@
 import { PrismaClient } from '@prisma/client'
 
-// Database configuration for different environments
+// Database configuration for local development
 export const getDatabaseUrl = (): string => {
-  const nodeEnv = process.env.NODE_ENV || 'development'
-  
-  switch (nodeEnv) {
-    case 'test':
-      return process.env.TEST_DATABASE_URL || process.env.DATABASE_URL || ''
-    case 'production':
-      return process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL || ''
-    case 'development':
-    default:
-      return process.env.DATABASE_URL || ''
-  }
+  return process.env.DATABASE_URL || ''
 }
 
-// Create Prisma client with the appropriate database URL
+// Create Prisma client with the database URL
 export const createPrismaClient = (): PrismaClient => {
   const databaseUrl = getDatabaseUrl()
   
   if (!databaseUrl) {
-    throw new Error(`Database URL not found for environment: ${process.env.NODE_ENV}`)
+    throw new Error('Database URL not found. Please set DATABASE_URL in your .env file')
   }
   
   return new PrismaClient({
@@ -32,30 +22,15 @@ export const createPrismaClient = (): PrismaClient => {
   })
 }
 
-// Environment-specific database utilities
+// Database configuration
 export const dbConfig = {
-  development: {
-    url: process.env.DATABASE_URL,
-    description: 'Local Docker PostgreSQL'
-  },
-  test: {
-    url: process.env.TEST_DATABASE_URL,
-    description: 'Neon Test Database'
-  },
-  production: {
-    url: process.env.PRODUCTION_DATABASE_URL,
-    description: 'Neon Production Database'
-  }
+  url: process.env.DATABASE_URL,
+  description: 'Local Docker PostgreSQL'
 }
 
 // Validate database configuration
 export const validateDatabaseConfig = (): void => {
-  const nodeEnv = process.env.NODE_ENV || 'development'
-  const config = dbConfig[nodeEnv as keyof typeof dbConfig]
-  
-  if (!config?.url) {
-    throw new Error(`Database URL not configured for ${nodeEnv} environment`)
+  if (!dbConfig.url) {
+    throw new Error('Database URL not configured. Please set DATABASE_URL in your .env file')
   }
-  
-
-} 
+}

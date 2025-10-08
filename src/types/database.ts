@@ -1,4 +1,4 @@
-// Database Types for Lead Manager - San Fernando Valley Real Estate
+// Database Types for Tiny CRM - San Fernando Valley Real Estate
 export interface Database {
   public: {
     Tables: {

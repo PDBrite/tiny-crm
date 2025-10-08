@@ -1,5 +1,5 @@
 {
-  "name": "lead-manager",
+  "name": "tiny-crm",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -14,19 +14,8 @@
     "db:reset": "prisma migrate reset --force",
     "db:seed": "ts-node --compiler-options {\\\"module\\\":\\\"CommonJS\\\"} prisma/seed.ts",
     "db:setup": "npm run docker:up && npm run db:migrate && npm run db:seed",
-    "db:test:migrate": "DATABASE_URL=$TEST_DATABASE_URL prisma migrate deploy",
-    "db:test:reset": "DATABASE_URL=$TEST_DATABASE_URL prisma migrate reset --force",
-    "db:test:seed": "DATABASE_URL=$TEST_DATABASE_URL ts-node --compiler-options {\\\"module\\\":\\\"CommonJS\\\"} prisma/seed.ts",
-    "db:test:setup": "npm run db:test:migrate && npm run db:test:seed",
-    "db:prod:migrate": "DATABASE_URL=$PRODUCTION_DATABASE_URL prisma migrate deploy",
-    "db:prod:reset": "DATABASE_URL=$PRODUCTION_DATABASE_URL prisma migrate reset --force",
-    "db:prod:seed": "DATABASE_URL=$PRODUCTION_DATABASE_URL ts-node --compiler-options {\\\"module\\\":\\\"CommonJS\\\"} prisma/seed.ts",
-    "db:prod:setup": "npm run db:prod:migrate && npm run db:prod:seed",
-    "test": "NODE_ENV=test npm run db:test:setup && npm run test:run",
-    "test:run": "jest",
-    "build:test": "NODE_ENV=test next build",
-    "build:prod": "NODE_ENV=production next build",
-    "setup:neon": "node scripts/setup-neon.js"
+    "test": "npm run test:run",
+    "test:run": "jest"
   },
   "dependencies": {
     "@prisma/client": "^6.10.1",

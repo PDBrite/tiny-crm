@@ -1,8 +1,8 @@
-# Lead Manager - Prospect Tracking Dashboard
+# Tiny CRM - Prospect Tracking Dashboard
 
 A comprehensive prospect tracking dashboard for outbound sales campaigns across multiple brands (CraftyCode and Avalern). Built with Next.js, TypeScript, TailwindCSS, and Prisma with PostgreSQL.
 
-![Lead Manager Dashboard](docs/dashboard-preview.png)
+![Tiny CRM Dashboard](docs/dashboard-preview.png)
 
 ## 🌟 Features
 
@@ -73,7 +73,7 @@ A comprehensive prospect tracking dashboard for outbound sales campaigns across 
 
 ```bash
 git clone <repository-url>
-cd lead-manager
+cd tiny-crm
 npm install
 ```
 
@@ -83,7 +83,7 @@ Create a `.env` file in the root directory:
 
 ```env
 # Database URL for Prisma
-DATABASE_URL="postgresql://username:password@localhost:5432/lead_manager"
+DATABASE_URL="postgresql://username:password@localhost:5432/tiny_crm"
 
 # NextAuth configuration
 NEXTAUTH_SECRET=your-nextauth-secret

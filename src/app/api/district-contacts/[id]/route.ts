@@ -2,21 +2,28 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logger } from '@/lib/logger'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const startTime = Date.now()
+  let session: any = null
+  
   try {
     // Check authentication
-    const session = await getServerSession(authOptions)
+    session = await getServerSession(authOptions)
     
     if (!session) {
+      logger.logApiError(request, new Error('Not authenticated'))
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
       )
     }
+
+    logger.logApiRequest(request, session.user?.id, session.user?.role)
 
     // Get the district contact ID from the params
     const { id: contactId } = await params
@@ -138,10 +145,12 @@ export async function GET(
       scheduled_touchpoints_count: contact.touchpoints.filter(tp => tp.completedAt === null && tp.scheduledAt !== null).length
     }
 
+    const responseTime = Date.now() - startTime
+    logger.logApiResponse(request, 200, responseTime, session.user?.id, session.user?.role)
     return NextResponse.json(formattedContact)
     
   } catch (error) {
-    console.error('Error in district contact API:', error)
+    logger.logApiError(request, error instanceof Error ? error : new Error('Unknown error'), session?.user?.id, session?.user?.role)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

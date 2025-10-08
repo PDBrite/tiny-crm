@@ -39,7 +39,7 @@ export default function PageTitle() {
       const segments = pathname.split('/').filter(Boolean)
       
       if (segments.length === 0) {
-        return 'Dashboard - Lead Manager'
+        return 'Dashboard - Tiny CRM'
       }
       
       // Convert path segments to readable titles
@@ -63,10 +63,10 @@ export default function PageTitle() {
       
       // Handle campaign detail pages
       if (segments[0] === 'campaigns' && segments[1] && segments[1] !== 'select-leads' && segments[1] !== 'select-districts') {
-        return campaignName ? `${campaignName} - Lead Manager` : 'Campaign Details - Lead Manager'
+        return campaignName ? `${campaignName} - Tiny CRM` : 'Campaign Details - Tiny CRM'
       }
       
-      return `${pageName} - Lead Manager`
+      return `${pageName} - Tiny CRM`
     }
     
     document.title = generateTitle()

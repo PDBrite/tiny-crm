@@ -1,55 +1,38 @@
 # Database Setup Guide
 
-This guide will help you set up your database to run on Neon for both test and production environments.
+This guide will help you set up your database using Docker for local development.
 
 ## Overview
 
-The project supports three database environments:
-- **Development**: Local PostgreSQL via Docker
-- **Test**: Neon PostgreSQL for testing
-- **Production**: Neon PostgreSQL for production
+The project uses a local PostgreSQL database via Docker for development.
 
 ## Quick Setup
 
-Run the automated setup script:
+Run the complete setup command:
 
 ```bash
-npm run setup:neon
+npm run db:setup
 ```
 
-This will create your `.env` file and provide step-by-step instructions.
+This will start the Docker container, run migrations, and seed the database.
 
 ## Manual Setup
 
-### 1. Create Neon Projects
+### 1. Start the Database
 
-1. Go to [Neon Console](https://console.neon.tech)
-2. Create an account if you don't have one
-3. Create two projects:
-   - `lead-manager-test` (for testing)
-   - `lead-manager-prod` (for production)
+```bash
+npm run docker:up
+```
 
-### 2. Get Database Connection Strings
+This starts a PostgreSQL container on port 5433.
 
-For each project:
-1. Go to the project dashboard
-2. Click on "Connection Details"
-3. Copy the connection string
-4. Replace `username`, `password`, and `database` with your actual values
-
-### 3. Configure Environment Variables
+### 2. Configure Environment Variables
 
 Create a `.env` file in your project root with the following variables:
 
 ```env
-# Development (local Docker)
-DATABASE_URL="postgresql://postgres:postgres@localhost:5433/lead_manager"
-
-# Test Environment (Neon)
-TEST_DATABASE_URL="postgresql://username:password@ep-test-123456.us-east-1.aws.neon.tech/lead_manager_test?sslmode=require"
-
-# Production Environment (Neon)
-PRODUCTION_DATABASE_URL="postgresql://username:password@ep-prod-123456.us-east-1.aws.neon.tech/lead_manager_prod?sslmode=require"
+# Database URL
+DATABASE_URL="postgresql://postgres:postgres@localhost:5433/tiny_crm"
 
 # NextAuth Configuration
 NEXTAUTH_URL="http://localhost:3000"
@@ -59,16 +42,14 @@ NEXTAUTH_SECRET="your-nextauth-secret-here"
 NODE_ENV="development"
 ```
 
-### 4. Set Up Databases
-
-Run the following commands to set up your databases:
+### 3. Set Up the Database
 
 ```bash
-# For test environment
-npm run db:test:setup
+# Run migrations
+npm run db:migrate
 
-# For production environment
-npm run db:prod:setup
+# Seed the database
+npm run db:seed
 ```
 
 ## Available Scripts
@@ -76,47 +57,19 @@ npm run db:prod:setup
 ### Development (Local Docker)
 ```bash
 npm run docker:up          # Start local PostgreSQL
+npm run docker:down        # Stop local PostgreSQL
 npm run db:migrate         # Run migrations
 npm run db:seed           # Seed the database
 npm run db:setup          # Complete setup (up + migrate + seed)
 npm run db:studio         # Open Prisma Studio
-```
-
-### Test Environment (Neon)
-```bash
-npm run db:test:migrate   # Deploy migrations to test DB
-npm run db:test:seed      # Seed test database
-npm run db:test:setup     # Complete test setup
-npm run db:test:reset     # Reset test database
-```
-
-### Production Environment (Neon)
-```bash
-npm run db:prod:migrate   # Deploy migrations to production DB
-npm run db:prod:seed      # Seed production database
-npm run db:prod:setup     # Complete production setup
-npm run db:prod:reset     # Reset production database (⚠️ Use with caution!)
+npm run db:reset          # Reset the database
 ```
 
 ### Testing
 ```bash
-npm run test              # Run tests with test database
-npm run test:run          # Run tests only (assumes DB is set up)
+npm run test              # Run tests
+npm run test:run          # Run tests only
 ```
-
-### Building
-```bash
-npm run build:test        # Build for test environment
-npm run build:prod        # Build for production environment
-```
-
-## Environment-Specific Configuration
-
-The application automatically detects the environment and uses the appropriate database:
-
-- **Development** (`NODE_ENV=development`): Uses `DATABASE_URL`
-- **Test** (`NODE_ENV=test`): Uses `TEST_DATABASE_URL`
-- **Production** (`NODE_ENV=production`): Uses `PRODUCTION_DATABASE_URL`
 
 ## Database Schema
 
@@ -138,21 +91,16 @@ The database schema is defined in `prisma/schema.prisma` and includes:
 - Migrations are applied immediately
 - Schema is automatically updated
 
-### Test/Production
-- Use `prisma migrate deploy` to apply existing migrations
-- No schema changes are made
-- Safe for production environments
-
 ## Troubleshooting
 
 ### Connection Issues
-1. Verify your connection strings are correct
-2. Check that your Neon projects are active
-3. Ensure your IP is whitelisted (if required)
-4. Verify SSL mode is set to `require`
+1. Verify Docker is running
+2. Check that the container is started: `docker ps`
+3. Ensure port 5433 is not in use by another service
+4. Verify the connection string in your `.env` file
 
 ### Migration Issues
-1. Ensure you're using the correct environment
+1. Ensure the database container is running
 2. Check that the database exists
 3. Verify you have the necessary permissions
 4. Check the migration history
@@ -165,26 +113,12 @@ The database schema is defined in `prisma/schema.prisma` and includes:
 ## Security Best Practices
 
 1. **Never commit `.env` files** to version control
-2. **Use different databases** for test and production
+2. **Use strong passwords** for production databases
 3. **Rotate database passwords** regularly
-4. **Use connection pooling** for production
-5. **Monitor database usage** and costs
-6. **Backup your data** regularly
-
-## Cost Optimization
-
-Neon offers a generous free tier:
-- 3 projects
-- 0.5 GB storage
-- 10 GB transfer per month
-
-For production use, consider:
-- Monitoring usage to stay within limits
-- Upgrading to paid plans as needed
-- Using connection pooling to reduce costs
+4. **Backup your data** regularly
 
 ## Support
 
-- [Neon Documentation](https://neon.tech/docs)
 - [Prisma Documentation](https://www.prisma.io/docs)
-- [Next.js Documentation](https://nextjs.org/docs) 
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Docker Documentation](https://docs.docker.com/)

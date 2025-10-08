@@ -59,7 +59,7 @@ export default function LoginForm() {
         <div className="flex items-center justify-center w-16 h-16 mb-4 bg-blue-600 rounded-full">
           <Building2 className="h-8 w-8 text-white" />
         </div>
-        <h1 className="text-3xl font-bold text-center">Lead Manager</h1>
+        <h1 className="text-3xl font-bold text-center">Tiny CRM</h1>
         <p className="mt-2 text-gray-600">Sign in to your account</p>
       </div>
 

@@ -46,7 +46,7 @@ model Campaign {
   createdById         String?            @map("created_by_id")
   outreachSequenceId  String?            @map("outreach_sequence_id")
   instantlyCampaignId String?            @map("instantly_campaign_id")
-  status              CampaignStatusType @default(complete)
+  status              CampaignStatusType @default(draft)
   createdBy           User?              @relation(fields: [createdById], references: [id])
   outreachSequence    OutreachSequence?  @relation(fields: [outreachSequenceId], references: [id])
   districtContacts    DistrictContact[]
@@ -227,7 +227,9 @@ enum LeadStatusType {
 
 enum CampaignStatusType {
   active
-  complete
+  completed
+  draft
+  paused
 }
 
 enum UserRoleType {

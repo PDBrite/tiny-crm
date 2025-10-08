@@ -1,6 +1,6 @@
 # Migrating from Supabase to Prisma
 
-This document outlines the process of migrating the Lead Manager application from direct Supabase database access to using Prisma ORM with Supabase as the PostgreSQL provider.
+This document outlines the process of migrating the Tiny CRM application from direct Supabase database access to using Prisma ORM with Supabase as the PostgreSQL provider.
 
 ## Why Prisma?
 

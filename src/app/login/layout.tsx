@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Login - Lead Manager",
-  description: "Login to the Lead Manager system",
+  title: "Login - Tiny CRM",
+  description: "Login to the Tiny CRM system",
 };
 
 export default function LoginLayout({

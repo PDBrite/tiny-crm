@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Lead Manager now includes a comprehensive outreach automation system that supports:
+The Tiny CRM now includes a comprehensive outreach automation system that supports:
 
 - **📅 Weekday-only outreach** (business days only)
 - **🎯 8-touch, 10-business-day sequences** 
@@ -319,4 +319,4 @@ No additional environment variables required - uses existing Supabase configurat
 4. **Calendly**: Automatic meeting booking
 5. **Twilio**: SMS touchpoint support
 
-This outreach automation system transforms the Lead Manager from a simple CRM into a powerful sales automation platform, enabling systematic, scalable outreach while maintaining personal touch through customized messaging and business-day-aware scheduling. 
+This outreach automation system transforms the Tiny CRM from a simple CRM into a powerful sales automation platform, enabling systematic, scalable outreach while maintaining personal touch through customized messaging and business-day-aware scheduling. 

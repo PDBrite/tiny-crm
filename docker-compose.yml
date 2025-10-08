@@ -2,14 +2,14 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15
-    container_name: lead-manager-db
+    container_name: tiny-crm-db
     restart: always
     ports:
       - "5433:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: lead_manager
+      POSTGRES_DB: tiny_crm
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
