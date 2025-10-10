@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
         if (assigned_user_id) {
           try {
             // Check if assignment already exists
-            const existingAssignment = await prisma.userDistricts.findFirst({
+            const existingAssignment = await prisma.userDistrictAssignment.findFirst({
               where: {
                 userId: assigned_user_id,
                 districtId: districtId
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
             })
             
             if (!existingAssignment) {
-              await prisma.userDistricts.create({
+              await prisma.userDistrictAssignment.create({
                 data: {
                   userId: assigned_user_id,
                   districtId: districtId

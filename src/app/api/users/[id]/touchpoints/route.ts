@@ -55,6 +55,31 @@ export async function GET(
     // Get touchpoints created by this user
     // For now, we'll use a simple approach - in a real app, you might track
     // which user created each touchpoint
+    // const touchpoints = await prisma.touchpoint.findMany({
+    //   where: whereClause,
+    //   include: {
+    //     lead: {
+    //       select: {
+    //         id: true,
+    //         firstName: true,
+    //         lastName: true,
+    //         email: true
+    //       }
+    //     },
+    //     districtContact: {
+    //       select: {
+    //         id: true,
+    //         firstName: true,
+    //         lastName: true,
+    //         email: true
+    //       }
+    //     }
+    //   },
+    //   orderBy: {
+    //     createdAt: 'desc'
+    //   },
+    //   take: startDate && endDate ? 1000 : 50 // Allow more results for analytics
+    // });
     const touchpoints = await prisma.touchpoint.findMany({
       where: whereClause,
       include: {
@@ -73,12 +98,20 @@ export async function GET(
             lastName: true,
             email: true
           }
+        },
+        createdBy: {  // ADD THIS
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true
+          }
         }
       },
       orderBy: {
         createdAt: 'desc'
       },
-      take: startDate && endDate ? 1000 : 50 // Allow more results for analytics
+      take: startDate && endDate ? 1000 : 50
     });
 
     // Transform touchpoints to match the expected format

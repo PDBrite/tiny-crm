@@ -65,15 +65,32 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch touchpoints for this district contact
+    // const touchpoints = await prisma.touchpoint.findMany({
+    //   where: { 
+    //     districtContactId: districtContactId 
+    //   },
+    //   orderBy: { 
+    //     scheduledAt: 'asc' 
+    //   }
+    // });
     const touchpoints = await prisma.touchpoint.findMany({
       where: { 
         districtContactId: districtContactId 
+      },
+      include: {  // ADD THIS WHOLE BLOCK
+        createdBy: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true
+          }
+        }
       },
       orderBy: { 
         scheduledAt: 'asc' 
       }
     });
-    
     // Format the touchpoints
     const formattedTouchpoints = touchpoints.map(tp => ({
       id: tp.id,

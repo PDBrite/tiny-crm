@@ -150,38 +150,71 @@ export async function GET(request: NextRequest) {
     }
 
     // Build the query
-    const query: any = {
-      where: {},
-          include: {
-        districtContact: { 
-          select: { 
-            id: true, 
-            firstName: true, 
-            lastName: true, 
-            email: true, 
-            title: true 
-          } 
-        },
-          lead: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true
-            }
-        },
-        createdBy: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            role: true
-          }
-        }
-      },
-      orderBy: {}
-    };
+    // const query: any = {
+    //   where: {},
+    //       include: {
+    //     districtContact: { 
+    //       select: { 
+    //         id: true, 
+    //         firstName: true, 
+    //         lastName: true, 
+    //         email: true, 
+    //         title: true 
+    //       } 
+    //     },
+    //       lead: {
+    //         select: {
+    //           id: true,
+    //           firstName: true,
+    //           lastName: true,
+    //           email: true
+    //         }
+    //     },
+    //     createdBy: {
+    //       select: {
+    //         id: true,
+    //         email: true,
+    //         firstName: true,
+    //         lastName: true,
+    //         role: true
+    //       }
+    //     }
+    //   },
+    //   orderBy: {}
+    // };
+    // Build the query with proper typing
+const query = {
+  where: {} as any,
+  include: {
+    districtContact: { 
+      select: { 
+        id: true, 
+        firstName: true, 
+        lastName: true, 
+        email: true, 
+        title: true 
+      } 
+    },
+    lead: {
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true
+      }
+    },
+    createdBy: {
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true
+      }
+    }
+  },
+  orderBy: {} as any
+};
 
     // Set up the where conditions
     if (districtContactIds) {
