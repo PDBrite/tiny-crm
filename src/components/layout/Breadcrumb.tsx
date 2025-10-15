@@ -67,7 +67,11 @@ export default function Breadcrumb() {
     // Build breadcrumbs from path segments
     let currentPath = ''
     segments.forEach((segment, index) => {
-      currentPath += `/${segment}`
+      if (segment === 'district-contacts') {
+        currentPath += `/leads`
+      } else {
+        currentPath += `/${segment}`
+      }
       
       // Convert segment to readable name
       let name = segment

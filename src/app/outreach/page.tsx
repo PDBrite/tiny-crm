@@ -1019,8 +1019,6 @@ export default function OutreachPage() {
                   >
                     <option value="">All Types</option>
                     <option value="email">Email</option>
-                    <option value="call">Call</option>
-                    <option value="linkedin_message">LinkedIn Message</option>
                   </select>
                 </div>
                 
