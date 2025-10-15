@@ -167,14 +167,14 @@ function CreateSequenceModal({
               <label className="block text-sm font-medium text-gray-700">
                 Sequence Steps
               </label>
-              <button
+              {/* <button
                 type="button"
                 onClick={addStep}
                 className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
               >
                 <Plus className="h-4 w-4 mr-1" />
                 Add Step
-              </button>
+              </button> */}
             </div>
             
             <div className="space-y-4">
@@ -196,17 +196,14 @@ function CreateSequenceModal({
                       <label className="block text-xs font-medium text-gray-700 mb-1">
                         Type
                       </label>
-                      <select
+                       <select
                         value={step.type}
                         onChange={(e) => updateStep(index, 'type', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
                       >
                         <option value="email">Email</option>
-                        <option value="call">Call</option>
-                        <option value="linkedin_message">LinkedIn Message</option>
                       </select>
                     </div>
-                    
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">
                         Day Offset
