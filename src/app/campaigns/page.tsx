@@ -703,7 +703,7 @@ export default function CampaignsPage() {
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className={`w-3 h-3 rounded-full mr-3 ${campaign.company === 'CraftyCode' ? 'bg-blue-500' : 'bg-purple-500'}`}></div>
+                            <div className={`w-3 h-3 rounded-full mr-3 ${(campaign.company || '').toString().toLowerCase() === 'craftycode' ? 'bg-blue-500' : 'bg-purple-500'}`}></div>
                             <div>
                               <div className="text-sm font-medium text-gray-900">{campaign.name}</div>
                               {campaign.outreach_sequence && (
@@ -890,7 +890,7 @@ export default function CampaignsPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
                   <div className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-700">
                     <div className="flex items-center">
-                      <div className={`w-3 h-3 rounded-full mr-2 ${selectedCompany === 'CraftyCode' ? 'bg-blue-500' : 'bg-purple-500'}`}></div>
+                      <div className={`w-3 h-3 rounded-full mr-2 ${(selectedCompany || '').toString().toLowerCase() === 'craftycode' ? 'bg-blue-500' : 'bg-purple-500'}`}></div>
                       {selectedCompany}
                     </div>
                   </div>

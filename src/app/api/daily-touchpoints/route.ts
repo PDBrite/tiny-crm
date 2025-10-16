@@ -188,7 +188,7 @@ export async function GET(request: NextRequest) {
         };
       }).filter(Boolean);
     } else {
-      // For other companies (like CraftyCode), fetch regular lead touchpoints
+  // For other companies (non-district), fetch regular lead touchpoints
       // First, get the campaigns for this company
       const campaigns = await prisma.campaign.findMany({
         where: {

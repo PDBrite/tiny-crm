@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Tiny CRM - Prospect Tracking Dashboard",
-  description: "Comprehensive prospect tracking dashboard for outbound sales campaigns across CraftyCode and Avalern brands",
+  description: "Comprehensive prospect tracking dashboard for outbound sales campaigns across multiple brands",
 };
 
 export default function RootLayout({

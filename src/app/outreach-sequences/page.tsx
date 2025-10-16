@@ -448,7 +448,7 @@ export default function OutreachSequencesPage() {
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className={`w-3 h-3 rounded-full mr-3 ${sequence.company === 'CraftyCode' ? 'bg-blue-500' : 'bg-purple-500'}`}></div>
+                          <div className={`w-3 h-3 rounded-full mr-3 ${(sequence.company || '').toString().toLowerCase() === 'craftycode' ? 'bg-blue-500' : 'bg-purple-500'}`}></div>
                           <div>
                             <div className="text-sm font-medium text-gray-900">{sequence.name}</div>
                             {sequence.description && (

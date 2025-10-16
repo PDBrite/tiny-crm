@@ -649,7 +649,7 @@ export default function OutreachPage() {
         created_at: touchpoint.district_contact.created_at || new Date().toISOString()
       };
     } else if (touchpoint.lead) {
-      // Regular CraftyCode lead format
+  // Regular leads format (non-district/company specific)
       lead = {
         ...touchpoint.lead,
         created_at: touchpoint.lead.created_at || new Date().toISOString(),
@@ -835,7 +835,7 @@ export default function OutreachPage() {
           campaignName
         ]
       } else {
-        // CraftyCode uses leads
+  // Non-district companies use leads
         const lead = touchpoint.lead || {};
         return [
           lead.first_name || '',
@@ -1116,7 +1116,7 @@ export default function OutreachPage() {
                           campaignName = touchpoint.district_contact.district_lead?.district_name || '';
                         }
                       } else {
-                        // Regular leads format for CraftyCode
+                        // Regular leads format for non-district companies
                         contactName = `${touchpoint.lead?.first_name || ''} ${touchpoint.lead?.last_name || ''}`.trim();
                         contactEmail = touchpoint.lead?.email || '';
                         campaignName = touchpoint.lead?.campaign?.name || '';

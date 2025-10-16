@@ -22,10 +22,10 @@ export default function Companies() {
 
         {allowedCompanies.includes("craftycode") && (
           <div className="p-6 border rounded-lg bg-white">
-            <h2 className="text-2xl font-bold mb-4">CraftyCode</h2>
+            <h2 className="text-2xl font-bold mb-4">Partner Company</h2>
             <p className="mb-2">Industry: Developer Tools</p>
             <p className="mb-2">Founded: 2020</p>
-            <p>CraftyCode builds productivity tools for software developers.</p>
+            <p>Partner company profile and summary.</p>
           </div>
         )}
 

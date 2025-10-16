@@ -117,7 +117,7 @@ export default function ImportPage() {
     }
   }
   
-  // Function to detect if CSV is CraftyCode format
+  // Function to detect if CSV matches known import formats (alternate leads provider or district CSV)
   const detectCSVFormat = async (file: File): Promise<'craftycode' | 'avalern' | 'unknown'> => {
     return new Promise((resolve) => {
       Papa.parse(file, {
@@ -133,13 +133,13 @@ export default function ImportPage() {
           const headers = results.meta.fields.map(h => h.toLowerCase())
           console.log('CSV Headers:', headers)
           
-          // CraftyCode headers
+          // Alternate leads headers (common third-party provider format)
           const craftyCodeHeaders = ['first name', 'last name', 'email', 'online profile', 'phone number', 'linkedin url', 'company', 'city/state']
           
           // Avalern headers  
           const avernHeaders = ['school district name', 'county', 'first name', 'last name', 'title', 'email address']
           
-          // Check if it matches CraftyCode format - more flexible matching
+          // Check if it matches an alternate leads provider format - more flexible matching
           const craftyCodeMatches = craftyCodeHeaders.filter(header => 
             headers.some(h => h.includes(header.toLowerCase()) || header.toLowerCase().includes(h))
           ).length
@@ -149,7 +149,7 @@ export default function ImportPage() {
             headers.some(h => h.includes(header.toLowerCase()) || header.toLowerCase().includes(h))
           ).length
           
-          console.log('Format matches - CraftyCode:', craftyCodeMatches, 'Avalern:', avernMatches)
+          console.log('Format matches - alternate leads provider:', craftyCodeMatches, 'Avalern:', avernMatches)
           
           if (craftyCodeMatches >= 3 && craftyCodeMatches > avernMatches) {
             resolve('craftycode')
@@ -222,7 +222,7 @@ export default function ImportPage() {
           valid: [],
           invalid: [{
             lead: { firstName: '', lastName: '', email: '' },
-            errors: ['This appears to be a CraftyCode spreadsheet format. Please upload an Avalern district CSV file with columns: School District Name, County, First Name, Last Name, Title, Email Address.'],
+            errors: ['This appears to be a different spreadsheet format. Please upload an Avalern district CSV file with columns: School District Name, County, First Name, Last Name, Title, Email Address.'],
             rowIndex: 1
           }],
           duplicates: []
@@ -232,13 +232,13 @@ export default function ImportPage() {
         return
       }
       
-      // Prevent importing Avalern spreadsheets when CraftyCode is selected
-      if (csvFormat === 'avalern' && selectedCompany === 'CraftyCode') {
+  // Prevent importing Avalern district spreadsheets when a non-district leads import is selected
+  if (csvFormat === 'avalern' && selectedCompany !== 'Avalern') {
         setValidationResult({
           valid: [],
           invalid: [{
             lead: { firstName: '', lastName: '', email: '' },
-            errors: ['This appears to be an Avalern district spreadsheet format. Please upload a CraftyCode leads CSV file with columns: First Name, Last Name, Email, Company, etc.'],
+            errors: ['This appears to be an Avalern district spreadsheet format. Please upload a leads CSV file with columns: First Name, Last Name, Email, Company, etc.'],
             rowIndex: 1
           }],
           duplicates: []
@@ -366,7 +366,7 @@ export default function ImportPage() {
         }
         
       } else {
-        // Process individual leads CSV for CraftyCode
+  // Process individual leads CSV for standard leads import
         await processAsLeads(file)
       }
       
@@ -827,13 +827,13 @@ Robert,Kim,rkim@compass.com,https://www.zillow.com/profile/robertkim,(818) 555-0
           <h1 className="text-3xl font-bold text-gray-900">
             {selectedCompany === 'Avalern' 
               ? 'Import District Leads for Avalern' 
-              : 'Import Leads for CraftyCode'
+              : 'Import Leads'
             }
           </h1>
           <p className="text-gray-600 mt-1">
             {selectedCompany === 'Avalern'
               ? 'Upload CSV files to import school district leads for Avalern'
-              : 'Upload CSV files to import real estate leads for CraftyCode'
+              : 'Upload CSV files to import leads for the selected company'
             }
           </p>
         </div>
