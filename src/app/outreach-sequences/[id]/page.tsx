@@ -185,7 +185,7 @@ export default function OutreachSequenceDetailPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center">
-              <div className={`w-3 h-3 rounded-full mr-3 ${sequence.company === 'CraftyCode' ? 'bg-blue-500' : 'bg-purple-500'}`}></div>
+              <div className={`w-3 h-3 rounded-full mr-3 ${(sequence.company || '').toString().toLowerCase() === 'craftycode' ? 'bg-blue-500' : 'bg-purple-500'}`}></div>
               <h2 className="text-lg font-semibold text-gray-800">{sequence.company}</h2>
             </div>
             <div className="text-sm text-gray-500">

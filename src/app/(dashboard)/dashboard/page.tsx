@@ -66,7 +66,7 @@ export default function Dashboard() {
   const [currentPage, setCurrentPage] = useState(1)
   const touchpointsPerPage = 20
 
-  // Company-specific configurations
+  // Company-specific configurations (keys correspond to CompanyType values)
   const companyConfig = {
     CraftyCode: {
       color: 'blue',

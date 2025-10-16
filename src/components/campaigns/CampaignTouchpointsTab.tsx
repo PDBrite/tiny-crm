@@ -195,7 +195,7 @@ export default function CampaignTouchpointsTab({
           ) : (
             <div className="space-y-4">
               {getCurrentPageItems().map((touchpoint) => {
-                // Handle different data structures for CraftyCode vs Avalern
+                // Handle different data structures for different company lead/contact shapes
                 const contact = touchpoint.lead || touchpoint.district_contact || touchpoint.contact
                 const contactEmail = contact?.email
                 const isScheduled = !touchpoint.completed_at

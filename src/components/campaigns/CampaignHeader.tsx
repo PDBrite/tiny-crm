@@ -91,7 +91,7 @@ export default function CampaignHeader({
         <h1 className="text-3xl font-bold text-gray-900">{campaign.name}</h1>
         <div className="flex items-center space-x-4 mt-2">
           <div className="flex items-center space-x-2">
-            <div className={`w-3 h-3 rounded-full ${campaign.company === 'CraftyCode' ? 'bg-blue-500' : 'bg-purple-500'}`}></div>
+            <div className={`w-3 h-3 rounded-full ${(campaign.company || '').toString().toLowerCase() === 'craftycode' ? 'bg-blue-500' : 'bg-purple-500'}`}></div>
             <span className="text-sm font-medium text-gray-600">{campaign.company}</span>
           </div>
           <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(campaign.status || 'active')}`}>

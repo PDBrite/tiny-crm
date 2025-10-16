@@ -1,6 +1,6 @@
 # Tiny CRM - Prospect Tracking Dashboard
 
-A comprehensive prospect tracking dashboard for outbound sales campaigns across multiple brands (CraftyCode and Avalern). Built with Next.js, TypeScript, TailwindCSS, and Prisma with PostgreSQL.
+A comprehensive prospect tracking dashboard for outbound sales campaigns across multiple brands. Built with Next.js, TypeScript, TailwindCSS, and Prisma with PostgreSQL.
 
 ![Tiny CRM Dashboard](docs/dashboard-preview.png)
 
@@ -38,7 +38,7 @@ A comprehensive prospect tracking dashboard for outbound sales campaigns across 
    - CSV format compatible with tools like Instantly and Myphoner
 
 6. **Multi-Brand Support**
-   - Support for CraftyCode and Avalern brands
+   - Support for multiple brands
    - Brand-specific filtering and reporting
    - Color-coded brand identification
 
