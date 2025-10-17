@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCompany } from '@/contexts/CompanyContext'
 import DashboardLayout from '@/components/layout/DashboardLayout'
@@ -167,14 +167,14 @@ function CreateSequenceModal({
               <label className="block text-sm font-medium text-gray-700">
                 Sequence Steps
               </label>
-              {/* <button
+              <button
                 type="button"
                 onClick={addStep}
                 className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
               >
                 <Plus className="h-4 w-4 mr-1" />
                 Add Step
-              </button> */}
+              </button>
             </div>
             
             <div className="space-y-4">
@@ -196,14 +196,17 @@ function CreateSequenceModal({
                       <label className="block text-xs font-medium text-gray-700 mb-1">
                         Type
                       </label>
-                       <select
+                      <select
                         value={step.type}
                         onChange={(e) => updateStep(index, 'type', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
                       >
                         <option value="email">Email</option>
+                        <option value="call">Call</option>
+                        <option value="linkedin_message">LinkedIn Message</option>
                       </select>
                     </div>
+                    
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">
                         Day Offset
@@ -285,7 +288,7 @@ function CreateSequenceModal({
   )
 }
 
-export default function OutreachSequencesPage() {
+function OutreachSequencesPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { selectedCompany } = useCompany()
@@ -487,11 +490,19 @@ export default function OutreachSequencesPage() {
       </div>
 
       {/* Create Sequence Modal */}
-      <CreateSequenceModal 
-        isOpen={showCreateModal} 
-        onClose={handleCloseModal} 
-        company={selectedCompany || 'Avalern'} 
+      <CreateSequenceModal
+        isOpen={showCreateModal}
+        onClose={handleCloseModal}
+        company={selectedCompany || 'Avalern'}
       />
     </DashboardLayout>
+  )
+}
+
+export default function OutreachSequencesPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <OutreachSequencesPageContent />
+    </Suspense>
   )
 } 
