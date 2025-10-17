@@ -98,7 +98,8 @@ export async function GET(request: NextRequest) {
             title: contact.title || '',
             company: contact.district?.name || '',
             city: contact.district?.county || '',
-            state: contact.state || 'California'
+            state: contact.state || 'California',
+            status: contact.status
           },
           is_district_contact: true,
           campaign_id: campaignId,
@@ -164,7 +165,8 @@ export async function GET(request: NextRequest) {
             phone: lead.phone || '',
             company: lead.company || '',
             city: lead.city || '',
-            state: lead.state || ''
+            state: lead.state || '',
+            status: lead.status
           },
           is_district_contact: false,
           campaign_id: campaignId,

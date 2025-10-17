@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { CampaignStatusType, CompanyType } from '@prisma/client'
+import { getInstantlyClient, InstantlyError } from '@/lib/instantly-client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -212,11 +213,61 @@ export async function POST(request: NextRequest) {
       endDate: endDate || end_date,
       outreachSequenceId,
       instantlyCampaignId: instantlyCampaignId || instantly_campaign_id,
-      status: status || 'complete',
+      status: status || 'draft',
       createdById: userId
     })
 
-    // Create campaign using Prisma
+    let finalInstantlyCampaignId = instantlyCampaignId || instantly_campaign_id;
+    let instantlyCreationError: string | null = null;
+
+    console.log('DEBUG - Instantly integration check:', {
+      hasFinalId: !!finalInstantlyCampaignId,
+      apiKeyConfigured: process.env.INSTANTLY_API_KEY !== 'your-instantly-api-key-here',
+      apiKeyPrefix: process.env.INSTANTLY_API_KEY?.substring(0, 10) + '...',
+      willCreateInInstantly: !finalInstantlyCampaignId && process.env.INSTANTLY_API_KEY !== 'your-instantly-api-key-here'
+    });
+
+    if (!finalInstantlyCampaignId && process.env.INSTANTLY_API_KEY !== 'your-instantly-api-key-here') {
+      try {
+        console.log('Attempting to create campaign in Instantly...');
+        const instantlyClient = getInstantlyClient();
+
+        const instantlyCampaign = await instantlyClient.createCampaign({
+          name,
+          campaign_schedule: {
+            schedules: [{
+              name: 'Default Schedule',
+              timing: {
+                from: '08:00',
+                to: '17:00',
+              },
+              days: {
+                "0": false,
+                "1": true,
+                "2": true,
+                "3": true,
+                "4": true,
+                "5": true,
+                "6": false,
+              },
+              timezone: 'Etc/GMT+12',
+            }],
+          },
+        });
+
+        finalInstantlyCampaignId = instantlyCampaign.id;
+        console.log('Campaign created in Instantly with ID:', finalInstantlyCampaignId);
+      } catch (error) {
+        if (error instanceof InstantlyError) {
+          console.error('Failed to create campaign in Instantly:', error.message);
+          instantlyCreationError = error.message;
+        } else {
+          console.error('Failed to create campaign in Instantly:', error);
+          instantlyCreationError = 'Unknown error creating campaign in Instantly';
+        }
+      }
+    }
+
     const campaign = await prisma.campaign.create({
       data: {
         name,
@@ -225,8 +276,8 @@ export async function POST(request: NextRequest) {
         startDate: (startDate || start_date) ? new Date(startDate || start_date) : null,
         endDate: (endDate || end_date) ? new Date(endDate || end_date) : null,
         outreachSequenceId,
-        instantlyCampaignId: instantlyCampaignId || instantly_campaign_id,
-        status: status as CampaignStatusType || 'complete',
+        instantlyCampaignId: finalInstantlyCampaignId,
+        status: (status as CampaignStatusType) || 'draft',
         createdById: userId
       },
       include: {
@@ -244,7 +295,13 @@ export async function POST(request: NextRequest) {
     })
 
     console.log('Campaign created successfully:', campaign.id)
-    return NextResponse.json({ campaign }, { status: 201 })
+
+    const response: any = { campaign };
+    if (instantlyCreationError) {
+      response.warning = `Campaign created locally but failed to sync with Instantly: ${instantlyCreationError}`;
+    }
+
+    return NextResponse.json(response, { status: 201 })
   } catch (error) {
     console.error('Error creating campaign:', error)
     
