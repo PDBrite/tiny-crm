@@ -3,19 +3,18 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useCompany } from '@/contexts/CompanyContext'
-import { 
-  LayoutDashboard, 
-  Users, 
-  Target, 
-  Upload, 
-  Settings,
+import {
+  LayoutDashboard,
+  Users,
+  Target,
+  Upload,
   Building2,
-  Calendar,
   School,
   MessageSquare,
   User,
   List,
-  LogOut
+  LogOut,
+  Mail
 } from 'lucide-react'
 import { signOut, useSession } from "next-auth/react"
 
@@ -25,6 +24,7 @@ const avalernNav = [
   { name: 'District Contacts', href: '/leads', icon: Users },
   { name: 'Outreach', href: '/outreach', icon: MessageSquare },
   { name: 'Campaigns', href: '/campaigns', icon: Target },
+  { name: 'Inboxes', href: '/inboxes', icon: Mail },
   { name: 'Outreach Sequences', href: '/outreach-sequences', icon: List },
   { name: 'Users', href: '/users', icon: User },
   { name: 'Import', href: '/import', icon: Upload },

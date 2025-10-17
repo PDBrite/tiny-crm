@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import { useCompany } from '../../contexts/CompanyContext'
 import { DistrictLead, DISTRICT_STATUS_DISPLAY_MAP } from '../../types/districts'
+import { STATUS_DISPLAY_MAP } from '../../types/leads'
 import { MapPin, Users, Phone, Mail, Calendar, ChevronRight, Filter, Eye, X, Save, Edit3, Upload, UserPlus, Check } from 'lucide-react'
 import { UserRoleType } from '@prisma/client'
 
@@ -47,6 +48,11 @@ export default function DistrictsPage() {
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [assigningUsers, setAssigningUsers] = useState(false)
   const [selectedUsersToAssign, setSelectedUsersToAssign] = useState<string[]>([])
+
+  // District contacts states
+  const [districtContacts, setDistrictContacts] = useState<any[]>([])
+  const [editingStatusFor, setEditingStatusFor] = useState<string | null>(null)
+  const [updatingStatus, setUpdatingStatus] = useState(false)
 
   // Fetch current user role
   useEffect(() => {
@@ -153,15 +159,15 @@ export default function DistrictsPage() {
   const fetchDistrictTouchpoints = async (districtId: string) => {
     try {
       console.log('Fetching district touchpoints for district:', districtId)
-      
+
       // Get all contacts for this district using the API
       const contactsResponse = await fetch(`/api/district-contacts?district_id=${districtId}`)
-      
+
       console.log('District contacts API response status:', contactsResponse.status)
-      
+
       if (!contactsResponse.ok) {
         console.error('Error fetching district contacts from API:', contactsResponse.status)
-        
+
         // Try to get error details
         try {
           const errorData = await contactsResponse.json()
@@ -169,21 +175,24 @@ export default function DistrictsPage() {
         } catch (e) {
           console.error('Could not parse error response')
         }
-        
+
         return
       }
-      
+
       const contactsData = await contactsResponse.json()
       console.log('District contacts data:', {
         contactsCount: contactsData.contacts?.length || 0,
         firstContact: contactsData.contacts && contactsData.contacts.length > 0 ? contactsData.contacts[0].id : null
       })
-      
+
       const contacts = contactsData.contacts || []
       const contactIds = contacts.map((c: any) => c.id) || []
-      
+
+      // Store contacts in state
+      setDistrictContacts(contacts)
+
       console.log('Contact IDs for touchpoints:', contactIds.length)
-      
+
       if (contactIds.length === 0) {
         setTouchpoints([])
         setScheduledTouchpoints([])
@@ -250,11 +259,46 @@ export default function DistrictsPage() {
     const colors = {
       'not_contacted': 'bg-gray-100 text-gray-800',
       'contacted': 'bg-blue-100 text-blue-800',
+      'actively_contacting': 'bg-yellow-100 text-yellow-800',
       'engaged': 'bg-green-100 text-green-800',
       'won': 'bg-emerald-100 text-emerald-800',
-      'lost': 'bg-red-100 text-red-800'
+      'lost': 'bg-red-100 text-red-800',
+      'not_interested': 'bg-red-100 text-red-800'
     }
     return colors[status as keyof typeof colors] || colors.not_contacted
+  }
+
+  const handleUpdateContactStatus = async (contactId: string, newStatus: string) => {
+    setUpdatingStatus(true)
+    try {
+      const response = await fetch(`/api/district-contacts/${contactId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update contact status')
+      }
+
+      // Update local state
+      setDistrictContacts(prev =>
+        prev.map(contact =>
+          contact.id === contactId
+            ? { ...contact, status: newStatus }
+            : contact
+        )
+      )
+
+      setEditingStatusFor(null)
+    } catch (error) {
+      console.error('Error updating contact status:', error)
+      alert('Failed to update contact status')
+    } finally {
+      setUpdatingStatus(false)
+    }
   }
 
   const handleViewContacts = () => {
@@ -272,6 +316,8 @@ export default function DistrictsPage() {
     setEditingDistrict(null)
     setTouchpoints([])
     setScheduledTouchpoints([])
+    setDistrictContacts([])
+    setEditingStatusFor(null)
   }
 
   const handleSaveDistrict = async () => {
@@ -751,7 +797,7 @@ export default function DistrictsPage() {
                               e.stopPropagation()
                               router.push(`/leads?district=${district.id}`)
                             }}
-                            className="flex items-center px-3 py-1.5 text-sm bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200"
+                            className="flex items-center px-3 py-1.5 text-sm bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 cursor-pointer"
                           >
                             <Users className="h-4 w-4 mr-1" />
                             View Contacts
@@ -865,6 +911,74 @@ export default function DistrictsPage() {
               )}
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
+          </div>
+
+          {/* District Contacts */}
+          <div>
+            <h4 className="text-lg font-semibold text-gray-900 mb-3">District Contacts ({districtContacts.length})</h4>
+            {districtContacts.length === 0 ? (
+              <p className="text-sm text-gray-500">No contacts found for this district</p>
+            ) : (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {districtContacts.map((contact) => (
+                  <div key={contact.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-900">
+                        {contact.firstName} {contact.lastName}
+                      </span>
+                      {editingStatusFor === contact.id ? (
+                        <select
+                          value={contact.status || 'not_contacted'}
+                          onChange={(e) => {
+                            e.stopPropagation()
+                            handleUpdateContactStatus(contact.id, e.target.value)
+                          }}
+                          disabled={updatingStatus}
+                          onBlur={() => !updatingStatus && setEditingStatusFor(null)}
+                          autoFocus
+                          className="text-xs px-2 py-1 rounded-full border-2 border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <option value="not_contacted">Not Contacted</option>
+                          <option value="actively_contacting">Actively Contacting</option>
+                          <option value="engaged">Engaged</option>
+                          <option value="won">Won</option>
+                          <option value="not_interested">Not Interested</option>
+                        </select>
+                      ) : (
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium cursor-pointer hover:ring-2 hover:ring-purple-400 transition-all ${getStatusColor(contact.status || 'not_contacted')}`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setEditingStatusFor(contact.id)
+                          }}
+                          title="Click to edit status"
+                        >
+                          {STATUS_DISPLAY_MAP[contact.status] || contact.status || 'Not Contacted'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-600 space-y-1">
+                      {contact.email && (
+                        <div className="flex items-center">
+                          <Mail className="h-3 w-3 mr-1 text-gray-400" />
+                          {contact.email}
+                        </div>
+                      )}
+                      {contact.phone && (
+                        <div className="flex items-center">
+                          <Phone className="h-3 w-3 mr-1 text-gray-400" />
+                          {contact.phone}
+                        </div>
+                      )}
+                      {contact.title && (
+                        <div className="text-gray-500">{contact.title}</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Touchpoints */}
@@ -1231,6 +1345,74 @@ export default function DistrictsPage() {
                   )}
                   {saving ? 'Saving...' : 'Save Changes'}
                 </button>
+              </div>
+
+              {/* District Contacts */}
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">District Contacts ({districtContacts.length})</h4>
+                {districtContacts.length === 0 ? (
+                  <p className="text-sm text-gray-500">No contacts found for this district</p>
+                ) : (
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {districtContacts.map((contact) => (
+                      <div key={contact.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-900">
+                            {contact.firstName} {contact.lastName}
+                          </span>
+                          {editingStatusFor === contact.id ? (
+                            <select
+                              value={contact.status || 'not_contacted'}
+                              onChange={(e) => {
+                                e.stopPropagation()
+                                handleUpdateContactStatus(contact.id, e.target.value)
+                              }}
+                              disabled={updatingStatus}
+                              onBlur={() => !updatingStatus && setEditingStatusFor(null)}
+                              autoFocus
+                              className="text-xs px-2 py-1 rounded-full border-2 border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <option value="not_contacted">Not Contacted</option>
+                              <option value="actively_contacting">Actively Contacting</option>
+                              <option value="engaged">Engaged</option>
+                              <option value="won">Won</option>
+                              <option value="not_interested">Not Interested</option>
+                            </select>
+                          ) : (
+                            <span
+                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium cursor-pointer hover:ring-2 hover:ring-purple-400 transition-all ${getStatusColor(contact.status || 'not_contacted')}`}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setEditingStatusFor(contact.id)
+                              }}
+                              title="Click to edit status"
+                            >
+                              {STATUS_DISPLAY_MAP[contact.status] || contact.status || 'Not Contacted'}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-600 space-y-1">
+                          {contact.email && (
+                            <div className="flex items-center">
+                              <Mail className="h-3 w-3 mr-1 text-gray-400" />
+                              {contact.email}
+                            </div>
+                          )}
+                          {contact.phone && (
+                            <div className="flex items-center">
+                              <Phone className="h-3 w-3 mr-1 text-gray-400" />
+                              {contact.phone}
+                            </div>
+                          )}
+                          {contact.title && (
+                            <div className="text-gray-500">{contact.title}</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Touchpoints */}

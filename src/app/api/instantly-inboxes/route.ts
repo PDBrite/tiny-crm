@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
-import { instantlyClient } from '@/lib/instantly-client'
+import { getInstantlyClient } from '@/lib/instantly-client'
 
 export async function GET() {
   try {
@@ -11,17 +11,18 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const inboxes = await instantlyClient.getInboxes()
+    const instantlyClient = getInstantlyClient()
+    const accounts = await instantlyClient.getAccounts()
 
     return NextResponse.json({
-      inboxes,
-      count: inboxes.length,
+      accounts,
+      count: accounts.length,
     })
   } catch (error) {
-    console.error('Error fetching Instantly inboxes:', error)
+    console.error('Error fetching Instantly accounts:', error)
     return NextResponse.json(
       {
-        error: 'Failed to fetch inboxes from Instantly',
+        error: 'Failed to fetch accounts from Instantly',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
