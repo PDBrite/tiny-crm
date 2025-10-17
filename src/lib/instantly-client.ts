@@ -30,15 +30,21 @@ interface InstantlyEmail {
   body?: string;
 }
 
-interface InstantlyInbox {
-  id: string;
+interface InstantlyAccount {
   email: string;
-  name: string;
-  status: InstantlyInboxStatus;
+  first_name?: string;
+  last_name?: string;
   daily_limit: number;
-  sent_today: number;
-  warmup_enabled: boolean;
-  created_at: string;
+  status: number;
+  warmup_status?: number;
+  warmup_enabled?: boolean;
+  stat_warmup_score?: number;
+  timestamp_created: string;
+  timestamp_updated?: string;
+  timestamp_last_used?: string;
+  timestamp_warmup_start?: string;
+  organization?: string;
+  tracking_domain_name?: string;
 }
 
 interface CreateCampaignParams {
@@ -98,15 +104,13 @@ class InstantlyError extends Error {
 
 export class InstantlyClient {
   private readonly apiKey: string;
-  private readonly workspaceId?: string;
   private readonly baseUrl = 'https://api.instantly.ai/api/v2';
 
-  constructor(apiKey: string, workspaceId?: string) {
+  constructor(apiKey: string) {
     if (!apiKey) {
       throw new Error('Instantly API key is required');
     }
     this.apiKey = apiKey;
-    this.workspaceId = workspaceId;
   }
 
   private async fetchAPI<T>(
@@ -233,16 +237,16 @@ export class InstantlyClient {
     return response.emails ?? [];
   }
 
-  async getInboxes(): Promise<InstantlyInbox[]> {
-    const response = await this.fetchAPI<{ inboxes: InstantlyInbox[] }>('/inboxes');
-    return response.inboxes ?? [];
+  async getAccounts(): Promise<InstantlyAccount[]> {
+    const response = await this.fetchAPI<InstantlyAccount[]>('/accounts');
+    return Array.isArray(response) ? response : [];
   }
 
-  async getInbox(inboxId: string): Promise<InstantlyInbox> {
-    const response = await this.fetchAPI<{ inbox: InstantlyInbox }>(
-      `/inboxes/${inboxId}`
+  async getAccount(email: string): Promise<InstantlyAccount> {
+    const response = await this.fetchAPI<InstantlyAccount>(
+      `/accounts/${encodeURIComponent(email)}`
     );
-    return response.inbox;
+    return response;
   }
 
   async addLeadsToCampaign(
@@ -304,7 +308,6 @@ let clientInstance: InstantlyClient | null = null;
 export function getInstantlyClient(): InstantlyClient {
   if (!clientInstance) {
     const apiKey = process.env.INSTANTLY_API_KEY;
-    const workspaceId = process.env.INSTANTLY_WORKSPACE_ID;
 
     if (!apiKey) {
       throw new Error(
@@ -312,20 +315,20 @@ export function getInstantlyClient(): InstantlyClient {
       );
     }
 
-    clientInstance = new InstantlyClient(apiKey, workspaceId);
+    clientInstance = new InstantlyClient(apiKey);
   }
 
   return clientInstance;
 }
 
-export function createInstantlyClient(apiKey: string, workspaceId?: string): InstantlyClient {
-  return new InstantlyClient(apiKey, workspaceId);
+export function createInstantlyClient(apiKey: string): InstantlyClient {
+  return new InstantlyClient(apiKey);
 }
 
 export type {
   InstantlyCampaign,
   InstantlyEmail,
-  InstantlyInbox,
+  InstantlyAccount,
   InstantlyCampaignStatus,
   InstantlyEmailStatus,
   InstantlyInboxStatus,
