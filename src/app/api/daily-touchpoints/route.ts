@@ -162,6 +162,7 @@ export async function GET(request: NextRequest) {
             email: dc.email,
             phone: dc.phone,
             title: dc.title,
+            status: dc.status,
             district_lead: {
               id: dc.district.id,
               district_name: dc.district.name,
@@ -178,6 +179,7 @@ export async function GET(request: NextRequest) {
             phone: dc.phone,
             city: dc.district.county,
             company: dc.district.name,
+            status: dc.status,
             campaign_id: dc.campaignId,
             campaign: campaign ? {
               id: campaign.id,
@@ -289,6 +291,7 @@ export async function GET(request: NextRequest) {
             phone: lead.phone,
             city: lead.city,
             company: lead.company,
+            status: lead.status,
             campaign_id: lead.campaignId,
             campaign: campaign ? {
               id: campaign.id,

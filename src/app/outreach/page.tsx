@@ -78,11 +78,28 @@ interface ExtendedLead extends Lead {
   title?: string;
 }
 
+const getStatusBadgeColor = (status: string) => {
+  switch (status) {
+    case 'not_contacted':
+      return 'bg-gray-100 text-gray-800'
+    case 'actively_contacting':
+      return 'bg-yellow-100 text-yellow-800'
+    case 'engaged':
+      return 'bg-green-100 text-green-800'
+    case 'won':
+      return 'bg-blue-100 text-blue-800'
+    case 'not_interested':
+      return 'bg-red-100 text-red-800'
+    default:
+      return 'bg-gray-100 text-gray-800'
+  }
+}
+
 export default function OutreachPage() {
   const { selectedCompany } = useCompany()
   // Default to Avalern if selectedCompany is empty
   const effectiveCompany = selectedCompany || 'Avalern'
-  
+
   const [touchpoints, setTouchpoints] = useState<TouchpointSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedCampaign, setSelectedCampaign] = useState('')
@@ -109,7 +126,10 @@ export default function OutreachPage() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [creatorFilter, setCreatorFilter] = useState('')
   const [users, setUsers] = useState<any[]>([])
-  
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [editingStatusFor, setEditingStatusFor] = useState<string | null>(null)
+  const [updatingStatus, setUpdatingStatus] = useState(false)
+
   // Fetch current user info
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -781,6 +801,87 @@ export default function OutreachPage() {
     }
   }
 
+  const handleSyncFromInstantly = async () => {
+    if (!selectedCampaign) {
+      alert('Please select a campaign first to sync emails from Instantly')
+      return
+    }
+
+    setIsSyncing(true)
+    try {
+      const response = await fetch('/api/sync-instantly', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ campaignId: selectedCampaign }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to sync from Instantly')
+      }
+
+      const result = await response.json()
+      alert(`Sync completed!\n\n✅ Created: ${result.touchpointsCreated}\n🔄 Updated: ${result.touchpointsUpdated}\n⏭️  Skipped: ${result.touchpointsSkipped}`)
+
+      await fetchFilteredTouchpoints()
+      await fetchTouchpointCounts()
+    } catch (error) {
+      console.error('Error syncing from Instantly:', error)
+      alert(`Failed to sync from Instantly: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
+  const handleUpdateContactStatus = async (touchpoint: any, newStatus: string) => {
+    const isAvalern = effectiveCompany === 'Avalern'
+    let contactId: string | null = null
+
+    if (isAvalern) {
+      if (touchpoint.contact) {
+        contactId = touchpoint.contact.id
+      } else if (touchpoint.district_contact) {
+        contactId = touchpoint.district_contact.id
+      }
+    } else {
+      contactId = touchpoint.lead?.id
+    }
+
+    if (!contactId) {
+      alert('Could not find contact ID')
+      return
+    }
+
+    setUpdatingStatus(true)
+    try {
+      const endpoint = isAvalern
+        ? `/api/district-contacts/${contactId}`
+        : `/api/leads/${contactId}`
+
+      const response = await fetch(endpoint, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update contact status')
+      }
+
+      await fetchFilteredTouchpoints()
+      setEditingStatusFor(null)
+    } catch (error) {
+      console.error('Error updating contact status:', error)
+      alert('Failed to update contact status')
+    } finally {
+      setUpdatingStatus(false)
+    }
+  }
+
   const handleExportTouchpoints = () => {
     if (!filteredTouchpoints || filteredTouchpoints.length === 0) {
       alert('No touchpoints to export')
@@ -1079,6 +1180,15 @@ export default function OutreachPage() {
                       <option value="50">50 per page</option>
                     </select>
                     <button
+                      onClick={handleSyncFromInstantly}
+                      disabled={isSyncing || !selectedCampaign}
+                      className="flex items-center px-3 py-2 text-sm text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={!selectedCampaign ? 'Select a campaign first' : 'Sync emails from Instantly'}
+                    >
+                      <RefreshCw className={`h-4 w-4 mr-1 ${isSyncing ? 'animate-spin' : ''}`} />
+                      {isSyncing ? 'Syncing...' : 'Sync from Instantly'}
+                    </button>
+                    <button
                       onClick={handleExportTouchpoints}
                       disabled={!filteredTouchpoints || filteredTouchpoints.length === 0}
                       className="flex items-center px-3 py-2 text-sm text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1100,24 +1210,28 @@ export default function OutreachPage() {
                       let contactName = 'Unknown Contact';
                       let contactEmail = '';
                       let campaignName = '';
-                      
+                      let contactStatus = 'not_contacted';
+
                       if (isAvalern) {
                         if (touchpoint.contact) {
                           // New format from campaign-touchpoints API
                           contactName = `${touchpoint.contact.first_name || ''} ${touchpoint.contact.last_name || ''}`.trim();
                           contactEmail = touchpoint.contact.email || '';
                           campaignName = touchpoint.contact.company || '';
+                          contactStatus = touchpoint.contact.status || 'not_contacted';
                         } else if (touchpoint.district_contact) {
                           // Old format for backward compatibility
                           contactName = `${touchpoint.district_contact.first_name || ''} ${touchpoint.district_contact.last_name || ''}`.trim();
                           contactEmail = touchpoint.district_contact.email || '';
                           campaignName = touchpoint.district_contact.district_lead?.district_name || '';
+                          contactStatus = touchpoint.district_contact.status || 'not_contacted';
                         }
                       } else {
                         // Regular leads format for CraftyCode
                         contactName = `${touchpoint.lead?.first_name || ''} ${touchpoint.lead?.last_name || ''}`.trim();
                         contactEmail = touchpoint.lead?.email || '';
                         campaignName = touchpoint.lead?.campaign?.name || '';
+                        contactStatus = touchpoint.lead?.status || 'not_contacted';
                       }
                       
                       return (
@@ -1137,6 +1251,37 @@ export default function OutreachPage() {
                                 {touchpoint.type.replace('_', ' ').toUpperCase()}
                               </span>
                               <span className="font-medium">{contactName || 'Unknown Contact'}</span>
+                              {editingStatusFor === touchpoint.id ? (
+                                <select
+                                  value={contactStatus}
+                                  onChange={(e) => {
+                                    e.stopPropagation()
+                                    handleUpdateContactStatus(touchpoint, e.target.value)
+                                  }}
+                                  disabled={updatingStatus}
+                                  onBlur={() => !updatingStatus && setEditingStatusFor(null)}
+                                  autoFocus
+                                  className="text-xs px-2 py-1 rounded-full border-2 border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <option value="not_contacted">Not Contacted</option>
+                                  <option value="actively_contacting">Actively Contacting</option>
+                                  <option value="engaged">Engaged</option>
+                                  <option value="won">Won</option>
+                                  <option value="not_interested">Not Interested</option>
+                                </select>
+                              ) : (
+                                <span
+                                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium cursor-pointer hover:ring-2 hover:ring-purple-400 transition-all ${getStatusBadgeColor(contactStatus)}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setEditingStatusFor(touchpoint.id)
+                                  }}
+                                  title="Click to edit status"
+                                >
+                                  {STATUS_DISPLAY_MAP[contactStatus] || contactStatus}
+                                </span>
+                              )}
                               {campaignName && (
                                 <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
                                   {campaignName}

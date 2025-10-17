@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { TouchpointType } from '@prisma/client'
 import { OutreachStep } from '@/types/leads'
+import { getInstantlyClient, InstantlyError } from '@/lib/instantly-client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -166,14 +167,69 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    let instantlySyncError: string | null = null;
+    let contactsAddedToInstantly = 0;
+
+    if (campaign.instantlyCampaignId && process.env.INSTANTLY_API_KEY !== 'your-instantly-api-key-here') {
+      try {
+        console.log(`Adding ${districtContacts.length} contacts to Instantly campaign ${campaign.instantlyCampaignId}`);
+        const instantlyClient = getInstantlyClient();
+
+        const instantlyLeads = districtContacts
+          .filter(contact => contact.email && contact.email.trim().length > 0)
+          .map(contact => ({
+            email: contact.email,
+            first_name: contact.firstName || undefined,
+            last_name: contact.lastName || undefined,
+            company: contact.district?.name || undefined,
+            phone: contact.phone || undefined,
+            custom_variables: {
+              title: contact.title || '',
+              linkedin_url: contact.linkedinUrl || '',
+            },
+          }));
+
+        if (instantlyLeads.length > 0) {
+          const result = await instantlyClient.addLeadsToCampaign(
+            campaign.instantlyCampaignId,
+            instantlyLeads
+          );
+
+          contactsAddedToInstantly = result.added;
+          console.log(`Successfully added ${result.added} contacts to Instantly campaign`);
+
+          if (result.failed > 0) {
+            console.warn(`Failed to add ${result.failed} contacts to Instantly campaign`);
+          }
+        } else {
+          console.warn('No contacts with valid emails to add to Instantly');
+        }
+      } catch (error) {
+        if (error instanceof InstantlyError) {
+          console.error('Failed to sync contacts with Instantly:', error.message);
+          instantlySyncError = error.message;
+        } else {
+          console.error('Failed to sync contacts with Instantly:', error);
+          instantlySyncError = 'Unknown error syncing contacts with Instantly';
+        }
+      }
+    }
+
+    const response: any = {
+      success: true,
       message: 'Districts assigned to campaign successfully',
       data: updateResult,
       contacts: districtContacts,
       contacts_count: districtContacts.length,
-      touchpoints_created: touchpointsCreated
-    })
+      touchpoints_created: touchpointsCreated,
+      contacts_added_to_instantly: contactsAddedToInstantly,
+    };
+
+    if (instantlySyncError) {
+      response.warning = `Districts assigned but failed to sync contacts with Instantly: ${instantlySyncError}`;
+    }
+
+    return NextResponse.json(response)
 
   } catch (error) {
     console.error('Error in assign-districts-to-campaign API:', error)
