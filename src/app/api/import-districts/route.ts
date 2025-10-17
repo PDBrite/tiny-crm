@@ -21,6 +21,7 @@ interface ImportResult {
     added: number
     updated: number
     failed: number
+    skipped: number
   }
   message: string
 }
@@ -71,38 +72,56 @@ export async function POST(request: NextRequest) {
       contacts: {
         added: 0,
         updated: 0,
-        failed: 0
+        failed: 0,
+        skipped: 0
       },
       message: ''
     }
 
     // Step 1: Find existing districts to determine which ones need to be created vs updated
-    const districtNames = districts.map(d => d.districtName)
-    const districtCounties = districts.map(d => d.county)
-    
-    // Get existing districts using Prisma
+    const normalize = (s?: string) => (s || '').trim().toLowerCase()
+
+    const districtPairs = districts.map(d => ({
+      name: d.districtName.trim(),
+      county: d.county.trim(),
+      state: 'California'
+    }))
+
+    // Query existing districts by OR of exact pairs
     const existingDistricts = await prisma.district.findMany({
       where: {
-        name: { in: districtNames },
-        county: { in: districtCounties }
+        OR: districtPairs.map(p => ({ name: p.name, county: p.county, state: p.state }))
       },
-      select: {
-        id: true,
-        name: true,
-        county: true
-      }
+      select: { id: true, name: true, county: true, state: true }
     })
-    
-    // Create a map for quick lookups
-    const existingDistrictMap = new Map<string, { id: string, name: string, county: string }>()
+
+    // Create a map for quick lookups keyed by normalized name|county|state
+    const existingDistrictMap = new Map<string, { id: string, name: string, county: string, state: string }>()
     existingDistricts.forEach(district => {
-      const key = `${district.name.toLowerCase()}-${district.county.toLowerCase()}`
+      const key = `${normalize(district.name)}|${normalize(district.county)}|${normalize(district.state)}`
       existingDistrictMap.set(key, district)
+    })
+
+    // Prefetch existing contacts by email (global) to avoid per-contact DB hits
+    const allEmails = new Set<string>()
+    districts.forEach(d => d.contacts.forEach(c => { if (c.email) allEmails.add(c.email.trim().toLowerCase()) }))
+    const emailList = Array.from(allEmails)
+    const existingContactsByEmail = emailList.length > 0 ? await prisma.districtContact.findMany({
+      where: { email: { in: emailList } },
+      select: { id: true, email: true, districtId: true, firstName: true, lastName: true }
+    }) : []
+
+    const emailContactMap = new Map<string, { id: string, email: string, districtId: string, firstName?: string, lastName?: string }>()
+    existingContactsByEmail.forEach(c => {
+      if (c.email) {
+        const emailKey = c.email.trim().toLowerCase()
+        emailContactMap.set(emailKey, { id: c.id, email: c.email, districtId: c.districtId, firstName: c.firstName, lastName: c.lastName })
+      }
     })
 
     // Step 2: Process each district
     for (const district of districts) {
-      const key = `${district.districtName.toLowerCase()}-${district.county.toLowerCase()}`
+      const key = `${normalize(district.districtName)}|${normalize(district.county)}|${normalize('California')}`
       const existingDistrict = existingDistrictMap.get(key)
       
       try {
@@ -168,52 +187,91 @@ export async function POST(request: NextRequest) {
         // Process contacts for this district
         for (const contact of district.contacts) {
           try {
-            // Check if contact already exists by email only
-            let existingContact = null
-            
-            if (contact.email) {
-              existingContact = await prisma.districtContact.findFirst({
+            const contactEmail = contact.email ? contact.email.trim().toLowerCase() : ''
+
+            if (contactEmail) {
+              const existingContact = emailContactMap.get(contactEmail)
+
+              if (existingContact) {
+                if (existingContact.districtId === districtId) {
+                  // Update existing contact in same district
+                  await prisma.districtContact.update({
+                    where: { id: existingContact.id },
+                    data: {
+                      title: contact.title,
+                      email: contact.email,
+                      phone: contact.phone,
+                      notes: contact.notes,
+                      state: contact.state || 'California',
+                      campaignId: campaign_id || undefined
+                    }
+                  })
+                  result.contacts.updated++
+                } else {
+                  // Email exists but in a different district - skip and log
+                  result.contacts.skipped++
+                  result.errors.push(`Skipped contact ${contact.email} for district ${district.districtName}: already exists in another district.`)
+                }
+              } else {
+                // Create new contact and add to email map
+                const created = await prisma.districtContact.create({
+                  data: {
+                    districtId: districtId,
+                    firstName: contact.firstName,
+                    lastName: contact.lastName,
+                    title: contact.title,
+                    email: contact.email,
+                    phone: contact.phone,
+                    linkedinUrl: null,
+                    status: 'not_contacted',
+                    notes: contact.notes,
+                    state: contact.state || 'California',
+                    campaignId: campaign_id || undefined
+                  }
+                })
+                result.contacts.added++
+                emailContactMap.set(contactEmail, { id: created.id, email: contactEmail, districtId })
+              }
+            } else {
+              // No email - fallback to matching by name within district
+              const existingByName = await prisma.districtContact.findFirst({
                 where: {
                   districtId: districtId,
-                  email: contact.email
-                }
-              })
-            }
-            
-            if (existingContact) {
-              // Update existing contact
-              await prisma.districtContact.update({
-                where: { id: existingContact.id },
-                data: {
-                  title: contact.title,
-                  email: contact.email,
-                  phone: contact.phone,
-                  notes: contact.notes,
-                  state: contact.state || 'California',
-                  campaignId: campaign_id || undefined
-                }
-              })
-              
-              result.contacts.updated++
-            } else {
-              // Create new contact
-              await prisma.districtContact.create({
-                data: {
-                  districtId: districtId,
                   firstName: contact.firstName,
-                  lastName: contact.lastName,
-                  title: contact.title,
-                  email: contact.email,
-                  phone: contact.phone,
-                  linkedinUrl: null,
-                  status: 'not_contacted',
-                  notes: contact.notes,
-                  state: contact.state || 'California',
-                  campaignId: campaign_id || undefined
+                  lastName: contact.lastName
                 }
               })
-              
-              result.contacts.added++
+
+              if (existingByName) {
+                await prisma.districtContact.update({
+                  where: { id: existingByName.id },
+                  data: {
+                    title: contact.title,
+                    phone: contact.phone,
+                    notes: contact.notes,
+                    state: contact.state || 'California',
+                    campaignId: campaign_id || undefined
+                  }
+                })
+                result.contacts.updated++
+              } else {
+                await prisma.districtContact.create({
+                  data: {
+                    districtId: districtId,
+                    firstName: contact.firstName,
+                    lastName: contact.lastName,
+                    title: contact.title,
+                    email: contact.email || null,
+                    phone: contact.phone,
+                    linkedinUrl: null,
+                    status: 'not_contacted',
+                    notes: contact.notes,
+                    state: contact.state || 'California',
+                    campaignId: campaign_id || undefined
+                  }
+                })
+                result.contacts.added++
+              }
             }
           } catch (contactError) {
             console.error('Error processing contact:', contactError)
