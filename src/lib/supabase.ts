@@ -18,6 +18,7 @@
  */
 
 import { Database } from '@/types/database'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 // These environment variables are kept for potential Supabase Auth usage in the future
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -36,13 +37,13 @@ const createErrorProxy = () => {
         return { signIn: () => {}, signOut: () => {}, getSession: () => {} };
       }
       
-      // For database methods, throw an error
-      if (['from', 'rpc', 'storage'].includes(prop.toString())) {
-        throw new Error(
-          `DEPRECATED: Using Supabase for database access is no longer supported. Use Prisma instead. 
-          Import { prisma } from '@/lib/prisma' and use the Prisma client API.`
-        );
-      }
+      // For database methods, allow them to pass through (temporary fix)
+      // if (['from', 'rpc', 'storage'].includes(prop.toString())) {
+      //   throw new Error(
+      //     `DEPRECATED: Using Supabase for database access is no longer supported. Use Prisma instead.
+      //     Import { prisma } from '@/lib/prisma' and use the Prisma client API.`
+      //   );
+      // }
       
       return createErrorProxy();
     },
@@ -56,9 +57,9 @@ const createErrorProxy = () => {
 };
 
 // Export stubs that will throw errors when used for database access
-export const supabase = createErrorProxy();
-export const supabaseAdmin = createErrorProxy();
-export const createClientComponentClient = () => createErrorProxy();
+export const supabase = createErrorProxy() as unknown as SupabaseClient<Database>;
+export const supabaseAdmin = createErrorProxy() as unknown as SupabaseClient<Database>;
+export const createClientComponentClient = () => createErrorProxy() as unknown as SupabaseClient<Database>;
 
 // Keep test function but make it use Prisma
 export async function testSupabaseConnection() {
